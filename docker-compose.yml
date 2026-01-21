@@ -1,0 +1,155 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgis/postgis:15-3.4
+    container_name: fleet_tracking_db
+    environment:
+      POSTGRES_DB: fleet_tracking
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fleet_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Redis Cache & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: fleet_tracking_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - fleet_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Laravel Backend
+  backend:
+    build:
+      context: ./fleet-tracking-backend
+      dockerfile: Dockerfile
+    container_name: fleet_tracking_backend
+    ports:
+      - "8000:8000"
+    environment:
+      APP_ENV: local
+      APP_DEBUG: "true"
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: fleet_tracking
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+      CACHE_DRIVER: redis
+    volumes:
+      - ./fleet-tracking-backend:/var/www/html
+      - backend_storage:/var/www/html/storage
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - fleet_network
+    command: >
+      sh -c "php artisan migrate --force &&
+             php artisan serve --host=0.0.0.0 --port=8000"
+
+  # Laravel Queue Worker
+  queue:
+    build:
+      context: ./fleet-tracking-backend
+      dockerfile: Dockerfile
+    container_name: fleet_tracking_queue
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: fleet_tracking
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
+    volumes:
+      - ./fleet-tracking-backend:/var/www/html
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - fleet_network
+    command: php artisan queue:work redis --queue=default,gps,notifications --tries=3 --timeout=90
+
+  # Laravel Scheduler
+  scheduler:
+    build:
+      context: ./fleet-tracking-backend
+      dockerfile: Dockerfile
+    container_name: fleet_tracking_scheduler
+    environment:
+      APP_ENV: local
+      DB_CONNECTION: pgsql
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_DATABASE: fleet_tracking
+      DB_USERNAME: postgres
+      DB_PASSWORD: postgres
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+    volumes:
+      - ./fleet-tracking-backend:/var/www/html
+    depends_on:
+      - backend
+    networks:
+      - fleet_network
+    command: php artisan schedule:work
+
+  # Next.js Frontend
+  frontend:
+    build:
+      context: ./fleet-tracking-frontend
+      dockerfile: Dockerfile
+    container_name: fleet_tracking_frontend
+    ports:
+      - "3000:3000"
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000/api
+      NEXT_PUBLIC_PUSHER_KEY: ${PUSHER_APP_KEY}
+      NEXT_PUBLIC_PUSHER_CLUSTER: ${PUSHER_APP_CLUSTER}
+    volumes:
+      - ./fleet-tracking-frontend:/app
+      - /app/node_modules
+      - /app/.next
+    depends_on:
+      - backend
+    networks:
+      - fleet_network
+    command: npm run dev
+
+volumes:
+  postgres_data:
+  redis_data:
+  backend_storage:
+
+networks:
+  fleet_network:
+    driver: bridge
