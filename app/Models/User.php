@@ -9,6 +9,7 @@ use App\Models\Partner;
 use App\Models\Project;
 use App\Models\Discount;
 use Illuminate\Support\Str;
+use App\Enums\UserTypesEnums;
 use Laravel\Passport\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
 use Illuminate\Support\Facades\Storage;
@@ -71,6 +72,11 @@ class User extends Authenticatable
         'bank_code',
         'production_access_approved_at',
         'payout_restricted',
+        'user_type',        // individual_operator | business_operator
+        'business_type',    // co | bn | it
+        'cac_number',
+        'cac_document',
+        'nin_number',
     ];
 
     /**
@@ -84,6 +90,7 @@ class User extends Authenticatable
         'remember_token',
         'pin_reset_otp',
     ];
+
 
     /**
      * Get the attributes that should be cast.
@@ -102,7 +109,15 @@ class User extends Authenticatable
         ];
     }
 
-    protected $appends = ['image_url']; // ensures it's always returned
+    protected $appends = ['image_url', 'cac_document_url']; // ensures it's always returned
+
+
+    public function getCacDocumentUrlAttribute()
+    {
+        return $this->cac_document
+            ? url(Storage::url($this->cac_document))
+            : null;
+    }
 
     public function getImageUrlAttribute()
     {
@@ -126,6 +141,20 @@ class User extends Authenticatable
             && !empty($this->bank_code)
             && !empty($this->bank_details_updated_at);
     }
+
+
+    public function isBusinessOperator(): bool
+    {
+        return $this->user_type === UserTypesEnums::BUSINESS_OPERATOR->value;
+    }
+
+    public function hasCacDetails(): bool
+    {
+        return !empty($this->business_type)
+            && !empty($this->cac_number)
+            && !empty($this->cac_document);
+    }
+
 
 
 

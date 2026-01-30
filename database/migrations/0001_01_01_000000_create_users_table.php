@@ -6,24 +6,54 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('users', function (Blueprint $table) {
             $table->uuid('id')->primary();
+
+            // BASIC INFO
             $table->string('name');
             $table->string('email')->nullable();
             $table->string('phone')->nullable();
-            $table->string('image')->nullable();
             $table->string('whatsapp_number')->nullable();
+            $table->string('image')->nullable();
+
+            // VERIFICATION
             $table->string('otp_code')->nullable();
             $table->timestamp('otp_expires_at')->nullable();
             $table->timestamp('email_verified_at')->nullable();
             $table->timestamp('phone_verified_at')->nullable();
             $table->timestamp('whatsapp_number_verified_at')->nullable();
+
+            $table->string('user_type')->nullable(); // individual_operator | business_operator
+
+            $table->string('business_type')->nullable(); // co | bn | it
+            $table->string('cac_number')->nullable();
+            $table->string('cac_document')->nullable();
+
+            $table->string('nin_number')->nullable();
+
+            // organization id
+            $table->string('organization_id')->nullable()->unique();
+
+            // BANK
+            $table->string('bank_name')->nullable();
+            $table->string('account_name')->nullable();
+            $table->string('account_number')->nullable();
+            $table->string('bank_code', 20)->nullable();
+            $table->timestamp('bank_details_updated_at')->nullable();
+
+            // SECURITY
             $table->string('password');
+            $table->string('transaction_pin')->nullable();
+            $table->string('pin_reset_otp')->nullable();
+            $table->timestamp('pin_reset_otp_expires_at')->nullable();
+
+            // FLAGS
+            $table->boolean('has_updated_name_once')->default(false);
+            $table->boolean('payout_restricted')->default(false);
+            $table->timestamp('last_activity')->nullable();
+
             $table->rememberToken();
             $table->timestamps();
         });
@@ -44,9 +74,6 @@ return new class extends Migration
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('users');

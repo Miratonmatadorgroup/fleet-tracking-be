@@ -9,9 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('subscriptions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('asset_id')->constrained()->onDelete('cascade');
+            $table->uuid('id')->primary(); // use UUID for PK
+            $table->foreignUuid('user_id')->constrained('users')->cascadeOnDelete();
+            $table->foreignUuid('asset_id')->constrained('assets')->cascadeOnDelete();
             $table->enum('plan_class', ['A', 'B', 'C']);
             $table->enum('billing_cycle', ['monthly', 'quarterly', 'biannual', 'yearly']);
             $table->decimal('price_per_month', 10, 2);
@@ -30,8 +30,6 @@ return new class extends Migration
             $table->index('asset_id');
             $table->index('status');
             $table->index('end_date');
-            $table->unique(['asset_id', 'status'], 'idx_subscriptions_active_asset')
-                  ->where('status', 'active');
         });
     }
 

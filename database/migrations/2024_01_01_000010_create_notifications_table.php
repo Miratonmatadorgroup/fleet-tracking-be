@@ -9,9 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('notifications', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->enum('type', ['geofence_breach', 'speeding', 'idle_alert', 'subscription_expiry', 'remote_shutdown']);
+            $table->uuid('id')->primary();
+
+            // Use UUID for user_id
+            $table->uuid('user_id');
+
+            // Foreign key constraint
+            $table->foreign('user_id')->references('id')->on('users')->cascadeOnDelete();
+
+            // 'geofence_breach', 'speeding', 'idle_alert', 'subscription_expiry', 'remote_shutdown'
+            $table->string('type');
+
+
             $table->string('title');
             $table->text('message');
             $table->json('data')->nullable();

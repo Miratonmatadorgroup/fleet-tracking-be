@@ -9,8 +9,13 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('payments', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('subscription_id')->constrained()->onDelete('cascade');
+            $table->uuid('id')->primary();
+
+            // Foreign key to subscriptions (UUID)
+            $table->foreignUuid('subscription_id')
+                  ->constrained('subscriptions')
+                  ->cascadeOnDelete();
+
             $table->decimal('amount', 10, 2);
             $table->string('currency', 3)->default('NGN');
             $table->enum('status', ['pending', 'completed', 'failed', 'refunded'])->default('pending');
@@ -31,3 +36,4 @@ return new class extends Migration
         Schema::dropIfExists('payments');
     }
 };
+
