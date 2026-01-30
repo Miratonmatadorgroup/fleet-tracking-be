@@ -1,0 +1,48 @@
+@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTk3NTQ5ZS0xNmU3LTcwNmQtYTQzYi0xMWQzN2VjYmZjOTgiLCJqdGkiOiI3ZDc2M2JjZWQwY2YyYjRiMDE3MGM0NzdlM2RiZjkxMWU2OWNlNTEyOTU2ZGNjNWFkOTM0NmNlYzNkMGI1NmNmMDYyNGI0OTQxYjhmYTk5MSIsImlhdCI6MTc2MTE1MDc5Mi42NDgzMTMsIm5iZiI6MTc2MTE1MDc5Mi42NDgzMjUsImV4cCI6MTc5MjY4Njc5Mi42MjAwNDUsInN1YiI6ImM0MmJkZGZlLTBiY2QtNDFjMy04MmM5LTZiZjA3YmViYzliOCIsInNjb3BlcyI6W119.rdDuqEqyRBzGindpGIrnoYp5tJUUBKdQ9ML8DIj_NY57dNrfueNCWMI5nOyOIvyK9cg2f-4QEkiLvMt_xnyUZJ9SEf5_qU1KXaI2SDKHIqaBDYttKlf_aHozDLeuINnKtZdZP34U06da6MkP0fYqKeflKPv_YkPO3ZhQGSEtfPaZCwZ964hdzxNktQl_45qbNcPpcMy_uQ4fABThVnJPmjoYhuDW7C08CHqWQFU9ySE4FNXpTRoHf6FPyNJRAf8HRi45G9ApRgtbksn5Gn3UIMLIiiBs_H9D_vuCNMHPJom_1agfPalLVjCNWLmc-gxlEJcPYMaS-KUu09w9ACt9ZvRWuny-Nj2FQO2GDL9RDdfMizK_2RBgq-mm1144D0C0JBA7ro9nB6_4k6fjPuGAO70mmTEj4B_RNZ4onzWpSfFCCY5M1mRt7lJeOAIO4NYQdSpy8z2RxRX70tu0cnFXhCOddzg8BfgklqTdXwNtNSxK_Op7cvHYE-rYvagc8YpdDJJazNZiPiBFpQ7KWUl9YMG1zgC2DMhV2x_K6nBFaUoXcRtpzPDV9ewDYi6IUDvi6s3cDeM_iXzdke5PU6bUhE-N1VbatGG6tJdj4OGHSqmkdE40ES4GUjHVwNC_m3z7Mwlbxy8hTxlYJuJx1AcvheSKFxHdUDXOzFeON0wkd28
+
+@url=http://127.0.0.1:8000/api
+
+
+//INVESTOR LOGIN
+ ###
+POST {{url}}/login
+Content-Type: application/json
+Accept: application/json
+
+{
+    "identifier": "kinglose21@aol.com",
+    "password": "password"
+}
+
+
+//INVESTOR EARNINGS
+###
+GET {{url}}/investor/earnings
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//INVESTOR REINVEST
+###
+POST {{url}}/investor/reinvest
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+# PAYMENT METHOD ENUMNS bank,card,offline,wallet
+
+{
+  "investment_plan_id": "0199516d-d728-73e5-ad22-afd75da03781",
+  "payment_method": "bank"
+}
+
+//INVESTOR WITHDRAW INVESTMENT
+###
+POST {{url}}/investments/withdrawal
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+

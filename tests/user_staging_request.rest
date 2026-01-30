@@ -1,0 +1,226 @@
+@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTlhYzQxZi02YWJmLTcyYmEtODUxYy1mZTAyOGFmZjExZDEiLCJqdGkiOiIxZGQ0ZTEwY2ZjMGJmMmYxNmFjOTUzYTUzZTU1NzFmMDg0ZDcwOWY2NWI2NTEwNjIwMGMyMWE5NzdlMGY2NzExZTkwYTQyMzQ3OTk5MzU0MCIsImlhdCI6MTc2NzIwMDU5NS42MTYyNCwibmJmIjoxNzY3MjAwNTk1LjYxNjI0MiwiZXhwIjoxNzk4NzM2NTk1LjYxMTg0Nywic3ViIjoiOGMyN2VmZjItZjBkZi00ZThhLTg2MWYtNTg2YWJkZTVkNDkwIiwic2NvcGVzIjpbXX0.PaDzdECOD9kBwCFftwHhw4V5NfWp7lkzKU1hJXryR88YxMqbVKIJLhXaYejgwM294r0mVqkfs5fwfWDD7ptvvkFrDIp9tRWMenkRcSPeIHTKcfCB0vLjFjOlD4ZGankqojaAG0iO4asxjdpx3PdQzgosSnQYVHnqYVM-zHsDLVIkGE22Md1-bvY64TQlsJzlF4MWMIMJocy3ys1iUv--Pov7fxrfTDLk-GxRZ37uzvhF5KGIdPXdHW6CNZm03lasMchLazP9sGOlSJIZYnusgq-2a42t6X6UtMH6haP1gOVSaB_zvn-55RiJvHvgsHJvEHeLaZrUJQMi3ywNPAim9aTbwhJ2wA8f4WIBtn1UD4eRRb-FCQBBM-O4qiUcH4XIMfS3Z23RxUeO5XW2de2FuImpmdJdEHqC8H6prH6K7f1tBBCHzwqYzlZYYPFiOcCavDS6bzTAi0dNo2y7wJ9x37rSLpxggl9U-PGg8Bz9a_or3550wyfpIebJDwA8l8Sm_enSJNfYbLxUt3Ec4uhIpUQ30LNe2k8-SxdNcEkpZ4_nA90_nDfoZqp2akkjWDvQ-CFNKY0XQtxBTmSTgVKsD2tP8Qk9OBCI6SQjdNTMI2VNLpIE4ipDL1euFUGX4XS47493f1GHzMh3W6SXXZZ5wSvcv9EGp9I8NB8eYevh8pk
+
+@url=https://api.loopfreight.xyz/api
+
+
+@twitterbearer=Bearer
+//ADMIN LOGIN
+ ###
+POST {{url}}/login
+Content-Type: application/json
+Accept: application/json
+
+{
+    "identifier": "kele.chivctorn@gmail.com",
+    "password": "Password123!"
+ }
+
+#  {
+#     "identifier": "peaceay96+99@gmail.com",
+#     "password": "Password@1"
+#  }
+
+
+//USER PROFILE
+###
+GET {{url}}/user-profile
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//LIST OF BANKS
+###
+GET {{url}}/banks
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+
+ //USER CREATE PIN
+###
+POST {{url}}/transaction-pin/create
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "transaction_pin": "1111"
+
+}
+
+
+//USER CHANGE TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/change
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "old_pin": "1111",
+    "new_pin": "0000"
+
+}
+
+//USER FORGOT TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/forgot
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//USER RESET TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/reset
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "otp": "130745",
+    "new_pin": "1111"
+
+}
+
+//USER CHEK TRANSACTION PIN STATUS
+###
+GET {{url}}/user/transaction-pin-status
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//MARK DRIVER AVAILABLE
+###
+PATCH {{url}}/drivers/019aca53-9907-725f-bc11-2d0acad15049/available
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//MARK DRIVER unAVAILABLE
+###
+POST {{url}}/drivers/{driverId}/unavailable
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//USER CHEK TRANSACTION PIN STATUS
+###
+GET {{url}}/user/transaction-pin-status
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//USER SEARCH FOR RIDE
+###
+POST {{url}}/ride/search
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "pickup": "Murtala Muhammed Airport Domestic Airport, Local Airport Road, Ikeja, Nigeria",
+   "dropoff": "Sheraton Lagos Hotel, Lagos, Nigeria",
+   "transport_mode": "car",
+   "ride_pool_category": "",
+   "usage_hours": ""
+
+}
+
+
+//USER BOOK RIDE
+###
+POST {{url}}/book/ride
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "driver_id": "019aca53-9aeb-73a0-bf2d-ed34f1636a5b",
+    "transport_mode_id": "019ad8d2-08eb-706a-9e53-bacb01c04d3f",
+    "estimate_token": "ride_estimate_94d8c3d9-3919-486a-9405-9f29bee34d20_d9af2839-0cb4-4cbc-ac3a-40c652d21754"
+
+}
+
+
+//USER RATING LAST RIDE POOL DRIVER
+###
+GET {{url}}/rating/last-ride
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//USER DISMISS RATING RIDE POOL DRIVER
+###
+POST {{url}}/rating/dismiss
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+{
+  "ride_pool_id": "bd841e4e-ec8c-492c-bf3a-319e0ab6d19e"
+}
+
+
+
+//USER RATE RIDE POOL DRIVER
+###
+POST {{url}}/rate/ride-pool/drivers
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "ride_pool_id": "bd841e4e-ec8c-492c-bf3a-319e0ab6d19e",
+    "rating": "5",
+    "comment": "He was very professional"
+
+}
+
+//USER VIEW RIDE POOLING PRICING
+###
+GET {{url}}/ride-pooling-pricing
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//USER VIEW USER DEVICE ACTIVITIES
+###
+GET {{url}}/activity/devices
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//USER VIEW LIST OF DATA PLANS
+###
+GET {{url}}/provider/data/plans
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "provider": "MTN"
+}
+
+//USER BUY AIRTIME
+###
+POST {{url}}/user/buy/data
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "phone": "08012345678",
+  "provider": "MTN",
+  "plan_code": "md10",
+  "transaction_pin": "1234"
+}
+
+
+

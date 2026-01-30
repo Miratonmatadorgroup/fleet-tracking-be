@@ -1,0 +1,105 @@
+@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTlhYzQxZi02YWJmLTcyYmEtODUxYy1mZTAyOGFmZjExZDEiLCJqdGkiOiIwZGU0NTlmODRkZGJiYjIwMmJlYTg4ODMyYzY3ZjBiZmQ0ZDkzYzEwYjQ3MmQzNTk2YmNlZGYzMjMxZmJmZjQzYjg1Y2IxN2VmOWMyNTNjZiIsImlhdCI6MTc2NDc1NzI0NC45NTMwOTIsIm5iZiI6MTc2NDc1NzI0NC45NTMwOTUsImV4cCI6MTc5NjI5MzI0NC45NDc3NjgsInN1YiI6IjdlYjY3NGI5LWZkNjEtNDI1OS1iOWIzLWY1MjMwMjViZjk3OSIsInNjb3BlcyI6W119.mBPY3_a_X3ozJKnr8_WTsu8XL1uiJ8b_09c12yT2n0hbVqWn1FV1t2n3ppiTS8DoECgvRfTQoFBAR5XwObNOL3xhLNN9PcEpwpNnbllj6d3-NnvvEsnl5maf-scZRMNPmstc_hYNPbqH6CKQ1Pan4Z38H4rvBLKA3NVihAmFIgVI4hSVFHq0MFz_XytUQur3kNqOzLhJVBz4JtVLwSxGzUyQZw5UipDqHt0dU-MuoDO6TP8eXjeF0-BFiCf_ILB5DLHQwmnwDpqkfzedHPCSyDtvgy5tBrwJ_C6ppPcSsh4nMiArbFvTD-Nus81PKTCMjg8GcsWtMruO08wh83KrtIsn_CyGQ3tbuRnZLaGHPBnGMQW8UKV83Ss4gKMi72BcqC1Kmg-fvNQLdgVqsEDLqwfQK8yy00BPw4fVrctkRqhVLM0vOiSNxgrpIDYOJNc8WN5DuViaS75NvPzJTWROQBdc8vVceEE5kmsRMyH-5521oFq3xFSAwO5_gDPBca9AA07MejtQG70d-mYxUvHJUNd5_8xwF2lZMNVnDsz8qUnKa9RiyjBXtK2qkkoDIrGBg8Eiu-ZIJu0IdOBhrm2TeErw_NtM6Qo2blJb2Mj90QvXrjh-UT3XslsEuXj5SN-dGFZ0NKqFXPh1u0n9T5QeKmwJpC6sSHFEhv39alGpHFY
+
+
+
+@url=https://api.loopfreight.xyz/api
+
+
+//DRIVR LOGIN
+ ###
+POST {{url}}/login
+Content-Type: application/json
+Accept: application/json
+
+ {
+    "identifier": "mathewapollo9.68@gmail.com",
+    "password": "Password123!"
+ }
+
+// FOR DRIVER TO CLAIM REWARD
+###
+POST {{url}}/rewards/claim
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+
+    "claim_id": "019a007a-f691-70e8-8fc8-d36bac6b8b4a"
+
+}
+
+
+
+
+
+//DRIVER VIEW BOOKED RIDES
+###
+GET {{url}}/driver/view/booked-rides
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+
+//DRIVER ACCEPT BOOKED RIDE
+###
+POST {{url}}/driver/ride/accept
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+
+    "ride_id": "bd841e4e-ec8c-492c-bf3a-319e0ab6d19e"
+
+}
+
+//DRIVER REJECT BOOKED RIDE
+###
+POST {{url}}/driver/ride/reject
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+
+    "ride_id": "019adabf-9bfb-73cf-8a4e-fecfa0268f90"
+
+}
+
+
+//DRIVER START RIDE
+###
+POST {{url}}/start/ride
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+
+    "ride_id": "bd841e4e-ec8c-492c-bf3a-319e0ab6d19e"
+
+}
+
+//DRIVER END RIDE
+###
+POST {{url}}/end/ride
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+
+    "ride_id": "bd841e4e-ec8c-492c-bf3a-319e0ab6d19e"
+
+}
+
+
+//DRIVER ACTIVE RIDE
+###
+GET {{url}}/driver/active-ride
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}

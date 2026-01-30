@@ -1,0 +1,715 @@
+@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTk3NTQ5ZS0xNmU3LTcwNmQtYTQzYi0xMWQzN2VjYmZjOTgiLCJqdGkiOiJlMWQ0MDVjZWI4OWI1ZTQzZjAyOGYwYTBmYzRjOWI0OGRlZGE0OGE2MGJlOWExOWFjN2RkMWZkNTJkMjM3NmM3NGZjNmYxYWVlOGFlMDk4MiIsImlhdCI6MTc2MjQ2MzA1OS40NDYyMDYsIm5iZiI6MTc2MjQ2MzA1OS40NDYyMTksImV4cCI6MTc5Mzk5OTA1OC43OTY3NDYsInN1YiI6ImZiOTAwMWNjLTA2NDEtNDUyMS1iYzUzLTczMDQ4NzI2Y2U5NyIsInNjb3BlcyI6W119.oWpi5z16ts4MgLoteAuxudxF5DPhSvOlTbv34WU_vZQ2VmeWzvA7B89jIfb_OMu7Bw9BxMrsUkBoAG6BQ_XdWHG8kac2MxKbu9bGp8mg8tXKpgoO3gCyhYBo-bWf_ZW5FpbhtbGSWx7SC5NfvFTBUMOxYnz1N_6o-Jnps5zcfcwfprI4lpKFPglwMvg832YjUlk9ff0Jmcc36ulvYdQibh79bJAktILJAjBMrAwOvd7HG-mexWIVGgH1DjfFQJhXO7fRyrQbWDADGB5qs4kMuHdmq3rEY-53MrY0-soCNh4utgHPGXVg0LzF01VXjZEimzmtboLQD1ajLTF_7AHNJgxHw0mgZEfWgJr2kJ3p0fn1l8_fWqCkQGgIoOGHYBM0SUZP_ddolJiUUklKg72g0r9SbgIP0xnNgH_FIwZLMayT-hAhXJDAsMPufLclFEoGRfJxH9b_n7sbWtB0cfWbVTmCPV2NHLWpNBjmyiQPcdZMb6NkpnXndkcBuhshGZwD2tZAN3ASOURPIiYLXfc_BSVHJ2xhQCHefw0EE_0Yxo1nROxRXUjPP-jPrPW9v46BEc67wTyOtfjt-Q9fdzmD41L3OGtQn9QRnDYNH8Ertf8msggYx7IhIhLH9ym_ZEcExxC3XnQ5Kk8jQ2kML_H2z8hilG7kdk5uykFN3o1Zlqk
+@url=http://127.0.0.1:8000/api
+
+//ADMIN LOGIN
+ ###
+POST {{url}}/login
+Content-Type: application/json
+Accept: application/json
+
+{
+    "identifier": "+2347031010000",
+    "password": "password"
+}
+
+//ADMIN CREATE TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/create
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "pin": "1111"
+
+}
+
+
+//ADMIN CHANGE TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/change
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "old_pin": "1111",
+    "new_pin": "0000"
+
+}
+
+//ADMIN FORGOT TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/forgot
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN RESET TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/reset
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "otp": "130745",
+    "new_pin": "1111"
+
+}
+
+//ADMIN PROFILE
+###
+GET {{url}}/user-profile
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN CREDIT A USER ACCOUNT
+###
+POST {{url}}/admin-credit-user-walet
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "account_number": "2223074566",
+   "amount": "100000",
+   "description": "Direct Top Up",
+   "method": "system"
+
+}
+
+ //ADMIN ADD PERMISSIONS TO ROLE
+###
+POST {{url}}/add-permissions-to-role
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "role": "admin",
+        "permissions": [
+           "admin-global-payout-status",
+           "admin-user-payout-status"
+        ]
+}
+
+//ADMIN ASIGN DELIVERY TO DRIVER
+###
+POST {{url}}/admin/assign-delivery-to-driver
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "tracking_number": "LPF-20251020-68F67F421E8A6",
+   "identifier": "bashashiru@loopfrieght.com"
+
+}
+
+
+//ADMIN ASSIGN ROLE TO USER
+###
+POST {{url}}/admin/assign-role
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "identifier": "kelec.hivctorn@gmail.com",
+    "role": "driver"
+}
+
+//ADMIN UNASSIGN ROLE FROM USER
+###
+POST {{url}}/admin/unassign-role
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "identifier": "kelec.hivctorn@gmail.com",
+    "role": "driver"
+}
+
+//ADMIN PAY FOR DELIVERY FROM WALLET
+###
+POST {{url}}/admin/pay-with-wallet
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "delivery_id": "019a55a9-4dc5-73a4-97dd-32e2f8d4ad82"
+
+}
+
+//ADMIN PROFILE
+###
+GET {{url}}/user-profile
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN TO DELETE A USER
+###
+DELETE {{url}}/admin/delete-user/bc204a20-3c36-47ec-8b05-83919ae67c0c
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN NOTIFICATIONS
+###
+GET {{url}}/user/notifications
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN BROADCAST MESSAGE TO ALL USERS
+###
+POST {{url}}/admin/broadcast
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "subject": "Swift Maintetnance",
+    "message": "We will be having a quick maitenance tonight"
+}
+
+
+//ADMIN MARK INVESTOR WITHDRAWAL REFUNDED
+###
+POST {{url}}/admin/investors/0199f23d-985d-71ea-82c8-849a2e2934f9/refund
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "refund_note": "We love to do more business with you"
+}
+
+//ADMIN CREATE OR UPDATE RIDE POOLING PRICING
+###
+POST {{url}}/ride-pooling-pricing
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "category": "airport_pickup",
+   "base_price": 150.00
+}
+
+
+//ADMIN CREATE OR UPDATE RIDE POOLING PRICING USING OTHERS
+###
+POST {{url}}/ride-pooling-pricing
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "category": "others",
+   "custom_category": "luxury_van",
+   "base_price": 350.00
+
+
+}
+
+//ADMIN VIEW RIDE POOLING PRICING
+###
+GET {{url}}/ride-pooling-pricing
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+//ADMIN DELETE  RIDE POOLING PRICING
+###
+DELETE {{url}}/ride-pooling-pricing/019a7d85-df82-730c-bcab-fdc856b21657
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW USERS ACTIVITIES DEVICES
+###
+GET {{url}}/user/devices/activity
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//DISCOUNT IMPLIMETATION BY ADMIN
+//ADMIN VIEW ALL CREATED DISCOUNT
+###
+GET {{url}}/view/discounts
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//RIDE
+//ADMIN ACTIVE RIDES
+###
+GET {{url}}/admin/activeride
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN CREATE DISCOUNT
+###
+POST {{url}}/create/discount
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "name": "New Year Discount",
+  "percentage": 20,
+  "applies_to_all": false,
+  "expires_at": "2026-01-20"
+}
+
+//ADMIN ACTIVATE DISCOUNT
+###
+POST {{url}}/discount/activate/019b07c0-5bea-729b-ae65-04bc5afb3c38
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+//ADMIN ASSIGN DISCOUNT TO A USER
+###
+POST {{url}}/assign/discount
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "discount_id": "019b07c0-5bea-729b-ae65-04bc5afb3c38",
+  "user_id": "28d6a92d-5a8a-4bfc-944c-902d907b60b3"
+}
+
+//FLAG
+
+//ADMIN FLAG TRANSPORTMODE
+###
+POST {{url}}/flag/transport-mode
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "transport_mode_id": "0197b167-66e9-71fe-9c2b-9f0f7b5f36e9",
+  "reason": "Vehicle is Faulty"
+}
+
+//ADMIN UNFLAG TRANSPORTMODE
+###
+POST {{url}}/unflag/transport-mode
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "transport_mode_id": "0197b167-66e9-71fe-9c2b-9f0f7b5f36e9"
+}
+
+
+
+//ADMIN CREATE DISCOUNT
+###
+POST {{url}}/create/discount
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "name": "New Year Discount",
+  "percentage": 20,
+  "applies_to_all": false,
+  "expires_at": "2026-01-20"
+}
+
+//ADMIN ACTIVATE DISCOUNT
+###
+POST {{url}}/discount/activate/019b07c0-5bea-729b-ae65-04bc5afb3c38
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+//ADMIN ASSIGN DISCOUNT TO A USER
+###
+POST {{url}}/assign/discount
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "discount_id": "019b07c0-5bea-729b-ae65-04bc5afb3c38",
+  "user_id": "28d6a92d-5a8a-4bfc-944c-902d907b60b3"
+}
+
+
+//ADMIN VIEW RIDE LIST
+###
+GET {{url}}/admin/view/ride/list
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW RIDE POOL REVENUE
+###
+GET {{url}}/admin/view/ride-pools/revenue
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW INTERNAL DELIVERIES REVENUE
+###
+GET {{url}}/internal/deliveries/revenue
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW EXTERNAL DELIVERIES REVENUE
+###
+GET {{url}}/external/deliveries/revenue
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW TOTAL INVESTMET FUNDS
+###
+GET {{url}}/view/total/invested/funds
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW EARNINGS SUMMARY
+###
+GET {{url}}/admin/view-earnings-summary
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW FINANACIAL SUMMARY
+###
+GET {{url}}/admin/view/financial/summary
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW LOOPFREIGHT MARCHANT WALLET ACCOUNT  TRANSACTIONS
+###
+GET {{url}}/admin/shanono/wallet/transactions
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW ALL USERS
+###
+GET {{url}}/view/all-users
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN CREATE ROLE
+###
+POST {{url}}/admin/create-roles
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "role": "dev",
+    "permissions": [
+        "view-api-credentials",
+        "view-api-routes"
+    ]
+}
+
+
+//ADMIN RESTRICT A USER PAYOUT
+###
+POST {{url}}/users/d9a362cf-b913-4f77-a9b4-6eaac08cf028/restrict-payout
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN UNRESTRICT A USER PAYOUT
+###
+POST {{url}}/users/d9a362cf-b913-4f77-a9b4-6eaac08cf028/unrestrict-payout
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW A USER PAYOUT STATUS
+###
+GET {{url}}/admin/users/d9a362cf-b913-4f77-a9b4-6eaac08cf028/payout-status
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN RESTRICT ALL USERS PAYOUTS
+###
+POST {{url}}/payouts/restrict-all
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN UNRESTRICT ALL USERS PAYOUTS
+###
+POST {{url}}/payouts/unrestrict-all
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW ALL USERS PAYOUT STATUS
+###
+GET {{url}}/admin/payouts/global-status
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW PAYOUTS
+###
+GET {{url}}/view/payouts
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW BILLS PAYMENT COMMISSIONS
+# bills/commissions?bill_payment_type=airtime OR bills/commissions?start_date=2025-01-01&end_date=2025-01-31 OR bills/commissions?page=2&per_page=50
+###
+GET {{url}}/bills/commissions
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//API DOCUMENTATION
+//ADMIN CREATE A PROJECT API DOCS
+###
+POST {{url}}/docs/projects
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "name": "LoopFreight Delivery API",
+  "staging_base_url": "https://api.loopfreight.xyz/api",
+  "live_base_url": "https://api.useloopfreight.com/api",
+   "description": "API ENPOINTS FOR BOOKING DELIVERY"
+
+}
+
+//ADMIN VIEW PROJECT API DOCS
+###
+GET {{url}}/docs/projects
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW A PARTICULAR PROJECT API DOCS
+###
+GET {{url}}/docs/projects/019c071d-3ed4-718a-b4dd-63367b5f69dc
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+//ADMIN ASSIGN PROJECT TO A USER
+###
+POST {{url}}/projects/assign
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "project_id": "",
+  "user_id": ""
+
+}
+
+//ADMIN UNASSIGN PROJECT TO A USER
+###
+POST {{url}}/projects/unassign
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "project_id": "",
+  "user_id": ""
+
+}
+
+//ADMIN MARK PROJECT PUBLIC TO DEV
+###
+POST {{url}}/projects/marked/public
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "project_id": "019c071d-3ed4-718a-b4dd-63367b5f69dc"
+
+}
+
+//ADMIN MARK PROJECT PRIVATE TO DEV
+###
+POST {{url}}/projects/marked/private
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "project_id": ""
+
+}
+
+//ADMIN CREATE API ENDPOINTS
+###
+POST {{url}}/docs/api-endpoints
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "project_id": "019c071d-3ed4-718a-b4dd-63367b5f69dc",
+  "title": "Book Delivery",
+  "method": "post",
+  "path": "/external/book-delivery",
+  "full_url": "https://api.loopfreight.xyz/api/external/book-delivery",
+  "version": "For Users To Book Delivery",
+  "version": "V1"
+
+}
+
+//ADMIN CREATE API REQUEST BODY
+###
+POST {{url}}/docs/api-requests
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "api_endpoint_id": "019c073c-25a2-705c-98e2-3ee62575bce6",
+  "type": "body",
+  "content_type": "multipart/form-data",
+  "schema": {
+    "pickup_location": "Lagos,Nigeria",
+    "dropoff_location": "Abuja,NIGERIA",
+    "sender_name": "Harry Potter",
+    "sender_phone": "08012345678",
+    "sender_whatsapp_number": "08012345678",
+    "package_description": "Electronics package",
+    "package_weight": 12.5,
+    "mode_of_transportation": "van", 
+    "delivery_type": "next_day",
+    "delivery_date": "2025-08-20",
+    "delivery_time": "14:00",
+    "receiver_name": "Joseph Dream",
+    "receiver_phone": "08123456789",
+    "package_type": "fragile", 
+    "other_package_type": null,
+    "pin": "1234",
+    "deliveryPictures": {
+      "type": "file[]",
+      "required": false,
+      "description": "Note delivery images optional,Transport Mode // bike, boat, ship, air, truck, van, bus, car, Package Type // //electronics,clothing,documents,food_items,fragile_items,others"
+    }
+  }
+}
+
+//ADMIN CREATE HEADERS
+###
+POST {{url}}/docs/api-headers
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "api_endpoint_id": "019c073c-25a2-705c-98e2-3ee62575bce6",
+  "name": "Content-Type",
+  "value": "application/json",
+  "is_required": true,
+  "description": "Request payload format"
+}
+
+//ADMIN CREATE RESPONSES
+###
+POST {{url}}/docs/api-responses
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "api_endpoint_id": "019c073c-25a2-705c-98e2-3ee62575bce6",
+  "status_code": 200,
+  "description": "Delivery & payment created successfully",
+  "body": {
+    "success": true,
+    "message": "Delivery & Payment created successfully.",
+    "data": {
+      "delivery": {
+        "id": "019bbb52-e9f5-736f-95a8-7354cd6c45db",
+        "tracking_number": "LPF-20260114-6967403BD1FE1",
+        "pickup_location": "Lagos,Nigeria",
+        "dropoff_location": "Abuja,NIGERIA",
+        "status": "booked",
+        "subtotal": 128858.18,
+        "tax": 9664.36,
+        "total_price": 138522.54,
+        "delivery_pics": []
+      },
+      "payment": {
+        "reference": "EXTERNAL-6967403BDCD9E",
+        "status": "paid",
+        "currency": "NGN",
+        "amount": 138522.54
+      }
+    }
+  }
+}
+
+
+//ADMIN CREATE AUTH
+###
+POST {{url}}/docs/api-auths
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "api_endpoint_id": "019c073c-25a2-705c-98e2-3ee62575bce6",
+  "type": "none",
+  "description": "Public endpoint, no authentication required"
+}
+
+
+
+
+
+ 
+
+

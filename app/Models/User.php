@@ -2,90 +2,202 @@
 
 namespace App\Models;
 
+// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Models\Driver;
+use App\Models\Payout;
+use App\Models\Partner;
+use App\Models\Project;
+use App\Models\Discount;
+use Illuminate\Support\Str;
+use Laravel\Passport\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Notifications\Notifiable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Laravel\Sanctum\HasApiTokens;
+
+/**
+ * @method bool hasRole($roles, $guard = null)
+ * @method bool assignRole($roles, $guard = null)
+ * @method bool removeRole($role, $guard = null)
+ * @method bool syncRoles($roles)
+ * @method bool hasPermissionTo($permission, $guardName = null)
+ */
+
+
+
+
+/**
+ * @property string $password
+ */
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    /** @use HasFactory<\Database\Factories\UserFactory> */
+    use HasApiTokens, HasFactory, HasRoles, Notifiable;
 
+    protected $keyType = 'string';
+    public $incrementing = false;
+
+    protected $guard_name = 'api';
+
+    protected static function boot()
+    {
+        parent::boot();
+        static::creating(function ($model) {
+            if (empty($model->{$model->getKeyName()})) {
+                $model->{$model->getKeyName()} = (string) Str::uuid();
+            }
+        });
+    }
+
+    /**
+     * The attributes that are mass assignable.
+     *
+     * @var list<string>
+     */
     protected $fillable = [
-        'organization_id',
         'name',
         'email',
         'phone',
+        'whatsapp_number',
         'password',
-        'role',
-        'avatar_url',
-        'is_active',
+        'transaction_pin',
+        'otp_code',
+        'otp_expires_at',
+        'account_number',
+        'account_name',
+        'bank_name',
+        'bank_code',
+        'production_access_approved_at',
+        'payout_restricted',
     ];
 
+    /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var list<string>
+     */
     protected $hidden = [
         'password',
+        'transaction_pin',
         'remember_token',
+        'pin_reset_otp',
     ];
 
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [
+            'id' => 'string',
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'is_active' => 'boolean',
+            'bank_details_updated_at' => 'datetime',
+            'production_access_approved_at' => 'datetime',
+            'payout_restricted' => 'boolean',
         ];
     }
 
-    // Relationships
-    public function organization()
+    protected $appends = ['image_url']; // ensures it's always returned
+
+    public function getImageUrlAttribute()
     {
-        return $this->belongsTo(Organization::class);
+        if ($this->image) {
+            return url(Storage::url($this->image));
+        }
+        return null;
     }
 
-    public function assets()
+    public function payments()
     {
-        return $this->hasMany(Asset::class, 'driver_id');
+        return $this->hasMany(Payment::class);
     }
 
-    public function subscriptions()
+    // BANK DETAILS
+    public function hasBankDetails(): bool
     {
-        return $this->hasMany(Subscription::class);
+        return !empty($this->account_number)
+            && !empty($this->account_name)
+            && !empty($this->bank_name)
+            && !empty($this->bank_code)
+            && !empty($this->bank_details_updated_at);
     }
 
-    public function notifications()
+
+
+    public function deliveries()
     {
-        return $this->hasMany(Notification::class);
+        return $this->hasMany(Delivery::class, 'customer_id');
     }
 
-    public function auditLogs()
+    // app/Models/User.php
+
+    public function wallet()
     {
-        return $this->hasMany(AuditLog::class);
+        return $this->hasOne(Wallet::class);
     }
 
-    // Role checks
-    public function isSuperAdmin(): bool
+    public function driver()
     {
-        return $this->role === 'super_admin';
+        return $this->hasOne(Driver::class);
     }
 
-    public function isOfficeAdmin(): bool
+    // app/Models/User.php
+
+    public function payouts()
     {
-        return $this->role === 'office_admin';
+        return $this->hasMany(Payout::class);
     }
 
-    public function isUser(): bool
+    public function discounts()
     {
-        return $this->role === 'user';
+        return $this->belongsToMany(
+            Discount::class,
+            'discount_user',
+            'user_id',
+            'discount_id'
+        );
     }
 
-    // Scopes
-    public function scopeActive($query)
+
+
+    /**
+     * Get the partner record associated with the user.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\HasOne
+     */
+    public function partner(): \Illuminate\Database\Eloquent\Relations\HasOne
     {
-        return $query->where('is_active', true);
+        return $this->hasOne(Partner::class);
     }
 
-    public function scopeByRole($query, string $role)
+    public function tokens()
     {
-        return $query->where('role', $role);
+        return $this->hasMany(UserToken::class);
+    }
+
+    // FOR FLAGING
+    public function flaggedRidePools()
+    {
+        return $this->hasMany(RidePool::class, 'flagged_by');
+    }
+
+    public function flaggedTransportModes()
+    {
+        return $this->hasMany(TransportMode::class, 'flagged_by');
+    }
+
+    public function flaggedDrivers()
+    {
+        return $this->hasMany(Driver::class, 'flagged_by');
+    }
+
+    public function assignedProjects()
+    {
+        return $this->belongsToMany(Project::class, 'project_user', 'user_id', 'project_id');
     }
 }

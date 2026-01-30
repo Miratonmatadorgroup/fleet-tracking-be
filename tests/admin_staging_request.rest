@@ -1,0 +1,348 @@
+@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTlhYzQxZi02YWJmLTcyYmEtODUxYy1mZTAyOGFmZjExZDEiLCJqdGkiOiI1YjJiN2Q0Zjg4NjVhYWJmYmViMWY3Y2U3ODAzNGEwNjkyYmJiM2Q2NmEyMzg3MTU4ZWQxZTNjZmU1MTgwYjlmMzk2Zjc4ZGRkY2EyMTVkNyIsImlhdCI6MTc2NDMxNzY0NC42MzM2MDMsIm5iZiI6MTc2NDMxNzY0NC42MzM2MDUsImV4cCI6MTc5NTg1MzY0NC42Mjk3ODUsInN1YiI6ImEzYmRiMTNhLWMwNjYtNDUxMC05NjhiLTMxOTkzMGUxNTQ4NiIsInNjb3BlcyI6W119.miZHgQ-26QlyfUWsSCl7yShMfNJtS9jkY3V7oG05ayFECYKwwIE7mOdqlQKYEn17J47LWipqSMWKsj57FdZLpTlVGbxNdH9bVFRhLRAHnBEIRVPT9Prdx9GZ-ptQj40z5ZdxA9TWqVMjB6kM70Gy9exXNNiTIi6jLxCsu9ITNAFoMLERCUbHwZuokvVkZyyCT1ND6gvF2Y__mO04Qmp4xuraFw0pjZTRoTdLeLCHxk1A2C3i3ON9lUBAQIvrcwa_0zyqvSFOkyIOGLlNV-mEarlwHwazIl6464IipAhJ8Ut8sC1qxOKLH-IkTd3xkCQGzHQVTB_E4un0mVt5lF36albJ0KlyXX1jmUBqjMpLIIlyGkpVO0zXJnMFDm1A3EvZaeUciqkWgxGqoLO0LDJqj1S-U8akoz3hjfb6-ApQGmaCXOHwEGfNjD2_9K-zsLMKR7Ecf9DV1LjJjyno6bAcPjijFBu_LyPIrBIu0EPwM1s6kPAm-VKHx2pXdRnE4k93izaUq2-JS99YzcphInhARqRO182D6YZwfUgcqd-4dfOQ8wvLFUfiGw2wsNvFvEoXNAC7KSX6CdAMXq2IzqsncAt8ZFDxn-ovSKGe9f3LEKFlDoq_zFTJ80vw-kOzqKo8NcLPgvNq0MLhYfPXz3q3PUkDK4F2S-FKYUHQimzWuyU
+
+
+@url=https://api.loopfreight.xyz/api
+
+//ADMIN LOGIN
+ ###
+POST {{url}}/login
+Content-Type: application/json
+Accept: application/json
+
+{
+    "identifier": "admin@useloopfreight.com",
+    "password": "loopFreight2@"
+}
+
+
+//ADMIN CREATE PIN
+###
+POST {{url}}/transaction-pin/create
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "pin": "1111"
+
+}
+
+
+//ADMIN CHANGE TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/change
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "old_pin": "1111",
+    "new_pin": "0000"
+
+}
+
+//ADMIN FORGOT TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/forgot
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN RESET TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/reset
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "otp": "130745",
+    "new_pin": "1111"
+
+}
+
+//ADMIN CHEK TRANSACTION PIN STATUS
+###
+GET {{url}}/admin/transaction-pin-status
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN ADD PERMISSIONS TO ROLE
+###
+POST {{url}}/add-permissions-to-role
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+     "role": "admin",
+        "permissions": [
+           "admin-global-payout-status",
+           "admin-user-payout-status"
+        ]
+}
+
+
+
+
+//ADMIN TO DELETE A USER
+###
+DELETE {{url}}/admin/delete-user/94d8c3d9-3919-486a-9405-9f29bee34d20
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW USER DEVICE ACTIVITIES
+###
+GET {{url}}/user/devices/activity
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//RIDE
+//ADMIN ACTIVE RIDES
+###
+GET {{url}}/admin/activeride
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//DISCOUNT IMPLIMETATION BY ADMIN
+//ADMIN VIEW ALL CREATED DISCOUNT
+###
+GET {{url}}/view/discounts
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN CREATE DISCOUNT
+###
+POST {{url}}/create/discount
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "name": "New Year Discount",
+  "percentage": 20,
+  "applies_to_all": false,
+  "expires_at": "2026-01-20"
+}
+
+//ADMIN ACTIVATE DISCOUNT
+###
+POST {{url}}/discount/activate/019b0399-3306-7342-8dad-23d61fd73d70
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+//ADMIN ASSIGN DISCOUNT TO A USER
+###
+POST {{url}}/assign/discount
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "discount_id": "019b078f-8cbc-729f-9d6c-1d7f8526cf2b",
+  "user_id": "81b11992-46ac-4698-be42-74b53a583a79"
+}
+
+
+//ADMIN VIEW RIDE POOL REVENUE
+###
+GET {{url}}/admin/view/ride-pools/revenue
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW INTERNAL DELIVERIES REVENUE
+###
+GET {{url}}/internal/deliveries/revenue
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW EXTERNAL DELIVERIES REVENUE
+###
+GET {{url}}/external/deliveries/revenue
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW TOTAL INVESTMET FUNDS
+###
+GET {{url}}/view/total/invested/funds
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW FINANACIAL SUMMARY
+###
+GET {{url}}/admin/view/financial/summary
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW LOOPFREIGHT MARCHANT WALLET ACCOUNT  TRANSACTIONS
+###
+GET {{url}}/admin/shanono/wallet/transactions
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW ALL USERS
+###
+GET {{url}}/view/all-users
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+//ADMIN VIEW ALL USERS
+###
+GET {{url}}/view/all-users
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN ASSIGN ROLE TO USER
+###
+POST {{url}}/admin/assign-role
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "identifier": "derektippy@aol.com",
+    "role": "dev"
+}
+
+//ADMIN UNASSIGN ROLE FROM USER
+###
+POST {{url}}/admin/unassign-role
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "identifier": "pelet53071@icousd.com",
+    "role": "driver"
+}
+
+//ADMIN CREATE ROLE
+###
+POST {{url}}/admin/create-roles
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "role": "dev",
+    "permissions": [
+        "view-api-credentials",
+        "view-api-routes"
+    ]
+}
+
+//ADMIN CREATE OR UPDATE RIDE POOLING PRICING
+###
+POST {{url}}/ride-pooling-pricing
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "category": "airport_pickup",
+   "base_price": 10.00
+}
+
+
+//ADMIN CREATE OR UPDATE RIDE POOLING PRICING USING OTHERS
+###
+POST {{url}}/ride-pooling-pricing
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "category": "others",
+   "custom_category": "xtra comfort",
+   "base_price": 10.00
+
+
+}
+
+//ADMIN VIEW RIDE POOLING PRICING
+###
+GET {{url}}/ride-pooling-pricing
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+//ADMIN DELETE  RIDE POOLING PRICING
+###
+DELETE {{url}}/ride-pooling-pricing/019a7d85-df82-730c-bcab-fdc856b21657
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//PAYOUT RETRICTIONS
+//ADMIN RESTRICT A USER PAYOUT
+###
+POST {{url}}/users/d9a362cf-b913-4f77-a9b4-6eaac08cf028/restrict-payout
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+//ADMIN UNRESTRICT USER PAYOUT
+###
+POST {{url}}/users/d9a362cf-b913-4f77-a9b4-6eaac08cf028/unrestrict-payout
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW A USER PAYOUT STATUS
+###
+GET {{url}}/admin/users/d9a362cf-b913-4f77-a9b4-6eaac08cf028/payout-status
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN RESTRICT ALL USERS PAYOUTS
+###
+POST {{url}}/payouts/restrict-all
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN UNRESTRICT ALL USERS PAYOUTS
+###
+POST {{url}}/payouts/unrestrict-all
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW ALL USERS PAYOUT STATUS
+###
+GET {{url}}/admin/payouts/global-status
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
