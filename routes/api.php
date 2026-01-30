@@ -52,7 +52,7 @@ use App\Http\Controllers\Api\ShanonoBillsPaymentWebhookController;
 
 
 Route::get('/', function () {
-    $message = 'Welcome to Loop Freight App';
+    $message = 'Welcome to FLEET MANAGEMENT App';
     if (config('app.env') === 'production') {
         $message .= '. This API is in production environment';
     } else {
@@ -229,7 +229,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     // PAYMENT HADNLER ENDS HERE
 
     // WALLET TRANSACTIONS STARTS HERE
-    // USER REQUEST PAYOUT TO TRANSFER 
+    // USER REQUEST PAYOUT TO TRANSFER
     Route::post('/user/transfer', [PayoutController::class, 'requestPayout']);
     //ADMIN RESTRICT AND UNRESTRICT PAYOUT FOR SINGLE USER AND ALL USERS
     Route::post('/users/{user}/restrict-payout', [PayoutController::class, 'restrictPayouts'])
@@ -702,7 +702,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
 
     // API DOCS ENDPOINTS STARTS HERE
     // Project Routes
-    // GET/docs/projects POST/docs/projects	GET/docs/projects/{project}	PUT/docs/projects/{project}	DELETE/docs/projects/{project}	
+    // GET/docs/projects POST/docs/projects	GET/docs/projects/{project}	PUT/docs/projects/{project}	DELETE/docs/projects/{project}
     Route::apiResource('/docs/projects', ProjectController::class)
         ->middleware(['auth', 'permission:document-projects']);
     // ->middleware('permission:document-projects');
@@ -738,7 +738,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         ->middleware('permission:docu-responses');
 
     // API AUTH ROUTE
-    //POST/docs/api-auths  it stores and updates 
+    //POST/docs/api-auths  it stores and updates
     Route::apiResource('/docs/api-auths', ApiAuthController::class)->only(['store'])
         ->middleware('permission:docu-api-auths');
 
