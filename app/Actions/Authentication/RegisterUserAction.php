@@ -15,66 +15,38 @@ class RegisterUserAction
 {
     public function execute(RegisterUserDTO $dto): array
     {
+        if (User::where('email', $dto->email)->exists()) {
+            throw new \Exception('Email already in use', 422);
+        }
+
         $otp = (string) rand(100000, 999999);
-
-        if ($dto->email) {
-            $channel = 'email';
-            $identifier = $dto->email;
-        } elseif ($dto->phone) {
-            $channel = 'phone';
-            $identifier = $dto->phone;
-        } else {
-            $channel = 'whatsapp_number';
-            $identifier = $dto->whatsapp_number;
-        }
-
-        $column = match ($channel) {
-            'email'           => 'email',
-            'phone'           => 'phone',
-            'whatsapp_number' => 'whatsapp_number',
-        };
-
-        $existingUser = User::where($column, $identifier)->first();
-
-        if ($existingUser) {
-            $verifiedColumn = match ($channel) {
-                'email'           => 'email_verified_at',
-                'phone'           => 'phone_verified_at',
-                'whatsapp_number' => 'whatsapp_number_verified_at',
-            };
-
-            if ($existingUser->{$verifiedColumn}) {
-                throw new \Exception(
-                    ucfirst(str_replace('_', ' ', $channel)) . ' is already in use by another account.',
-                    422
-                );
-            }
-        }
-
-        $reference = "pending_registration_" . Str::uuid();
+        $reference = 'pending_registration_' . Str::uuid();
 
         Cache::put($reference, [
-            'type'            => 'registration',
-            'name'            => $dto->name,
-            'identifier'      => $identifier,
-            'channel'         => $channel,
-            'password'        => Hash::make($dto->password),
-            'otp_code'        => $otp,
-            'is_dev'          => $dto->is_dev,
-            'otp_expires_at'  => now()->addMinutes(10),
+            'type'          => 'registration',
+            'name'          => $dto->name,
+            'email'         => $dto->email,
+            'password'      => Hash::make($dto->password),
+
+            'user_type'     => $dto->user_type,
+            'business_type' => $dto->business_type,
+            'cac_number'    => $dto->cac_number,
+            'cac_document'  => $dto->cac_document,
+            'nin_number'    => $dto->nin_number,
+
+            'otp_code'      => $otp,
+            'otp_expires_at' => now()->addMinutes(10),
         ], now()->addMinutes(10));
 
-        Log::info('OTP cached successfully', [
-            'reference'  => $reference,
-            'expires_at' => now()->addMinutes(10),
-        ]);
-
-
-        event(new OtpRequestedEvent($channel, $identifier, $otp, $dto->name));
+        event(new OtpRequestedEvent(
+            'email',
+            $dto->email,
+            $otp,
+            $dto->name
+        ));
 
         return [
             'reference' => $reference,
-            'message'   => "Verification code sent via {$channel}.",
         ];
     }
 }

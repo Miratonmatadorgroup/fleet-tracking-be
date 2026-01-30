@@ -63,6 +63,31 @@ class WalletService
         return $wallet;
     }
 
+    public function getOrCreateForUser(
+        int|string $userId,
+        ?string $currency = null,
+        bool $isVirtual = false,
+        ?string $provider = null
+    ): Wallet {
+        $currencyEnum = CurrencyEnums::tryFrom($currency) ?? CurrencyEnums::NGN;
+
+        //Check if wallet already exists
+        $existingWallet = Wallet::where('user_id', $userId)
+            ->where('currency', $currencyEnum)
+            ->first();
+
+        if ($existingWallet) {
+            return $existingWallet;
+        }
+
+        //Wallet does NOT exist — create fully (internal + external)
+        return $this->createForUser(
+            $userId,
+            $currencyEnum->value,
+            $isVirtual,
+            $provider
+        );
+    }
 
     public static function creditCommissions(User $driverUser, Delivery $delivery)
     {

@@ -8,9 +8,11 @@ use App\Models\User;
 use App\Mail\SendOtpMail;
 use App\Models\ApiClient;
 use App\Models\UserToken;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Services\TermiiService;
 use App\Services\TwilioService;
+use App\Services\SmileIdService;
 use App\Mail\TransactionPinOtpMail;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
@@ -60,43 +62,77 @@ class AuthController extends Controller
             $messages = [
                 'password.regex' => 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (e.g. @, #, $, %, &).',
             ];
-
             $validator = Validator::make($request->all(), [
-                'name'            => 'required|string|max:255',
-                'email'           => 'nullable|email|unique:users,email',
-                'phone'           => 'nullable|string|unique:users,phone',
-                'whatsapp_number' => 'nullable|string|unique:users,whatsapp_number',
+                'name'          => 'required|string|max:255',
+                'email'         => 'required|email|unique:users,email',
+                'operator_type' => 'required|in:individual,business',
+
+                // Business only
+                'business_type' => 'required_if:operator_type,business|in:co,bn,it',
+                'cac_number'    => 'required_if:operator_type,business',
+                'cac_document'  => 'required_if:operator_type,business|file',
+                'owner_nin'     => 'required_if:operator_type,business',
                 'password'        => [
                     'required',
                     'string',
                     'min:6',
                     'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/'
                 ],
-                'registration_type' => 'nullable|in:user,developer',
             ], $messages);
 
-            if (!$request->email && !$request->phone && !$request->whatsapp_number) {
-                return failureResponse(
-                    ['contact' => ['Either email, phone number or WhatsApp number is required']],
-                    422,
-                    'validation_error'
-                );
-            }
-
             if ($validator->fails()) {
-                return failureResponse($validator->errors()->toArray(), 422, 'validation_error');
+                return failureResponse($validator->errors(), 422, 'validation_error');
             }
 
-            $dto = RegisterUserDTO::fromRequest($request);
+            /**
+             * BUSINESS VERIFICATION FIRST (NO USER CREATED)
+             */
+            if ($request->operator_type === 'business') {
 
+                $smile = app(SmileIdService::class);
+
+                // temp user object ONLY for Smile ID name extraction
+                $tempUser = new User(['name' => $request->name]);
+
+                //CAC verification
+                $smile->submitBusinessCAC([
+                    'user_id'       => (string) Str::uuid(),
+                    'cac_number'    => $request->cac_number,
+                    'business_type' => $request->business_type,
+                    'cac_document'  => $request->cac_document,
+                ]);
+
+                //NIN verification
+                $ninResult = $smile->submitNin($tempUser, $request->owner_nin);
+
+                if (! $ninResult['success']) {
+                    return failureResponse('Owner NIN verification failed', 422);
+                }
+
+                //Name match (CAC owner ↔ NIN)
+                if (
+                    strtolower(trim($ninResult['details']['full_name'])) !==
+                    strtolower(trim($request->name))
+                ) {
+                    return failureResponse(
+                        'Business owner name does not match NIN records',
+                        422
+                    );
+                }
+            }
+
+            /**
+             * SAFE TO SEND OTP
+             */
+            $dto  = RegisterUserDTO::fromRequest($request);
             $data = $this->registerUserAction->execute($dto);
 
-
-            return successResponse("Verification code sent. Please verify to complete registration.", [
-                'reference' => $data['reference'],
-            ]);
-        } catch (\Throwable $th) {
-            return failureResponse("Failed to register user", 500, 'server_error', $th);
+            return successResponse(
+                'Verification code sent to your email',
+                ['reference' => $data['reference']]
+            );
+        } catch (\Throwable $e) {
+            return failureResponse('Registration failed', 500, 'server_error', $e);
         }
     }
 
@@ -627,6 +663,4 @@ class AuthController extends Controller
             return failureResponse("Failed to check PIN status", 400, "PIN_STATUS_ERROR", $th);
         }
     }
-
-    
 }

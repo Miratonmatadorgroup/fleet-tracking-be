@@ -7,27 +7,29 @@ use Illuminate\Http\Request;
 class RegisterUserDTO
 {
     public string $name;
-    public ?string $email;
-    public ?string $phone;
-    public ?string $whatsapp_number;
+    public string $email;
     public string $password;
-    public ?string $currency;
-    public bool $is_virtual_account;
-    public ?string $provider;
 
-    public bool $is_dev;
+    public string $user_type;     // individual_operator | business_operator
+    public ?string $business_type;
+    public ?string $cac_number;
+    public ?string $cac_document;
+    public ?string $nin_number;
 
     public function __construct(array $data)
     {
-        $this->name               = $data['name'];
-        $this->email              = $data['email'] ?? null;
-        $this->phone              = $data['phone'] ?? null;
-        $this->whatsapp_number    = $data['whatsapp_number'] ?? null;
-        $this->password           = $data['password'];
-        $this->currency           = $data['currency'] ?? null;
-        $this->is_virtual_account = filter_var($data['is_virtual_account'] ?? false, FILTER_VALIDATE_BOOLEAN);
-        $this->provider           = $data['provider'] ?? null;
-        $this->is_dev = ($data['registration_type'] ?? 'user') === 'developer';
+        $this->name = $data['name'];
+        $this->email = $data['email'];
+        $this->password = $data['password'];
+
+        $this->user_type = $data['operator_type'] === 'business'
+            ? 'business_operator'
+            : 'individual_operator';
+
+        $this->business_type = $data['business_type'] ?? null;
+        $this->cac_number    = $data['cac_number'] ?? null;
+        $this->cac_document  = $data['cac_document'] ?? null;
+        $this->nin_number    = $data['owner_nin'] ?? null;
     }
 
     public static function fromRequest(Request $request): self
@@ -35,13 +37,12 @@ class RegisterUserDTO
         return new self($request->only([
             'name',
             'email',
-            'phone',
-            'whatsapp_number',
             'password',
-            'currency',
-            'is_virtual_account',
-            'provider',
-            'registration_type',
+            'operator_type',
+            'business_type',
+            'cac_number',
+            'cac_document',
+            'owner_nin',
         ]));
     }
 }

@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\DTOs\Authentication\VerifyOtpDTO;
 use App\Services\UserProvisioningManager;
+use Illuminate\Validation\ValidationException;
+
 
 class VerifyOtpAction
 {
@@ -25,13 +27,17 @@ class VerifyOtpAction
             throw new \Exception("No pending request found", 404);
         }
 
-        if ((string) $pending['otp_code'] !== (string) $dto->otp) {
-            throw new \Exception("Invalid OTP", 422);
+        if (
+            (string) $pending['otp_code'] !== (string) $dto->otp ||
+            now()->greaterThan($pending['otp_expires_at'])
+        ) {
+            throw ValidationException::withMessages([
+                'otp' => 'Invalid or expired OTP',
+            ]);
         }
 
-        if (now()->greaterThan($pending['otp_expires_at'])) {
-            throw new \Exception("OTP expired", 422);
-        }
+        // OTP is now confirmed — prevent reuse immediately
+        Cache::forget($cacheKey);
 
         $type = $pending['type'] ?? null;
 
@@ -57,9 +63,6 @@ class VerifyOtpAction
 
                 $user->save();
             }
-
-            Cache::forget($cacheKey);
-
             return [
                 'user'   => $user,
                 'wallet' => null,
@@ -69,97 +72,44 @@ class VerifyOtpAction
 
         if ($type === 'registration') {
             $result = DB::transaction(function () use ($pending) {
-                $isNewUser = false;
-                $identifier = $pending['identifier'] ?? null;
-                $channel = $pending['channel'] ?? null;
-                $isDev = (bool) ($pending['is_dev'] ?? false);
 
-                $user = null;
+                $user = User::where('email', $pending['email'])
+                    ->whereNull('email_verified_at')
+                    ->first();
 
-                if ($identifier && $channel === 'email') {
-                    $user = User::where('email', $identifier)
-                        ->whereNull('email_verified_at')
-                        ->first();
-                } elseif ($identifier && $channel === 'phone') {
-                    $user = User::where('phone', $identifier)
-                        ->whereNull('phone_verified_at')
-                        ->first();
-                } elseif ($identifier && $channel === 'whatsapp_number') {
-                    $user = User::where('whatsapp_number', $identifier)
-                        ->whereNull('whatsapp_number_verified_at')
-                        ->first();
-                }
-
-                if (!$user) {
-
-                    $isNewUser = true;
+                if (! $user) {
                     $user = User::create([
-                        'name'            => $pending['name'] ?? null,
-                        'email'           => $channel === 'email' ? $identifier : null,
-                        'phone'           => $channel === 'phone' ? $identifier : null,
-                        'whatsapp_number' => $channel === 'whatsapp_number' ? $identifier : null,
-                        'password'        => $pending['password'] ?? null,
+                        'name'          => $pending['name'],
+                        'email'         => $pending['email'],
+                        'password'      => $pending['password'],
+
+                        'user_type'     => $pending['user_type'],
+                        'business_type' => $pending['business_type'],
+                        'cac_number'    => $pending['cac_number'],
+                        'cac_document'  => $pending['cac_document'],
+                        'nin_number'    => $pending['nin_number'],
+
+                        'email_verified_at' => now(),
                     ]);
-                }
-
-                $verifyColumn = match ($channel) {
-                    'email'    => 'email_verified_at',
-                    'phone'    => 'phone_verified_at',
-                    'whatsapp_number' => 'whatsapp_number_verified_at',
-                    default    => null,
-                };
-
-                if ($verifyColumn) {
-                    $user->{$verifyColumn} = now();
+                } else {
+                    $user->email_verified_at = now();
                     $user->save();
                 }
 
-                /**
-                 *  ROLE ASSIGNMENT
-                 */
-                // if ($isNewUser) {
-                //     $user->assignRole('dev');
-                // }
+                $wallet = $this->walletService->getOrCreateForUser(
+                    $user->id,
+                    'NGN',
+                    true,
+                    'default'
+                );
 
-                $wallet = null;
 
-                if ($isDev) {
-
-                    if (!$user->hasRole('dev')) {
-                        $user->assignRole('dev');
-                    }
-
-                    // Ensure wallet exists
-                    if (!$user->wallet) {
-                        $this->walletService->createForUser(
-                            $user->id,
-                            $pending['currency'] ?? 'NGN',
-                            true,
-                            $pending['provider'] ?? 'shanono'
-                        );
-
-                        $user->refresh();
-                    }
-
-                    // Provision sandbox API
-                    $this->provisioningManager->provision($user);
-
-                    $wallet = $user->wallet;
-                } else {
-
-                    $wallet = $this->walletService->createForUser(
-                        $user->id,
-                        $pending['currency'] ?? 'NGN',
-                        true,
-                        $pending['provider'] ?? 'default'
-                    );
-                }
                 return compact('user', 'wallet');
             });
 
-            Cache::forget($cacheKey);
             return $result;
         }
+
 
         throw new \Exception("Unknown OTP type", 400);
     }

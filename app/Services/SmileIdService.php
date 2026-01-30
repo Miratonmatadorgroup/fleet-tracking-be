@@ -14,8 +14,6 @@ use Illuminate\Support\Facades\Storage;
 
     use GuzzleHttp\Psr7\Utils;
 
-
-
 class SmileIdService
 {
     protected string $baseUrl;

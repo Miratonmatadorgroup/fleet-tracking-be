@@ -35,6 +35,12 @@ class Wallet extends Model
 
     protected $casts = [
         'currency' => CurrencyEnums::class,
+        'available_balance' => 'decimal:2',
+        'total_balance' => 'decimal:2',
+        'pending_balance' => 'decimal:2',
+        'external_available_balance' => 'decimal:2',
+        'external_book_balance' => 'decimal:2',
+        'is_virtual_account' => 'boolean',
     ];
 
     protected static function booted()
