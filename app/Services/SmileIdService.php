@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
-    use GuzzleHttp\Psr7\Utils;
+use GuzzleHttp\Psr7\Utils;
 
 class SmileIdService
 {
@@ -238,79 +238,146 @@ class SmileIdService
     }
 
 
-public function submitBusinessCAC(array $payload)
-{
-    $auth = $this->generateAuthData();
-    $partnerId = $this->partnerId;
-    $signature = $auth['signature'];
-    $timestamp = $auth['timestamp'];
-    $jobId = (string) \Illuminate\Support\Str::uuid();
+    public function submitBusinessCAC(array $payload)
+    {
+        $auth = $this->generateAuthData();
+        $jobId = (string) \Illuminate\Support\Str::uuid();
 
-    $rawCac = preg_replace('/^(RC|BN|IT)/', '', strtoupper(trim($payload['cac_number'] ?? '')));
-    if (!ctype_digit($rawCac)) throw new \Exception('Invalid CAC number format');
+        // Strip RC / BN / IT
+        $rawCac = preg_replace('/^(RC|BN|IT)/i', '', trim($payload['cac_number'] ?? ''));
+        if (!preg_match('/^0{7}$|^(?![0]+$)[0-9]{1,8}$/', $rawCac)) {
+            throw new \Exception('Invalid CAC number format');
+        }
 
-    $businessType = strtolower($payload['business_type'] ?? '');
-    if (!in_array($businessType, ['co', 'bn', 'it'])) throw new \Exception('Unsupported business type');
+        $businessType = strtolower($payload['business_type'] ?? '');
+        if (!in_array($businessType, ['co', 'bn', 'it'])) {
+            throw new \Exception('Unsupported business type');
+        }
 
-    $file = $payload['cac_document'] ?? null;
-    if (!$file) throw new \Exception('CAC document is required');
+        $body = [
+            'partner_id' => config('services.smile_identity.partner_id'),
+            'source_sdk' => 'rest_api',
+            'source_sdk_version' => '1.0.0',
+            'signature' => $auth['signature'],
+            'timestamp' => $auth['timestamp'],
+            'country' => 'NG',
 
-    $cacDocumentPath = $file instanceof \Illuminate\Http\UploadedFile ? $file->getRealPath() : Storage::disk('public')->path($file);
-    $cacFileName = $file instanceof \Illuminate\Http\UploadedFile ? $file->getClientOriginalName() : basename($cacDocumentPath);
-    if (!file_exists($cacDocumentPath) || !is_readable($cacDocumentPath)) throw new \Exception("CAC document file not readable");
+            // 🔥 SYNC requires this
+            'id_type' => 'BASIC_BUSINESS_REGISTRATION',
+            'id_number' => $rawCac,
+            'business_type' => $businessType,
 
-    // Partner params JSON
-    $partnerParams = [
-        'job_type' => 7,
-        'job_id' => $jobId,
-        'user_id' => (string)$payload['user_id'],
-    ];
-    $partnerParamsJson = json_encode($partnerParams, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+            'partner_params' => [
+                'job_type' => 7,
+                'job_id' => $jobId,
+                'user_id' => (string) $payload['user_id'],
+            ],
+        ];
 
-    $multipart = [
-        ['name' => 'cac_document', 'contents' => fopen($cacDocumentPath, 'r'), 'filename' => $cacFileName],
-        ['name' => 'callback_url', 'contents' => config('services.smile_identity.callback_url')],
-        ['name' => 'country', 'contents' => 'NG'],
-        ['name' => 'id_type', 'contents' => 'BUSINESS_REGISTRATION'],
-        ['name' => 'id_number', 'contents' => $rawCac],
-        ['name' => 'business_type', 'contents' => $businessType],
-        ['name' => 'partner_id', 'contents' => $partnerId],
-        // ✅ Send partner_params as a raw stream
-        ['name' => 'partner_params', 'contents' => Utils::streamFor($partnerParamsJson)],
-        ['name' => 'signature', 'contents' => $signature],
-        ['name' => 'source_sdk', 'contents' => 'rest_api'],
-        ['name' => 'source_sdk_version', 'contents' => '1.0.0'],
-        ['name' => 'timestamp', 'contents' => $timestamp],
-    ];
+        // 🔥 SWITCH TO SYNC ENDPOINT
+        $url = config('services.smile_identity.base_url') . '/business_verification';
 
-    $url = config('services.smile_identity.sid_server') === 'sandbox'
-        ? 'https://testapi.smileidentity.com/v1/async_business_verification'
-        : 'https://api.smileidentity.com/v1/async_business_verification';
+        $client = new \GuzzleHttp\Client(['verify' => false]);
 
-    $client = new \GuzzleHttp\Client(['verify' => false]);
-
-    try {
-        $response = $client->request('POST', $url, [
-            'multipart' => $multipart,
-            'headers' => ['Accept' => 'application/json'],
+        $response = $client->post($url, [
+            'json' => $body,
+            'headers' => [
+                'Accept' => 'application/json',
+                'Content-Type' => 'application/json',
+            ],
             'timeout' => 30,
         ]);
 
-        $body = (string)$response->getBody();
-        $json = json_decode($body, true);
+        $json = json_decode((string) $response->getBody(), true);
 
-        if (!$json || !$json['success'] ?? false) {
-            throw new \Exception("Smile ID CAC verification request failed: $body");
+        if (!($json['success'] ?? false)) {
+            throw new \Exception('Smile ID CAC verification failed: ' . json_encode($json));
         }
 
+        // ✅ SUCCESS — instant result
         return [
             'job_id' => $jobId,
-            'response' => $json,
+            'result_code' => $json['ResultCode'] ?? null,
+            'company_info' => $json['company_information'] ?? null,
+            'raw' => $json,
         ];
-    } catch (\GuzzleHttp\Exception\RequestException $e) {
-        throw new \Exception('Smile ID CAC verification request failed: ' . $e->getMessage());
     }
-}
+
+
+
+    // public function submitBusinessCAC(array $payload)
+    // {
+    //     $auth = $this->generateAuthData();
+    //     $partnerId = $this->partnerId;
+    //     $signature = $auth['signature'];
+    //     $timestamp = $auth['timestamp'];
+    //     $jobId = (string) \Illuminate\Support\Str::uuid();
+
+    //     $rawCac = preg_replace('/^(RC|BN|IT)/', '', strtoupper(trim($payload['cac_number'] ?? '')));
+    //     if (!ctype_digit($rawCac)) throw new \Exception('Invalid CAC number format');
+
+    //     $businessType = strtolower($payload['business_type'] ?? '');
+    //     if (!in_array($businessType, ['co', 'bn', 'it'])) throw new \Exception('Unsupported business type');
+
+    //     $file = $payload['cac_document'] ?? null;
+    //     if (!$file) throw new \Exception('CAC document is required');
+
+    //     $cacDocumentPath = $file instanceof \Illuminate\Http\UploadedFile ? $file->getRealPath() : Storage::disk('public')->path($file);
+    //     $cacFileName = $file instanceof \Illuminate\Http\UploadedFile ? $file->getClientOriginalName() : basename($cacDocumentPath);
+    //     if (!file_exists($cacDocumentPath) || !is_readable($cacDocumentPath)) throw new \Exception("CAC document file not readable");
+
+    //     // Partner params JSON
+    //     $partnerParams = [
+    //         'job_type' => 7,
+    //         'job_id' => $jobId,
+    //         'user_id' => (string)$payload['user_id'],
+    //     ];
+    //     $partnerParamsJson = json_encode($partnerParams, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
+
+    //     $multipart = [
+    //         ['name' => 'cac_document', 'contents' => fopen($cacDocumentPath, 'r'), 'filename' => $cacFileName],
+    //         ['name' => 'callback_url', 'contents' => config('services.smile_identity.callback_url')],
+    //         ['name' => 'country', 'contents' => 'NG'],
+    //         ['name' => 'id_type', 'contents' => 'BUSINESS_REGISTRATION'],
+    //         ['name' => 'id_number', 'contents' => $rawCac],
+    //         ['name' => 'business_type', 'contents' => $businessType],
+    //         ['name' => 'partner_id', 'contents' => $partnerId],
+    //         // ✅ Send partner_params as a raw stream
+    //         ['name' => 'partner_params', 'contents' => Utils::streamFor($partnerParamsJson)],
+    //         ['name' => 'signature', 'contents' => $signature],
+    //         ['name' => 'source_sdk', 'contents' => 'rest_api'],
+    //         ['name' => 'source_sdk_version', 'contents' => '1.0.0'],
+    //         ['name' => 'timestamp', 'contents' => $timestamp],
+    //     ];
+
+    //     $url = config('services.smile_identity.sid_server') === 'sandbox'
+    //         ? 'https://testapi.smileidentity.com/v1/async_business_verification'
+    //         : 'https://api.smileidentity.com/v1/async_business_verification';
+
+    //     $client = new \GuzzleHttp\Client(['verify' => false]);
+
+    //     try {
+    //         $response = $client->request('POST', $url, [
+    //             'multipart' => $multipart,
+    //             'headers' => ['Accept' => 'application/json'],
+    //             'timeout' => 30,
+    //         ]);
+
+    //         $body = (string)$response->getBody();
+    //         $json = json_decode($body, true);
+
+    //         if (!$json || !$json['success'] ?? false) {
+    //             throw new \Exception("Smile ID CAC verification request failed: $body");
+    //         }
+
+    //         return [
+    //             'job_id' => $jobId,
+    //             'response' => $json,
+    //         ];
+    //     } catch (\GuzzleHttp\Exception\RequestException $e) {
+    //         throw new \Exception('Smile ID CAC verification request failed: ' . $e->getMessage());
+    //     }
+    // }
 
 
 

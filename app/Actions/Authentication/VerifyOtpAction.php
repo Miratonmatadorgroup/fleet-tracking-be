@@ -27,12 +27,30 @@ class VerifyOtpAction
             throw new \Exception("No pending request found", 404);
         }
 
-        if (
-            (string) $pending['otp_code'] !== (string) $dto->otp ||
-            now()->greaterThan($pending['otp_expires_at'])
-        ) {
+        //Check expiration first
+        if (now()->greaterThan($pending['otp_expires_at'])) {
+            Cache::forget($cacheKey);
             throw ValidationException::withMessages([
-                'otp' => 'Invalid or expired OTP',
+                'otp' => 'OTP has expired',
+            ]);
+        }
+
+        //Check attempt limit
+        if (($pending['attempts'] ?? 0) >= 5) {
+            Cache::forget($cacheKey);
+            throw ValidationException::withMessages([
+                'otp' => 'Too many failed attempts. Please request a new code.',
+            ]);
+        }
+
+        //Validate OTP
+        if ((string) $pending['otp_code'] !== (string) $dto->otp) {
+            $pending['attempts'] = ($pending['attempts'] ?? 0) + 1;
+
+            Cache::put($cacheKey, $pending, now()->addMinutes(15));
+
+            throw ValidationException::withMessages([
+                'otp' => 'Invalid OTP',
             ]);
         }
 

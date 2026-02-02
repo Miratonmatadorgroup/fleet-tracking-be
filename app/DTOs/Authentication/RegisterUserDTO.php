@@ -13,8 +13,10 @@ class RegisterUserDTO
     public string $user_type;     // individual_operator | business_operator
     public ?string $business_type;
     public ?string $cac_number;
-    public ?string $cac_document;
     public ?string $nin_number;
+
+    public ?string $cac_document;
+
 
     public function __construct(array $data)
     {
@@ -28,21 +30,24 @@ class RegisterUserDTO
 
         $this->business_type = $data['business_type'] ?? null;
         $this->cac_number    = $data['cac_number'] ?? null;
-        $this->cac_document  = $data['cac_document'] ?? null;
         $this->nin_number    = $data['owner_nin'] ?? null;
+        $this->cac_document = $data['cac_document'] ?? null;
+
     }
 
     public static function fromRequest(Request $request): self
     {
-        return new self($request->only([
+        return new self([
+        ...$request->only([
             'name',
             'email',
             'password',
             'operator_type',
             'business_type',
             'cac_number',
-            'cac_document',
             'owner_nin',
-        ]));
+        ]),
+        'cac_document' => $request->get('cac_document_path'),
+    ]);
     }
 }

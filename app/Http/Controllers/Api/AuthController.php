@@ -21,6 +21,7 @@ use Illuminate\Support\Facades\Mail;
 use App\DTOs\Authentication\LoginDTO;
 use App\Services\ExternalBankService;
 use App\Services\TransactionPinService;
+use Illuminate\Support\Facades\Storage;
 use App\DTOs\Authentication\ResendOtpDTO;
 use App\DTOs\Authentication\VerifyOtpDTO;
 use Illuminate\Support\Facades\Validator;
@@ -70,8 +71,8 @@ class AuthController extends Controller
                 // Business only
                 'business_type' => 'required_if:operator_type,business|in:co,bn,it',
                 'cac_number'    => 'required_if:operator_type,business',
-                'cac_document'  => 'required_if:operator_type,business|file',
                 'owner_nin'     => 'required_if:operator_type,business',
+                'cac_document'  => 'required_if:operator_type,business|file|mimes:pdf,jpg,jpeg,png|max:5120',
                 'password'        => [
                     'required',
                     'string',
@@ -83,47 +84,111 @@ class AuthController extends Controller
             if ($validator->fails()) {
                 return failureResponse($validator->errors(), 422, 'validation_error');
             }
+            $cacDocumentPath = null;
+
+            if ($request->hasFile('cac_document')) {
+                $cacDocumentPath = $request->file('cac_document')->store(
+                    'kyb/cac_documents',
+                    'private'
+                );
+            }
+            $request->merge([
+                'cac_document_path' => $cacDocumentPath,
+            ]);
 
             /**
              * BUSINESS VERIFICATION FIRST (NO USER CREATED)
              */
             if ($request->operator_type === 'business') {
-
                 $smile = app(SmileIdService::class);
 
-                // temp user object ONLY for Smile ID name extraction
+                // temp user object ONLY for Smile ID NIN extraction
                 $tempUser = new User(['name' => $request->name]);
 
-                //CAC verification
-                $smile->submitBusinessCAC([
+
+                //CAC verification (capture response)
+                $cacResult = $smile->submitBusinessCAC([
                     'user_id'       => (string) Str::uuid(),
                     'cac_number'    => $request->cac_number,
                     'business_type' => $request->business_type,
-                    'cac_document'  => $request->cac_document,
                 ]);
 
+                if (! ($cacResult['success'] ?? false)) {
+                    $this->cleanupCacDocument($cacDocumentPath);
+                    return failureResponse('CAC verification failed', 422);
+                }
+
+                //Extract CAC owner names (based on business type)
+                $cacOwnerNames = [];
+
+                if (in_array($request->business_type, ['bn', 'it'])) {
+                    $cacOwnerNames = collect($cacResult['proprietors'] ?? [])
+                        ->pluck('name')
+                        ->toArray();
+                }
+
+                if ($request->business_type === 'co') {
+                    $cacOwnerNames = collect($cacResult['beneficial_owners'] ?? [])
+                        ->where('shareholder_type', 'Individual')
+                        ->pluck('name')
+                        ->toArray();
+
+                    // fallback if no beneficial owners
+                    if (empty($cacOwnerNames)) {
+                        $cacOwnerNames = collect($cacResult['directors'] ?? [])
+                            ->pluck('name')
+                            ->toArray();
+                    }
+                }
+
+                if (empty($cacOwnerNames)) {
+                    return failureResponse('Unable to determine business owner from CAC', 422);
+                }
+
+
                 //NIN verification
+
                 $ninResult = $smile->submitNin($tempUser, $request->owner_nin);
 
-                if (! $ninResult['success']) {
+                if (! ($ninResult['success'] ?? false)) {
                     return failureResponse('Owner NIN verification failed', 422);
                 }
 
-                //Name match (CAC owner ↔ NIN)
-                if (
-                    strtolower(trim($ninResult['details']['full_name'])) !==
-                    strtolower(trim($request->name))
-                ) {
+                $ninName = $this->normalizeName(
+                    $ninResult['details']['full_name']
+                );
+
+                //Compare CAC ↔ NIN
+                $matchFound = false;
+
+                $ninTokens = explode(' ', $ninName);
+
+                foreach ($cacOwnerNames as $cacName) {
+                    $cac = $this->normalizeName($cacName);
+
+                    $matches = 0;
+                    foreach ($ninTokens as $token) {
+                        if (str_contains($cac, $token)) {
+                            $matches++;
+                        }
+                    }
+
+                    if ($matches >= 2) { // at least 2 name parts match
+                        $matchFound = true;
+                        break;
+                    }
+                }
+
+
+                if (! $matchFound) {
                     return failureResponse(
-                        'Business owner name does not match NIN records',
+                        'Business owner name does not match CAC and NIN records',
                         422
                     );
                 }
             }
 
-            /**
-             * SAFE TO SEND OTP
-             */
+            // SAFE TO SEND OTP
             $dto  = RegisterUserDTO::fromRequest($request);
             $data = $this->registerUserAction->execute($dto);
 
@@ -135,29 +200,51 @@ class AuthController extends Controller
             return failureResponse('Registration failed', 500, 'server_error', $e);
         }
     }
+    private function normalizeName(string $name): string
+    {
+        return strtolower(
+            preg_replace('/\s+/', ' ', trim($name))
+        );
+    }
+
+    private function cleanupCacDocument(?string $path): void
+    {
+        if ($path && Storage::disk('private')->exists($path)) {
+            Storage::disk('private')->delete($path);
+        }
+    }
+
 
     public function adminCreateUser(Request $request)
     {
         try {
-            /** @var \App\Models\User $user */
+            /** @var \App\Models\User $admin */
             $admin = Auth::user();
 
-            if (!$admin) {
+            if (! $admin) {
                 return failureResponse('Unauthorized. Please log in.', 401, 'unauthorized');
             }
 
-            if (!$admin->hasRole('admin')) {
+            if (! $admin->hasRole('admin')) {
                 return failureResponse('Forbidden. Only admins can perform this action.', 403, 'forbidden');
             }
+
             $messages = [
                 'password.regex' => 'Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (e.g. @, #, $, %, &).',
             ];
+
             $validator = Validator::make($request->all(), [
-                'name'            => 'required|string|max:255',
-                'email'           => 'nullable|email|unique:users,email',
-                'phone'           => 'nullable|string|unique:users,phone',
-                'whatsapp_number' => 'nullable|string|unique:users,whatsapp_number',
-                'password'        => [
+                'name'          => 'required|string|max:255',
+                'email'         => 'required|email|unique:users,email',
+                'operator_type' => 'required|in:individual,business',
+
+                // Business only
+                'business_type' => 'required_if:operator_type,business|in:co,bn,it',
+                'cac_number'    => 'required_if:operator_type,business',
+                'owner_nin'     => 'required_if:operator_type,business',
+                'cac_document'  => 'required_if:operator_type,business|file|mimes:pdf,jpg,jpeg,png|max:5120',
+
+                'password' => [
                     'required',
                     'string',
                     'min:6',
@@ -165,32 +252,123 @@ class AuthController extends Controller
                 ],
             ], $messages);
 
-            if (
-                !$request->email &&
-                !$request->phone &&
-                !$request->whatsapp_number
-            ) {
-                return failureResponse(
-                    ['contact' => ['Either email, phone number or WhatsApp number is required']],
-                    422,
-                    'validation_error'
+            if ($validator->fails()) {
+                return failureResponse($validator->errors(), 422, 'validation_error');
+            }
+
+            $cacDocumentPath = null;
+
+            if ($request->hasFile('cac_document')) {
+                $cacDocumentPath = $request->file('cac_document')->store(
+                    'kyb/cac_documents',
+                    'private'
                 );
             }
 
-            if ($validator->fails()) {
-                return failureResponse($validator->errors()->toArray(), 422, 'validation_error');
+            $request->merge([
+                'cac_document_path' => $cacDocumentPath,
+            ]);
+
+            /**
+             * BUSINESS VERIFICATION FIRST (NO USER CREATED)
+             */
+            if ($request->operator_type === 'business') {
+                $smile = app(SmileIdService::class);
+
+                $tempUser = new User(['name' => $request->name]);
+
+                // CAC verification
+                $cacResult = $smile->submitBusinessCAC([
+                    'user_id'       => (string) Str::uuid(),
+                    'cac_number'    => $request->cac_number,
+                    'business_type' => $request->business_type,
+                ]);
+
+                if (! ($cacResult['success'] ?? false)) {
+                    $this->cleanupCacDocument($cacDocumentPath);
+                    return failureResponse('CAC verification failed', 422);
+                }
+
+                // Extract CAC owner names
+                $cacOwnerNames = [];
+
+                if (in_array($request->business_type, ['bn', 'it'])) {
+                    $cacOwnerNames = collect($cacResult['proprietors'] ?? [])
+                        ->pluck('name')
+                        ->toArray();
+                }
+
+                if ($request->business_type === 'co') {
+                    $cacOwnerNames = collect($cacResult['beneficial_owners'] ?? [])
+                        ->where('shareholder_type', 'Individual')
+                        ->pluck('name')
+                        ->toArray();
+
+                    if (empty($cacOwnerNames)) {
+                        $cacOwnerNames = collect($cacResult['directors'] ?? [])
+                            ->pluck('name')
+                            ->toArray();
+                    }
+                }
+
+                if (empty($cacOwnerNames)) {
+                    $this->cleanupCacDocument($cacDocumentPath);
+                    return failureResponse('Unable to determine business owner from CAC', 422);
+                }
+
+                // NIN verification
+                $ninResult = $smile->submitNin($tempUser, $request->owner_nin);
+
+                if (! ($ninResult['success'] ?? false)) {
+                    $this->cleanupCacDocument($cacDocumentPath);
+                    return failureResponse('Owner NIN verification failed', 422);
+                }
+
+                $ninName   = $this->normalizeName($ninResult['details']['full_name']);
+                $ninTokens = explode(' ', $ninName);
+
+                $matchFound = false;
+
+                foreach ($cacOwnerNames as $cacName) {
+                    $cac = $this->normalizeName($cacName);
+
+                    $matches = 0;
+                    foreach ($ninTokens as $token) {
+                        if (str_contains($cac, $token)) {
+                            $matches++;
+                        }
+                    }
+
+                    if ($matches >= 2) {
+                        $matchFound = true;
+                        break;
+                    }
+                }
+
+                if (! $matchFound) {
+                    $this->cleanupCacDocument($cacDocumentPath);
+                    return failureResponse(
+                        'Business owner name does not match CAC and NIN records',
+                        422
+                    );
+                }
             }
 
-            $dto = RegisterUserDTO::fromRequest($request);
+            /**
+             * SAFE TO CREATE USER + SEND OTP
+             */
+            $dto  = RegisterUserDTO::fromRequest($request);
             $data = $this->registerUserAction->execute($dto);
 
-            return successResponse("Verification code sent. User must verify OTP to complete registration.", [
-                'reference' => $data['reference'],
-            ]);
-        } catch (\Throwable $th) {
-            return failureResponse("Failed to create user", 500, 'server_error', $th);
+            return successResponse(
+                'Verification code sent to user email',
+                ['reference' => $data['reference']]
+            );
+        } catch (\Throwable $e) {
+            return failureResponse('Admin user registration failed', 500, 'server_error', $e);
         }
     }
+
 
     public function adminDeleteUser(Request $request, $userId, DeleteUserAction $action)
     {

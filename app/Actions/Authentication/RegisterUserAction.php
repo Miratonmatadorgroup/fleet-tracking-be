@@ -19,7 +19,7 @@ class RegisterUserAction
             throw new \Exception('Email already in use', 422);
         }
 
-        $otp = (string) rand(100000, 999999);
+        $otp = (string) random_int(100000, 999999);
         $reference = 'pending_registration_' . Str::uuid();
 
         Cache::put($reference, [
@@ -31,12 +31,11 @@ class RegisterUserAction
             'user_type'     => $dto->user_type,
             'business_type' => $dto->business_type,
             'cac_number'    => $dto->cac_number,
-            'cac_document'  => $dto->cac_document,
             'nin_number'    => $dto->nin_number,
-
+            'cac_document'  => $dto->cac_document,
             'otp_code'      => $otp,
             'otp_expires_at' => now()->addMinutes(10),
-        ], now()->addMinutes(10));
+        ], now()->addMinutes(15));
 
         event(new OtpRequestedEvent(
             'email',
