@@ -3,7 +3,9 @@
 namespace App\Actions\Authentication;
 
 use App\Models\User;
+use App\Models\Merchant;
 use App\Services\WalletService;
+use App\Enums\MerchantStatusEnums;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Cache;
 use App\DTOs\Authentication\VerifyOtpDTO;
@@ -87,10 +89,19 @@ class VerifyOtpAction
             ];
         }
 
-
         if ($type === 'registration') {
+
+            //Validate pending registration state FIRST
+            if (
+                $pending['user_type'] === 'business_operator'
+                && empty($pending['cac_number'])
+            ) {
+                throw new \Exception('Invalid business registration state');
+            }
+
             $result = DB::transaction(function () use ($pending) {
 
+                //Create or confirm user
                 $user = User::where('email', $pending['email'])
                     ->whereNull('email_verified_at')
                     ->first();
@@ -101,19 +112,21 @@ class VerifyOtpAction
                         'email'         => $pending['email'],
                         'password'      => $pending['password'],
 
-                        'user_type'     => $pending['user_type'],
-                        'business_type' => $pending['business_type'],
-                        'cac_number'    => $pending['cac_number'],
-                        'cac_document'  => $pending['cac_document'],
-                        'nin_number'    => $pending['nin_number'],
+                        'user_type'     => $pending['user_type'], // source of truth
+                        'business_type' => $pending['business_type'] ?? null,
+                        'cac_number'    => $pending['cac_number'] ?? null,
+                        'cac_document'  => $pending['cac_document'] ?? null,
+                        'nin_number'    => $pending['nin_number'] ?? null,
 
                         'email_verified_at' => now(),
                     ]);
                 } else {
-                    $user->email_verified_at = now();
-                    $user->save();
+                    $user->forceFill([
+                        'email_verified_at' => now(),
+                    ])->save();
                 }
 
+                //Create wallet (ALL users)
                 $wallet = $this->walletService->getOrCreateForUser(
                     $user->id,
                     'NGN',
@@ -121,14 +134,41 @@ class VerifyOtpAction
                     'default'
                 );
 
+                $merchant = null;
 
-                return compact('user', 'wallet');
+                //BUSINESS OPERATOR ONLY
+                if ($pending['user_type'] === 'business_operator') {
+
+                    // Assign office_admin role
+                    if (! $user->hasRole('office_admin')) {
+                        $user->assignRole('office_admin');
+                    }
+
+                    // Create merchant profile
+                    $merchant = Merchant::firstOrCreate(
+                        ['user_id' => $user->id],
+                        [
+                            'merchant_code' => $this->generateMerchantCode(),
+                            'status'        => MerchantStatusEnums::PENDING,
+                        ]
+                    );
+                }
+
+                return compact('user', 'wallet', 'merchant');
             });
 
             return $result;
         }
 
-
         throw new \Exception("Unknown OTP type", 400);
+    }
+
+    private function generateMerchantCode(): string
+    {
+        do {
+            $code = (string) random_int(1000000, 9999999);
+        } while (Merchant::where('merchant_code', $code)->exists());
+
+        return $code;
     }
 }

@@ -193,40 +193,43 @@ class User extends Authenticatable
     }
 
 
-
-    /**
-     * Get the partner record associated with the user.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasOne
-     */
-    public function partner(): \Illuminate\Database\Eloquent\Relations\HasOne
-    {
-        return $this->hasOne(Partner::class);
-    }
-
     public function tokens()
     {
         return $this->hasMany(UserToken::class);
     }
 
-    // FOR FLAGING
-    public function flaggedRidePools()
+    public function merchant()
     {
-        return $this->hasMany(RidePool::class, 'flagged_by');
+        return $this->hasOne(Merchant::class);
     }
 
-    public function flaggedTransportModes()
+    /*
+    |--------------------------------------------------------------------------
+    | Trackers (Individual Ownership)
+    |--------------------------------------------------------------------------
+    */
+
+    // Trackers owned directly by an individual user
+    public function trackers()
     {
-        return $this->hasMany(TransportMode::class, 'flagged_by');
+        return $this->hasMany(Tracker::class);
     }
 
-    public function flaggedDrivers()
+    /*
+    |--------------------------------------------------------------------------
+    | Admin Actions
+    |--------------------------------------------------------------------------
+    */
+
+    // Trackers inventoried by admin
+    public function inventoriedTrackers()
     {
-        return $this->hasMany(Driver::class, 'flagged_by');
+        return $this->hasMany(Tracker::class, 'inventory_by');
     }
 
-    public function assignedProjects()
+    // Merchants verified by admin
+    public function verifiedMerchants()
     {
-        return $this->belongsToMany(Project::class, 'project_user', 'user_id', 'project_id');
+        return $this->hasMany(Merchant::class, 'verified_by');
     }
 }
