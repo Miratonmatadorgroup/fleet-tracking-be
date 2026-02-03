@@ -4,9 +4,11 @@ namespace App\Actions\Authentication;
 
 use App\Models\User;
 use App\Models\Merchant;
+use Illuminate\Support\Carbon;
 use App\Services\WalletService;
 use App\Enums\MerchantStatusEnums;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use App\DTOs\Authentication\VerifyOtpDTO;
 use App\Services\UserProvisioningManager;
@@ -25,12 +27,16 @@ class VerifyOtpAction
         $cacheKey = $dto->reference;
         $pending = Cache::get($cacheKey);
 
-        if (!$pending) {
-            throw new \Exception("No pending request found", 404);
+        if (! $pending) {
+            throw ValidationException::withMessages([
+                'otp' => 'OTP has already been used or has expired. Please request a new one.',
+            ]);
         }
 
+
         //Check expiration first
-        if (now()->greaterThan($pending['otp_expires_at'])) {
+
+        if (now()->greaterThan(Carbon::parse($pending['otp_expires_at']))) {
             Cache::forget($cacheKey);
             throw ValidationException::withMessages([
                 'otp' => 'OTP has expired',
@@ -99,31 +105,39 @@ class VerifyOtpAction
                 throw new \Exception('Invalid business registration state');
             }
 
+            Log::info('Pending OTP before registration processing:', $pending);
+
             $result = DB::transaction(function () use ($pending) {
+                // Normalize email for DB search
+                $email = strtolower(trim($pending['email']));
 
                 //Create or confirm user
-                $user = User::where('email', $pending['email'])
-                    ->whereNull('email_verified_at')
+                $user = User::whereRaw('LOWER(email) = ?', [$email])
+                    ->lockForUpdate()
                     ->first();
 
-                if (! $user) {
+                if ($user) {
+                    // Always update email_verified_at if not already set
+                    Log::info('Existing user found:', ['user_id' => $user->id, 'email_verified_at' => $user->email_verified_at]);
+
+                    if (! $user->email_verified_at) {
+                        $user->email_verified_at = now();
+                        $user->save();
+                        Log::info('User email verified updated:', ['user_id' => $user->id, 'email_verified_at' => $user->email_verified_at]);
+                    }
+                } else {
+                    // Create new user with email_verified_at set
                     $user = User::create([
                         'name'          => $pending['name'],
                         'email'         => $pending['email'],
                         'password'      => $pending['password'],
-
-                        'user_type'     => $pending['user_type'], // source of truth
+                        'user_type'     => $pending['user_type'],
                         'business_type' => $pending['business_type'] ?? null,
                         'cac_number'    => $pending['cac_number'] ?? null,
                         'cac_document'  => $pending['cac_document'] ?? null,
                         'nin_number'    => $pending['nin_number'] ?? null,
-
                         'email_verified_at' => now(),
                     ]);
-                } else {
-                    $user->forceFill([
-                        'email_verified_at' => now(),
-                    ])->save();
                 }
 
                 //Create wallet (ALL users)

@@ -77,6 +77,9 @@ class User extends Authenticatable
         'cac_number',
         'cac_document',
         'nin_number',
+        'email_verified_at',
+        'phone_verified_at',
+
     ];
 
     /**
@@ -102,6 +105,7 @@ class User extends Authenticatable
         return [
             'id' => 'string',
             'email_verified_at' => 'datetime',
+            'phone_verified_at' => 'datetime',
             'password' => 'hashed',
             'bank_details_updated_at' => 'datetime',
             'production_access_approved_at' => 'datetime',
