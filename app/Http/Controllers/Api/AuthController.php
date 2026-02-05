@@ -67,7 +67,8 @@ class AuthController extends Controller
                 'name'          => 'required|string|max:255',
                 'email'         => 'required|email|unique:users,email',
                 'operator_type' => 'required|in:individual,business',
-
+                'dob'     => 'required|date',
+                'gender'  => 'required|in:male,female',
                 // Business only
                 'business_type' => 'required_if:operator_type,business|in:co,bn,it',
                 'cac_number'    => 'required_if:operator_type,business',
@@ -148,41 +149,22 @@ class AuthController extends Controller
 
                 //NIN verification
 
-                $ninResult = $smile->submitNin($tempUser, $request->owner_nin);
+                $ninResult = $smile->submitNin($tempUser, $request->owner_nin, [
+                    'date_of_birth' => $request->dob,
+                    'gender' => $request->gender,
+                ]);
 
                 if (! ($ninResult['success'] ?? false)) {
-                    return failureResponse('Owner NIN verification failed', 422);
+                    return failureResponse('Failed to submit NIN verification', 422);
                 }
 
-                $ninName = $this->normalizeName(
-                    $ninResult['details']['full_name']
-                );
-
-                //Compare CAC ↔ NIN
-                $matchFound = false;
-
-                $ninTokens = explode(' ', $ninName);
-
-                foreach ($cacOwnerNames as $cacName) {
-                    $cac = $this->normalizeName($cacName);
-
-                    $matches = 0;
-                    foreach ($ninTokens as $token) {
-                        if (str_contains($cac, $token)) {
-                            $matches++;
-                        }
-                    }
-
-                    if ($matches >= 2) { // at least 2 name parts match
-                        $matchFound = true;
-                        break;
-                    }
-                }
-
-
-                if (! $matchFound) {
+                // You don’t block registration anymore — just note that NIN verification is pending
+                if (
+                    ! ($ninResult['verified'] ?? false) ||
+                    ! ($ninResult['name_match'] ?? false)
+                ) {
                     return failureResponse(
-                        'Business owner name does not match CAC and NIN records',
+                        'Business owner name does not match NIN records',
                         422
                     );
                 }
@@ -190,6 +172,9 @@ class AuthController extends Controller
 
             // SAFE TO SEND OTP
             $dto  = RegisterUserDTO::fromRequest($request);
+            if ($dto->user_type === 'business_operator') {
+                $dto->kyb_verified = true;
+            }
             $data = $this->registerUserAction->execute($dto);
 
             return successResponse(

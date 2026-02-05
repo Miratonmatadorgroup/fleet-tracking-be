@@ -105,7 +105,14 @@ class VerifyOtpAction
                 throw new \Exception('Invalid business registration state');
             }
 
-            Log::info('Pending OTP before registration processing:', $pending);
+            if (
+                $pending['user_type'] === 'business_operator' &&
+                empty($pending['kyb_verified'])
+            ) {
+                throw ValidationException::withMessages([
+                    'verification' => 'Business verification not completed',
+                ]);
+            }
 
             $result = DB::transaction(function () use ($pending) {
                 // Normalize email for DB search
@@ -118,12 +125,10 @@ class VerifyOtpAction
 
                 if ($user) {
                     // Always update email_verified_at if not already set
-                    Log::info('Existing user found:', ['user_id' => $user->id, 'email_verified_at' => $user->email_verified_at]);
 
                     if (! $user->email_verified_at) {
                         $user->email_verified_at = now();
                         $user->save();
-                        Log::info('User email verified updated:', ['user_id' => $user->id, 'email_verified_at' => $user->email_verified_at]);
                     }
                 } else {
                     // Create new user with email_verified_at set
@@ -132,11 +137,15 @@ class VerifyOtpAction
                         'email'         => $pending['email'],
                         'password'      => $pending['password'],
                         'user_type'     => $pending['user_type'],
+                        'dob'           => $pending['dob'],
+                        'gender'        => $pending['gender'],
                         'business_type' => $pending['business_type'] ?? null,
                         'cac_number'    => $pending['cac_number'] ?? null,
                         'cac_document'  => $pending['cac_document'] ?? null,
                         'nin_number'    => $pending['nin_number'] ?? null,
                         'email_verified_at' => now(),
+                        'nin_verified_at' => now()
+
                     ]);
                 }
 

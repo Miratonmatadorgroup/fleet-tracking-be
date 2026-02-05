@@ -6,13 +6,15 @@ use Exception;
 use ZipArchive;
 use App\Models\User;
 use GuzzleHttp\Client;
+use GuzzleHttp\Psr7\Utils;
 use Illuminate\Support\Str;
+
+use App\Models\NinVerification;
 use Illuminate\Support\Facades\Log;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
-
-use GuzzleHttp\Psr7\Utils;
+use App\Enums\NinVerificationStatusEnums;
 
 class SmileIdService
 {
@@ -176,6 +178,123 @@ class SmileIdService
         ];
     }
 
+    // public function submitNinAsync($user, $nin)
+    // {
+    //     // Optional: prevent duplicate pending requests
+    //     $existing = NinVerification::where('user_id', $user->id)
+    //         ->where('nin_number', $nin)
+    //         ->where('status', NinVerificationStatusEnums::PENDING)
+    //         ->first();
+
+    //     if ($existing) {
+    //         return [
+    //             'success' => true,
+    //             'job_id' => $existing->job_id,
+    //             'message' => 'NIN verification already in progress',
+    //         ];
+    //     }
+
+    //     $auth = $this->generateAuthSignage();
+
+    //     $nameParts = explode(' ', trim($user->name));
+
+    //     $payload = [
+    //         "callback_url" => config('services.smile_identity.callback_url'),
+    //         "country" => "NG",
+    //         "id_type" => "NIN",
+    //         "id_number" => $nin,
+    //         "first_name" => $nameParts[0] ?? '',
+    //         "middle_name" => $nameParts[1] ?? null,
+    //         "last_name" => $nameParts[count($nameParts) - 1] ?? '',
+    //         "partner_id" => $auth['partner_id'],
+    //         "partner_params" => [
+    //             "job_id" => (string) Str::uuid(),
+    //             "user_id" => (string) $user->id,
+    //         ],
+    //         "signature" => $auth['signature'],
+    //         "source_sdk" => "rest_api",
+    //         "source_sdk_version" => "2.0.0",
+    //         "timestamp" => $auth['timestamp'],
+    //     ];
+
+    //     $url = config('services.smile_identity.sid_server') === 'production'
+    //         ? 'https://api.smileidentity.com/v1/id_verification'
+    //         : 'https://testapi.smileidentity.com/v1/id_verification';
+
+    //     $response = Http::withoutVerifying()->post($url, $payload);
+    //     $result = $response->json();
+
+    //     if (! ($result['success'] ?? false)) {
+    //         return [
+    //             'success' => false,
+    //             'raw' => $result,
+    //         ];
+    //     }
+
+    //     $verification = NinVerification::create([
+    //         'user_id' => $user->id,
+    //         'job_id' => $payload['partner_params']['job_id'],
+    //         'nin_number' => $nin,
+    //         'status' => NinVerificationStatusEnums::PENDING,
+    //     ]);
+
+    //     return [
+    //         'success' => true,
+    //         'job_id' => $verification->job_id,
+    //         'user_id' => $user->id,
+    //     ];
+    // }
+
+    // public function submitNinAsync($user, $nin)
+    // {
+    //     $auth = $this->generateAuthSignage();
+    //     $partner_id = $auth['partner_id'];
+    //     $signature = $auth['signature'];
+    //     $timestamp = $auth['timestamp'];
+
+    //     // Split name for first/middle/last (best effort)
+    //     $nameParts = explode(' ', trim($user->name));
+    //     $firstName = $nameParts[0] ?? '';
+    //     $lastName  = end($nameParts) ?? '';
+    //     $middleName = count($nameParts) > 2 ? $nameParts[1] : null;
+
+    //     $payload = [
+    //         "callback_url" => config('services.smile_identity.callback_url'),
+    //         "country" => "NG",
+    //         "id_type" => "NIN",          // async expects "NIN"
+    //         "id_number" => $nin,
+    //         "first_name" => $firstName,
+    //         "middle_name" => $middleName,
+    //         "last_name" => $lastName,
+    //         "partner_id" => $partner_id,
+    //         "partner_params" => [
+    //             "job_id" => (string) Str::uuid(),
+    //             "user_id" => (string) $user->id,
+    //         ],
+    //         "signature" => $signature,
+    //         "source_sdk" => "rest_api",
+    //         "source_sdk_version" => "2.0.0",
+    //         "timestamp" => $timestamp,
+    //     ];
+
+    //     $url = config('services.smile_identity.sid_server') === 'production'
+    //         ? 'https://api.smileidentity.com/v1/id_verification'
+    //         : 'https://testapi.smileidentity.com/v1/id_verification';
+
+    //     $response = Http::withoutVerifying()->post($url, $payload);
+    //     $result = $response->json();
+
+    //     // Async always returns {"success": true} if the request is accepted
+    //     return [
+    //         'success' => $result['success'] ?? false,
+    //         'raw' => $result,
+    //         'job_id' => $payload['partner_params']['job_id'],
+    //         'user_id' => $user->id,
+    //         'name_submitted' => $user->name,
+    //     ];
+    // }
+
+
     public function submitNin($user, $nin, array $extra = [])
     {
         $auth = $this->generateAuthSignage();
@@ -222,18 +341,12 @@ class SmileIdService
         $response = Http::withoutVerifying()->post($url, $payload);
         $result = $response->json();
 
-        $successCodes = ['0810', '1012'];
 
         return [
-            'success' => isset($result['ResultCode']) && in_array($result['ResultCode'], $successCodes),
+            'success' => isset($result['ResultCode']) && $result['ResultCode'] === '1020',
             'raw' => $result,
-            'details' => [
-                'full_name' => trim($result['Result']['FullName'] ?? ''),
-                'dob' => isset($result['Result']['DateOfBirth'])
-                    ? date('Y-m-d', strtotime($result['Result']['DateOfBirth']))
-                    : ($result['DOB'] ?? null),
-                'gender' => strtolower($result['Result']['Gender'] ?? ''),
-            ],
+            'verified' => ($result['Actions']['Verify_ID_Number'] ?? null) === 'Verified',
+            'name_match' => ($result['Actions']['Names'] ?? null) === 'Exact Match',
         ];
     }
 
@@ -261,9 +374,7 @@ class SmileIdService
             'signature' => $auth['signature'],
             'timestamp' => $auth['timestamp'],
             'country' => 'NG',
-
-            // 🔥 SYNC requires this
-            'id_type' => 'BASIC_BUSINESS_REGISTRATION',
+            'id_type' => 'BUSINESS_REGISTRATION',
             'id_number' => $rawCac,
             'business_type' => $businessType,
 
@@ -274,7 +385,7 @@ class SmileIdService
             ],
         ];
 
-        // 🔥 SWITCH TO SYNC ENDPOINT
+        //SWITCH TO SYNC ENDPOINT
         $url = config('services.smile_identity.base_url') . '/business_verification';
 
         $client = new \GuzzleHttp\Client(['verify' => false]);
@@ -294,242 +405,16 @@ class SmileIdService
             throw new \Exception('Smile ID CAC verification failed: ' . json_encode($json));
         }
 
-        // ✅ SUCCESS — instant result
+        //SUCCESS — instant result
         return [
+            'success' => true,
             'job_id' => $jobId,
             'result_code' => $json['ResultCode'] ?? null,
+            'beneficial_owners' => $json['beneficial_owners'] ?? [],
+            'directors' => $json['directors'] ?? [],
+            'proprietors' => $json['proprietors'] ?? [],
             'company_info' => $json['company_information'] ?? null,
             'raw' => $json,
         ];
     }
-
-
-
-    // public function submitBusinessCAC(array $payload)
-    // {
-    //     $auth = $this->generateAuthData();
-    //     $partnerId = $this->partnerId;
-    //     $signature = $auth['signature'];
-    //     $timestamp = $auth['timestamp'];
-    //     $jobId = (string) \Illuminate\Support\Str::uuid();
-
-    //     $rawCac = preg_replace('/^(RC|BN|IT)/', '', strtoupper(trim($payload['cac_number'] ?? '')));
-    //     if (!ctype_digit($rawCac)) throw new \Exception('Invalid CAC number format');
-
-    //     $businessType = strtolower($payload['business_type'] ?? '');
-    //     if (!in_array($businessType, ['co', 'bn', 'it'])) throw new \Exception('Unsupported business type');
-
-    //     $file = $payload['cac_document'] ?? null;
-    //     if (!$file) throw new \Exception('CAC document is required');
-
-    //     $cacDocumentPath = $file instanceof \Illuminate\Http\UploadedFile ? $file->getRealPath() : Storage::disk('public')->path($file);
-    //     $cacFileName = $file instanceof \Illuminate\Http\UploadedFile ? $file->getClientOriginalName() : basename($cacDocumentPath);
-    //     if (!file_exists($cacDocumentPath) || !is_readable($cacDocumentPath)) throw new \Exception("CAC document file not readable");
-
-    //     // Partner params JSON
-    //     $partnerParams = [
-    //         'job_type' => 7,
-    //         'job_id' => $jobId,
-    //         'user_id' => (string)$payload['user_id'],
-    //     ];
-    //     $partnerParamsJson = json_encode($partnerParams, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE);
-
-    //     $multipart = [
-    //         ['name' => 'cac_document', 'contents' => fopen($cacDocumentPath, 'r'), 'filename' => $cacFileName],
-    //         ['name' => 'callback_url', 'contents' => config('services.smile_identity.callback_url')],
-    //         ['name' => 'country', 'contents' => 'NG'],
-    //         ['name' => 'id_type', 'contents' => 'BUSINESS_REGISTRATION'],
-    //         ['name' => 'id_number', 'contents' => $rawCac],
-    //         ['name' => 'business_type', 'contents' => $businessType],
-    //         ['name' => 'partner_id', 'contents' => $partnerId],
-    //         // ✅ Send partner_params as a raw stream
-    //         ['name' => 'partner_params', 'contents' => Utils::streamFor($partnerParamsJson)],
-    //         ['name' => 'signature', 'contents' => $signature],
-    //         ['name' => 'source_sdk', 'contents' => 'rest_api'],
-    //         ['name' => 'source_sdk_version', 'contents' => '1.0.0'],
-    //         ['name' => 'timestamp', 'contents' => $timestamp],
-    //     ];
-
-    //     $url = config('services.smile_identity.sid_server') === 'sandbox'
-    //         ? 'https://testapi.smileidentity.com/v1/async_business_verification'
-    //         : 'https://api.smileidentity.com/v1/async_business_verification';
-
-    //     $client = new \GuzzleHttp\Client(['verify' => false]);
-
-    //     try {
-    //         $response = $client->request('POST', $url, [
-    //             'multipart' => $multipart,
-    //             'headers' => ['Accept' => 'application/json'],
-    //             'timeout' => 30,
-    //         ]);
-
-    //         $body = (string)$response->getBody();
-    //         $json = json_decode($body, true);
-
-    //         if (!$json || !$json['success'] ?? false) {
-    //             throw new \Exception("Smile ID CAC verification request failed: $body");
-    //         }
-
-    //         return [
-    //             'job_id' => $jobId,
-    //             'response' => $json,
-    //         ];
-    //     } catch (\GuzzleHttp\Exception\RequestException $e) {
-    //         throw new \Exception('Smile ID CAC verification request failed: ' . $e->getMessage());
-    //     }
-    // }
-
-
-
-
-
-
-
-
-
-
-
-    // public function submitBusinessCAC(array $payload)
-    // {
-    //     $auth = $this->generateAuthData();
-
-    //     $partnerId = $this->partnerId;
-    //     $signature = $auth['signature'];
-    //     $timestamp = $auth['timestamp'];
-
-    //     $jobId = (string) Str::uuid();
-
-    //     /**
-    //      * Normalize CAC number (VERY IMPORTANT)
-    //      */
-    //     $rawCac = strtoupper(trim($payload['cac_number']));
-
-    //     // Strip CAC prefixes if user supplied them (RC, BN, IT)
-    //     $rawCac = preg_replace('/^(RC|BN|IT)/', '', $rawCac);
-
-    //     // Ensure CAC number is digits only
-    //     if (! ctype_digit($rawCac)) {
-    //         throw new \Exception('Invalid CAC number format');
-    //     }
-
-    //     /**
-    //      *  Normalize business type
-    //      * Smile ID only supports: co | bn | it
-    //      */
-    //     $businessType = strtolower($payload['business_type']);
-
-    //     if (! in_array($businessType, ['co', 'bn', 'it'])) {
-    //         throw new \Exception('Unsupported business type');
-    //     }
-
-    //     /**
-    //      *  Build Smile ID payload (CORRECT FORMAT)
-    //      */
-    //     $data = [
-    //         "callback_url" => (string) config('services.smile_identity.callback_url'),
-    //         "country" => "NG",
-
-    //         "id_type" => "BUSINESS_REGISTRATION",
-    //         "id_number" => $rawCac,
-    //         "business_type" => $businessType,
-
-    //         // Smile auth
-    //         "partner_id" => $partnerId,
-    //         "partner_params" => [
-    //             "job_type" => 7,
-    //             "job_id" => $jobId,
-    //             "user_id" => (string) $payload['user_id'],
-    //         ],
-
-    //         "signature" => $signature,
-    //         "source_sdk" => "rest_api",
-    //         "source_sdk_version" => "1.0.0",
-    //         "timestamp" => $timestamp,
-    //     ];
-
-    //     /**
-    //      *  Select environment (Sandbox vs Production)
-    //      */
-    //     $url = config('services.smile_identity.sid_server') === 'sandbox'
-    //         ? 'https://testapi.smileidentity.com/v1/async_business_verification'
-    //         : 'https://api.smileidentity.com/v1/async_business_verification';
-
-
-    //     /**
-    //      *  Send request
-    //      */
-    //     // $response = Http::withoutVerifying()->post($url, $data);
-    //     $response = Http::withoutVerifying()
-    //         ->attach(
-    //             'cac_document',
-    //             file_get_contents($payload['cac_document']->getRealPath()),
-    //             $payload['cac_document']->getClientOriginalName()
-    //         )
-    //         ->post($url, $data);
-
-
-    //     if (! $response->ok()) {
-    //         throw new \Exception(
-    //             'Smile ID CAC verification request failed: ' . $response->body()
-    //         );
-    //     }
-
-    //     return [
-    //         'job_id' => $jobId,
-    //         'response' => $response->json(),
-    //     ];
-    // }
-
-
-    // public function submitBusinessCAC(array $payload)
-    // {
-    //     $auth = $this->generateAuthData();
-
-    //     $partnerId = $this->partnerId;
-    //     $signature = $auth['signature'];
-    //     $timestamp = $auth['timestamp'];
-
-    //     $jobId = (string) Str::uuid();
-
-    //     $data = [
-    //         "callback_url" => config('services.smile_identity.callback_url'),
-    //         "country" => "NG",
-
-    //         // CAC-specific
-    //         "id_type" => "BUSINESS_REGISTRATION",
-    //         "id_number" => $payload['cac_number'],
-    //         "business_type" => $payload['business_type'], // bn | co | it
-
-    //         // Smile auth
-    //         "partner_id" => $partnerId,
-    //         "partner_params" => [
-    //             "job_type" => 7,
-    //             "job_id" => $jobId,
-    //             "user_id" => (string) $payload['user_id'],
-    //         ],
-    //         "signature" => $signature,
-    //         "source_sdk" => "rest_api",
-    //         "source_sdk_version" => "1.0.0",
-    //         "timestamp" => $timestamp,
-    //     ];
-
-    //     $url = config('services.smile_identity.sid_server') == 0
-    //         ? 'https://testapi.smileidentity.com/v1/async_business_verification'
-    //         : 'https://api.smileidentity.com/v1/async_business_verification';
-
-
-    //     $response = Http::withoutVerifying()->post($url, $data);
-
-    //     if (! $response->ok()) {
-    //         throw new \Exception(
-    //             'Smile ID CAC verification request failed: ' . $response->body()
-    //         );
-    //     }
-
-
-    //     return [
-    //         'job_id' => $jobId,
-    //         'response' => $response->json(),
-    //     ];
-    // }
 }

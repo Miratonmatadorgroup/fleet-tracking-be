@@ -27,12 +27,14 @@ class RegisterUserAction
             'name'          => $dto->name,
             'email'         => $dto->email,
             'password'      => Hash::make($dto->password),
-
+            'dob'           => $dto->dob,       
+            'gender'        => $dto->gender,
             'user_type'     => $dto->user_type,
             'business_type' => $dto->business_type,
             'cac_number'    => $dto->cac_number,
             'nin_number'    => $dto->nin_number,
             'cac_document'  => $dto->cac_document,
+            'kyb_verified'  => $dto->kyb_verified,
             'otp_code'      => $otp,
             'otp_expires_at' => now()->addMinutes(10),
         ], now()->addMinutes(15));

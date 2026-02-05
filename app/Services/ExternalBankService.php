@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Models\User;
 use GuzzleHttp\Client;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 use GuzzleHttp\Exception\ConnectException;
@@ -63,9 +62,7 @@ class ExternalBankService
     protected function getAccessToken(): string
     {
         return Cache::remember($this->tokenCacheKey(), now()->addYear(), function () {
-            Log::info('Shanono token URL', [
-                'url' => $this->authBaseUrl . '/client/token',
-            ]);
+
 
             $response = Http::asForm()->post(
                 $this->authBaseUrl . '/client/token',
@@ -75,10 +72,7 @@ class ExternalBankService
                 ]
             );
 
-            Log::info('Shanono token response', [
-                'status' => $response->status(),
-                'body'   => $response->json(),
-            ]);
+
 
             if ($response->failed()) {
                 throw new \Exception(
@@ -105,7 +99,6 @@ class ExternalBankService
             $clientId = '019bbe4d-c999-7164-9ecb-9635ae87fd5a';
             $clientSecret = '2ybKtTG9Expu1R6GZjplL3J905gEPdAvVqssVpp7';
 
-            Log::info('Shanono token request URL', ['url' => $tokenUrl]);
 
             // Use form data, not JSON
             $response = Http::asForm()->post($tokenUrl, [
@@ -113,10 +106,7 @@ class ExternalBankService
                 'client_secret' => $clientSecret,
             ]);
 
-            Log::info('Shanono token response', [
-                'status' => $response->status(),
-                'body'   => $response->json(),
-            ]);
+
 
             if ($response->failed()) {
                 throw new \Exception(
@@ -162,7 +152,6 @@ class ExternalBankService
         $response = $this->http()->post($url, $payload);
 
         if ($response->status() === 401) {
-            Log::warning('Shanono token expired, refreshing token');
 
             Cache::forget($this->tokenCacheKey());
 
@@ -190,7 +179,6 @@ class ExternalBankService
             $payload['account_product_id'] = $accountProductId;
         }
 
-        Log::info('Shanono create sub-account payload', $payload);
 
         // $response = $this->http()->post(
         //     $this->baseUrl . '/loopfreight/sub-account',
@@ -202,11 +190,6 @@ class ExternalBankService
             $payload
         );
 
-
-        Log::info('Shanono create sub-account response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -220,9 +203,6 @@ class ExternalBankService
             !isset($body['data']) ||
             !isset($body['data']['sub_account'])
         ) {
-            Log::error('Invalid Shanono sub-account response', [
-                'response' => $body,
-            ]);
 
             throw new \Exception(
                 'Invalid response from Shanono Bank while creating sub-account'
@@ -252,17 +232,6 @@ class ExternalBankService
                 'password'       => $this->password,
             ]
         );
-
-        Log::info('FINAL SHANONO BALANCE REQUEST', [
-            'url'            => "{$this->baseUrl}/loopfreight/balance",
-            'account_number' => $accountNumber,
-            'username'       => $this->username,
-        ]);
-
-        Log::info('Shanono get balance response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -314,17 +283,7 @@ class ExternalBankService
             'bank_code'      => $bankCode,
         ];
 
-        Log::info('Shanono LIVE bank name enquiry request', [
-            'url'     => $url,
-            'payload' => $payload,
-        ]);
-
         $response = $this->shanonoTokenHttp()->post($url, $payload);
-
-        Log::info('Shanono LIVE bank name enquiry response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->status() === 401) {
             Cache::forget('shanono_bank_token');
@@ -348,16 +307,7 @@ class ExternalBankService
     {
         $url = 'https://api.myshanonobank.com/api/integrations/loopfreight/banks';
 
-        Log::info('Shanono LIVE bank list request', [
-            'url' => $url,
-        ]);
-
         $response = $this->shanonoTokenHttp()->get($url);
-
-        Log::info('Shanono LIVE bank list response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         // If token expired, clear cache and retry once
         if ($response->status() === 401) {
@@ -394,21 +344,7 @@ class ExternalBankService
             'bank_code'      => $bankCode,
         ];
 
-        Log::info('Shanono bank name enquiry request', [
-            'url'     => $url,
-            'payload' => [
-                'username'       => $this->username,
-                'account_number' => $accountNumber,
-                'bank_code'      => $bankCode,
-            ],
-        ]);
-
         $response = $this->http()->post($url, $payload);
-
-        Log::info('Shanono bank name enquiry response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -438,25 +374,11 @@ class ExternalBankService
             'reference'  => $reference,
         ];
 
-        Log::info('Shanono debit request', [
-            'url'     => "{$this->baseUrl}/loopfreight/accounts/debit",
-            'payload' => $payload,
-        ]);
-
-        // $response = $this->http()->post(
-        //     "{$this->debitUrl}/loopfreight/accounts/debit",
-        //     $payload
-        // );
-
         $response = $this->http()->post(
             "https://core.shanonobank.xyz/api/loopfreight/accounts/debit",
             $payload
         );
 
-        Log::info('Shanono debit response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -487,16 +409,6 @@ class ExternalBankService
                 'per_page'       => $perPage,
             ]
         );
-
-        Log::info('Shanono transactions request', [
-            'account_number' => $accountNumber,
-            'page'           => $page,
-        ]);
-
-        Log::info('Shanono transactions response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -541,11 +453,6 @@ class ExternalBankService
 
         $url = "{$this->baseUrl}/loopfreight/payout";
 
-        Log::info('Shanono payout request', [
-            'url' => $url,
-            'payload' => $payload,
-        ]);
-
         try {
             $response = $this->client->post($url, [
                 'json'            => $payload,
@@ -561,8 +468,6 @@ class ExternalBankService
         }
 
         $body = json_decode((string) $response->getBody(), true);
-
-        Log::info('Shanono payout response', ['body' => $body]);
 
         if (($body['status'] ?? null) !== 'success') {
             throw new \RuntimeException(
@@ -615,20 +520,11 @@ class ExternalBankService
             'pin' => config('services.shanono_bank.transaction_pin'),
         ];
 
-
-        Log::info('Shanono Airtime purchase request', [
-            'payload' => Arr::except($payload, ['pin', 'password']),
-        ]);
-
         $response = $this->http()->post(
             "{$this->baseUrl}/loopfreight/airtime-purchase",
             $payload
         );
 
-        Log::info('Shanono airtime purchase response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -655,12 +551,6 @@ class ExternalBankService
                 'transaction_reference' => $reference,
             ]
         );
-
-        Log::info('Shanono airtime requery response', [
-            'reference' => $reference,
-            'status'    => $response->status(),
-            'body'      => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception('Failed to requery airtime transaction');
@@ -699,12 +589,6 @@ class ExternalBankService
                     $query
                 );
 
-                Log::info('Shanono data plans response', [
-                    'provider' => $provider,
-                    'status'   => $response->status(),
-                    'body'     => $response->json(),
-                ]);
-
                 $body = $response->json();
 
                 if ($response->failed()) {
@@ -742,21 +626,11 @@ class ExternalBankService
             'pin'          => $this->pin,
         ];
 
-        Log::info('Shanono data purchase request', [
-            'url'     => "{$this->baseUrl}/loopfreight/vend-data",
-            'payload' => $payload,
-        ]);
-
         $response = Http::timeout(30)
             ->withToken($this->getAccessToken())
             ->acceptJson()
             ->asJson() //JSON as docs require
             ->post("{$this->baseUrl}/loopfreight/vend-data", $payload);
-
-        Log::info('Shanono data purchase response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -825,21 +699,11 @@ class ExternalBankService
             'pin'      => $this->pin,
         ];
 
-        Log::info('Shanono electricity purchase request', [
-            'url'     => "{$this->baseUrl}/loopfreight/vend-electricity",
-            'payload' => Arr::except($payload, ['pin']),
-        ]);
-
         $response = Http::timeout(30)
             ->withToken($this->getAccessToken())
             ->acceptJson()
             ->asJson()
             ->post("{$this->baseUrl}/loopfreight/vend-electricity", $payload);
-
-        Log::info('Shanono electricity purchase response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -897,21 +761,12 @@ class ExternalBankService
             'pin'           => $this->pin,
         ];
 
-        Log::info('Shanono TV purchase request', [
-            'url'     => "{$this->baseUrl}/loopfreight/vend-tv",
-            'payload' => Arr::except($payload, ['pin']),
-        ]);
-
         $response = Http::timeout(30)
             ->withToken($this->getAccessToken())
             ->acceptJson()
             ->asJson()
             ->post("{$this->baseUrl}/loopfreight/vend-tv", $payload);
 
-        Log::info('Shanono TV purchase response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -939,17 +794,11 @@ class ExternalBankService
             'webhook_secret' => $secret,
         ];
 
-        Log::info('Configuring Shanono webhook', $payload);
-
         $response = $this->http()->post(
             "{$this->baseUrl}/loopfreight/webhook/configure",
             $payload
         );
 
-        Log::info('Shanono webhook config response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception('Failed to configure webhook: ' . $response->body());
@@ -967,10 +816,6 @@ class ExternalBankService
             ])
             ->get("{$this->baseUrl}/loopfreight/webhook/config");
 
-        Log::info('Shanono get webhook config response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -996,19 +841,9 @@ class ExternalBankService
 
         $url = "{$this->baseUrl}/loopfreight/commissions";
 
-        Log::info('Shanono commission transactions request', [
-            'url'   => $url,
-            'query' => Arr::except($query, ['password']),
-        ]);
-
         $response = $this->http()
             ->withQueryParameters($query)
             ->get($url);
-
-        Log::info('Shanono commission transactions response', [
-            'status' => $response->status(),
-            'body'   => $response->json(),
-        ]);
 
         if ($response->failed()) {
             throw new \Exception(

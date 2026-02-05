@@ -8,6 +8,7 @@ use App\Models\Payout;
 use App\Models\Partner;
 use App\Models\Project;
 use App\Models\Discount;
+use App\Enums\GenderEnums;
 use Illuminate\Support\Str;
 use App\Enums\UserTypesEnums;
 use Laravel\Passport\HasApiTokens;
@@ -60,6 +61,8 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'dob',
+        'gender',
         'phone',
         'whatsapp_number',
         'password',
@@ -79,6 +82,7 @@ class User extends Authenticatable
         'nin_number',
         'email_verified_at',
         'phone_verified_at',
+        'nin_verified_at',
 
     ];
 
@@ -110,6 +114,9 @@ class User extends Authenticatable
             'bank_details_updated_at' => 'datetime',
             'production_access_approved_at' => 'datetime',
             'payout_restricted' => 'boolean',
+            'gender' => GenderEnums::class,
+            'dob' => 'date',
+            'nin_verified_at' => 'datetime',
         ];
     }
 

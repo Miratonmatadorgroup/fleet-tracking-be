@@ -177,7 +177,6 @@ class WalletService
                         $wallet->total_balance += $individualCommission;
                         $wallet->save();
 
-                        // Log wallet transaction
                         WalletTransaction::create([
                             'wallet_id'   => $wallet->id,
                             'user_id'     => $investorUser->id,
