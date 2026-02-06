@@ -436,7 +436,7 @@ class RolePermissionController extends Controller
         try {
             $user = User::findOrFail($userId);
 
-            if (!$user->hasRole('admin')) {
+            if (!$user->hasRole('super_admin')) {
                 return failureResponse('User does not have the admin role.', 403, 'role_check');
             }
 

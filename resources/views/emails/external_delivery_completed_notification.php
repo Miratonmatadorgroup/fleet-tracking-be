@@ -51,7 +51,7 @@
             </ul>
 
             <p style="text-align:center; margin-top: 30px;">
-                <a href="https://useloopfreight.com/" style="padding: 12px 24px; background-color: #421d95;; color: #fff; text-decoration: none; border-radius: 6px;">
+                <a href="https://useLoopFreight.com/" style="padding: 12px 24px; background-color: #421d95;; color: #fff; text-decoration: none; border-radius: 6px;">
                     View Delivery History
                 </a>
             </p>
@@ -61,7 +61,7 @@
     <tr style="background-color: #f0f0f0;">
         <td style="padding: 20px; text-align: center; font-size: 12px; color: #888;">
             &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.<br>
-            <a href="https://useloopfreight.com/">https://useloopfreight.com/</a>
+            <a href="https://useLoopFreight.com/">https://useLoopFreight.com/</a>
         </td>
     </tr>
 </table>

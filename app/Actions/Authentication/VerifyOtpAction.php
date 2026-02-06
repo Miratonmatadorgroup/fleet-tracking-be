@@ -122,14 +122,22 @@ class VerifyOtpAction
                 $user = User::whereRaw('LOWER(email) = ?', [$email])
                     ->lockForUpdate()
                     ->first();
-
                 if ($user) {
-                    // Always update email_verified_at if not already set
-
+                    // Update email_verified_at if needed
                     if (! $user->email_verified_at) {
                         $user->email_verified_at = now();
-                        $user->save();
                     }
+
+                    // Update nin_verified_at if pending says verified
+                    if (
+                        isset($pending['nin_verification']['status']) &&
+                        $pending['nin_verification']['status'] === 'verified' &&
+                        ! $user->nin_verified_at
+                    ) {
+                        $user->nin_verified_at = now();
+                    }
+
+                    $user->save();
                 } else {
                     // Create new user with email_verified_at set
                     $user = User::create([
@@ -144,7 +152,9 @@ class VerifyOtpAction
                         'cac_document'  => $pending['cac_document'] ?? null,
                         'nin_number'    => $pending['nin_number'] ?? null,
                         'email_verified_at' => now(),
-                        'nin_verified_at' => now()
+                        'nin_verified_at' => ($pending['nin_verification']['status'] ?? null) === 'verified'
+                            ? now()
+                            : null,
 
                     ]);
                 }

@@ -24,7 +24,6 @@ class TrackerController extends Controller
             ]);
 
             $user = Auth::user();
-
             $created = 0;
             $updated = 0;
 
@@ -68,6 +67,31 @@ class TrackerController extends Controller
                 'Failed to store trackers',
                 500,
                 'tracker_store_error',
+                $th
+            );
+        }
+    }
+
+
+    public function index(Request $request)
+    {
+        try {
+            // Optional: Pagination parameters
+            $perPage = $request->input('per_page', 20); // default 20
+
+            $trackers = Tracker::with(['user', 'merchant', 'inventoriedBy'])
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            return successResponse(
+                'Trackers retrieved successfully',
+                $trackers
+            );
+        } catch (\Throwable $th) {
+            return failureResponse(
+                'Failed to retrieve trackers',
+                500,
+                'tracker_index_error',
                 $th
             );
         }

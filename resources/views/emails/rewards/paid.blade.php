@@ -34,7 +34,7 @@
                             <p style="color: #555;">You can view this in your wallet from the dashboard.</p>
 
                             <p style="text-align: center; margin: 40px 0;">
-                                <a href="https://useloopfreight.com/" style="padding: 12px 24px; background-color: #421d95; color: #fff; text-decoration: none; border-radius: 6px; font-size: 16px;">
+                                <a href="https://useLoopFreight.com/" style="padding: 12px 24px; background-color: #421d95; color: #fff; text-decoration: none; border-radius: 6px; font-size: 16px;">
                                     Go to Dashboard
                                 </a>
                             </p>
@@ -47,7 +47,7 @@
                         <td style="padding: 20px; text-align: center; font-size: 12px; color: #888;">
                             &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.<br>
                             No.3 John Great Court, Chevron, Lekki, Lagos.<br>
-                            <a href="https://useloopfreight.com/" style="color: #421d95;">useloopfreight.com</a>
+                            <a href="https://useLoopFreight.com/" style="color: #421d95;">useLoopFreight.com</a>
                         </td>
                     </tr>
 

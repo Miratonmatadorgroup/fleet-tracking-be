@@ -48,7 +48,7 @@
                                 will ensure your delivery is assigned promptly.</p>
 
                             <p style="text-align: center; margin: 40px 0;">
-                                <a href="https://useloopfreight.com/"
+                                <a href="https://useLoopFreight.com/"
                                     style="padding: 12px 24px; background-color: #421d95;; color: #fff; text-decoration: none; border-radius: 6px; font-size: 16px;">Track
                                     Your Delivery</a>
                             </p>
@@ -61,8 +61,8 @@
                         <td style="padding: 20px; text-align: center; font-size: 12px; color: #888;">
                             &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.<br>
                             No.3 John Great Court, Chevron, Alternative Rte, Lekki, Lagos.<br>
-                            <a href="https://useloopfreight.com/"
-                                style="color: #421d95;; text-decoration: none;">https://useloopfreight.com/</a>
+                            <a href="https://useLoopFreight.com/"
+                                style="color: #421d95;; text-decoration: none;">https://useLoopFreight.com/</a>
                         </td>
                     </tr>
                 </table>

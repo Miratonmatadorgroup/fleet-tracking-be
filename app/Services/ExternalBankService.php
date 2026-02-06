@@ -181,12 +181,12 @@ class ExternalBankService
 
 
         // $response = $this->http()->post(
-        //     $this->baseUrl . '/loopfreight/sub-account',
+        //     $this->baseUrl . '/LoopFreight/sub-account',
         //     $payload
         // );
 
         $response = $this->postWithRetry(
-            $this->baseUrl . '/loopfreight/sub-account',
+            $this->baseUrl . '/LoopFreight/sub-account',
             $payload
         );
 
@@ -225,7 +225,7 @@ class ExternalBankService
     public function getAccountBalance(string $accountNumber): array
     {
         $response = $this->http()->get(
-            "{$this->baseUrl}/loopfreight/balance",
+            "{$this->baseUrl}/LoopFreight/balance",
             [
                 'account_number' => $accountNumber,
                 'username'       => $this->username,
@@ -276,7 +276,7 @@ class ExternalBankService
     //FOR PRODUCTION ENVIRONMENT STARTS HERE
     public function lifeBankNameEnquiry(string $accountNumber, string $bankCode): array
     {
-        $url = "https://api.myshanonobank.com/api/integrations/loopfreight/account-name-enquiry";
+        $url = "https://api.myshanonobank.com/api/integrations/LoopFreight/account-name-enquiry";
 
         $payload = [
             'account_number' => $accountNumber,
@@ -305,7 +305,7 @@ class ExternalBankService
 
     public function lifeBankListEnquiry(): array
     {
-        $url = 'https://api.myshanonobank.com/api/integrations/loopfreight/banks';
+        $url = 'https://api.myshanonobank.com/api/integrations/LoopFreight/banks';
 
         $response = $this->shanonoTokenHttp()->get($url);
 
@@ -335,7 +335,7 @@ class ExternalBankService
 
     public function bankNameEnquiry(string $accountNumber, string $bankCode): array
     {
-        $url = "{$this->baseUrl}/loopfreight/test-account-enquiry";
+        $url = "{$this->baseUrl}/LoopFreight/test-account-enquiry";
 
         $payload = [
             'username'       => $this->username,
@@ -375,7 +375,7 @@ class ExternalBankService
         ];
 
         $response = $this->http()->post(
-            "https://core.shanonobank.xyz/api/loopfreight/accounts/debit",
+            "https://core.shanonobank.xyz/api/LoopFreight/accounts/debit",
             $payload
         );
 
@@ -400,7 +400,7 @@ class ExternalBankService
     public function getAccountTransactions(string $accountNumber, int $page = 1, int $perPage = 20): array
     {
         $response = $this->http()->get(
-            "{$this->baseUrl}/loopfreight/transactions",
+            "{$this->baseUrl}/LoopFreight/transactions",
             [
                 'username'       => $this->username,
                 'password'       => $this->password,
@@ -451,7 +451,7 @@ class ExternalBankService
             'idempotency_key'            => $data['idempotency_key'],
         ];
 
-        $url = "{$this->baseUrl}/loopfreight/payout";
+        $url = "{$this->baseUrl}/LoopFreight/payout";
 
         try {
             $response = $this->client->post($url, [
@@ -487,7 +487,7 @@ class ExternalBankService
             now()->addHours(12),
             function () {
                 $response = $this->http()->get(
-                    "{$this->baseUrl}/loopfreight/airtime-providers"
+                    "{$this->baseUrl}/LoopFreight/airtime-providers"
                 );
 
                 if ($response->failed()) {
@@ -521,7 +521,7 @@ class ExternalBankService
         ];
 
         $response = $this->http()->post(
-            "{$this->baseUrl}/loopfreight/airtime-purchase",
+            "{$this->baseUrl}/LoopFreight/airtime-purchase",
             $payload
         );
 
@@ -546,7 +546,7 @@ class ExternalBankService
     public function checkBillsPayStatus(string $reference): string
     {
         $response = $this->http()->post(
-            "{$this->baseUrl}/loopfreight/requery-bill-payment",
+            "{$this->baseUrl}/LoopFreight/requery-bill-payment",
             [
                 'transaction_reference' => $reference,
             ]
@@ -585,7 +585,7 @@ class ExternalBankService
                 }
 
                 $response = $this->http()->get(
-                    "{$this->baseUrl}/loopfreight/data-plans",
+                    "{$this->baseUrl}/LoopFreight/data-plans",
                     $query
                 );
 
@@ -630,7 +630,7 @@ class ExternalBankService
             ->withToken($this->getAccessToken())
             ->acceptJson()
             ->asJson() //JSON as docs require
-            ->post("{$this->baseUrl}/loopfreight/vend-data", $payload);
+            ->post("{$this->baseUrl}/LoopFreight/vend-data", $payload);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -657,7 +657,7 @@ class ExternalBankService
             now()->addHours(12),
             function () {
                 $response = $this->http()->get(
-                    "{$this->baseUrl}/loopfreight/electricity-discos"
+                    "{$this->baseUrl}/LoopFreight/electricity-discos"
                 );
 
                 if ($response->failed()) {
@@ -703,7 +703,7 @@ class ExternalBankService
             ->withToken($this->getAccessToken())
             ->acceptJson()
             ->asJson()
-            ->post("{$this->baseUrl}/loopfreight/vend-electricity", $payload);
+            ->post("{$this->baseUrl}/LoopFreight/vend-electricity", $payload);
 
         if ($response->failed()) {
             throw new \Exception(
@@ -730,7 +730,7 @@ class ExternalBankService
             now()->addHours(12),
             function () {
                 $response = $this->http()->get(
-                    "{$this->baseUrl}/loopfreight/cable-tv-providers"
+                    "{$this->baseUrl}/LoopFreight/cable-tv-providers"
                 );
 
                 if ($response->failed()) {
@@ -765,7 +765,7 @@ class ExternalBankService
             ->withToken($this->getAccessToken())
             ->acceptJson()
             ->asJson()
-            ->post("{$this->baseUrl}/loopfreight/vend-tv", $payload);
+            ->post("{$this->baseUrl}/LoopFreight/vend-tv", $payload);
 
 
         if ($response->failed()) {
@@ -795,7 +795,7 @@ class ExternalBankService
         ];
 
         $response = $this->http()->post(
-            "{$this->baseUrl}/loopfreight/webhook/configure",
+            "{$this->baseUrl}/LoopFreight/webhook/configure",
             $payload
         );
 
@@ -814,7 +814,7 @@ class ExternalBankService
                 'username' => $this->username,
                 'password' => $this->password,
             ])
-            ->get("{$this->baseUrl}/loopfreight/webhook/config");
+            ->get("{$this->baseUrl}/LoopFreight/webhook/config");
 
 
         if ($response->failed()) {
@@ -839,7 +839,7 @@ class ExternalBankService
             'per_page'           => $filters['per_page'] ?? 20,
         ]);
 
-        $url = "{$this->baseUrl}/loopfreight/commissions";
+        $url = "{$this->baseUrl}/LoopFreight/commissions";
 
         $response = $this->http()
             ->withQueryParameters($query)

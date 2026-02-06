@@ -2,7 +2,7 @@
 
 
 
-@url=https://api.loopfreight.xyz/api
+@url=https://api.LoopFreight.xyz/api
 
 
 //DRIVR LOGIN

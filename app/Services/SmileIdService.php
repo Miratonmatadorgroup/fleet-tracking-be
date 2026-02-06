@@ -36,6 +36,8 @@ class SmileIdService
         return compact('signature', 'timestamp');
     }
 
+
+
     public function verifyDriverLicenseDocument(User $user, array $data): array
     {
         $jobId = (string) Str::uuid();
@@ -161,14 +163,18 @@ class SmileIdService
 
     public function generateAuthSignage()
     {
-        $api_key = config('services.smile_identity.api_key');
-        $partner_id = config('services.smile_identity.partner_id');
+        // Required inputs
+        $api_key = config('services.smile_identity.api_key'); // Replace with your actual api_key
+        $partner_id = config('services.smile_identity.partner_id'); // Replace with your actual partner_id
 
+        // Generate ISO8601 timestamp
         $timestamp = now()->toIso8601String();
 
+        // Create HMAC hash using SHA256
         $data = $timestamp . $partner_id . "sid_request";
         $hash = hash_hmac('sha256', $data, $api_key, true);
 
+        // Encode to Base64
         $signature = base64_encode($hash);
 
         return [
@@ -177,123 +183,6 @@ class SmileIdService
             'partner_id' => $partner_id
         ];
     }
-
-    // public function submitNinAsync($user, $nin)
-    // {
-    //     // Optional: prevent duplicate pending requests
-    //     $existing = NinVerification::where('user_id', $user->id)
-    //         ->where('nin_number', $nin)
-    //         ->where('status', NinVerificationStatusEnums::PENDING)
-    //         ->first();
-
-    //     if ($existing) {
-    //         return [
-    //             'success' => true,
-    //             'job_id' => $existing->job_id,
-    //             'message' => 'NIN verification already in progress',
-    //         ];
-    //     }
-
-    //     $auth = $this->generateAuthSignage();
-
-    //     $nameParts = explode(' ', trim($user->name));
-
-    //     $payload = [
-    //         "callback_url" => config('services.smile_identity.callback_url'),
-    //         "country" => "NG",
-    //         "id_type" => "NIN",
-    //         "id_number" => $nin,
-    //         "first_name" => $nameParts[0] ?? '',
-    //         "middle_name" => $nameParts[1] ?? null,
-    //         "last_name" => $nameParts[count($nameParts) - 1] ?? '',
-    //         "partner_id" => $auth['partner_id'],
-    //         "partner_params" => [
-    //             "job_id" => (string) Str::uuid(),
-    //             "user_id" => (string) $user->id,
-    //         ],
-    //         "signature" => $auth['signature'],
-    //         "source_sdk" => "rest_api",
-    //         "source_sdk_version" => "2.0.0",
-    //         "timestamp" => $auth['timestamp'],
-    //     ];
-
-    //     $url = config('services.smile_identity.sid_server') === 'production'
-    //         ? 'https://api.smileidentity.com/v1/id_verification'
-    //         : 'https://testapi.smileidentity.com/v1/id_verification';
-
-    //     $response = Http::withoutVerifying()->post($url, $payload);
-    //     $result = $response->json();
-
-    //     if (! ($result['success'] ?? false)) {
-    //         return [
-    //             'success' => false,
-    //             'raw' => $result,
-    //         ];
-    //     }
-
-    //     $verification = NinVerification::create([
-    //         'user_id' => $user->id,
-    //         'job_id' => $payload['partner_params']['job_id'],
-    //         'nin_number' => $nin,
-    //         'status' => NinVerificationStatusEnums::PENDING,
-    //     ]);
-
-    //     return [
-    //         'success' => true,
-    //         'job_id' => $verification->job_id,
-    //         'user_id' => $user->id,
-    //     ];
-    // }
-
-    // public function submitNinAsync($user, $nin)
-    // {
-    //     $auth = $this->generateAuthSignage();
-    //     $partner_id = $auth['partner_id'];
-    //     $signature = $auth['signature'];
-    //     $timestamp = $auth['timestamp'];
-
-    //     // Split name for first/middle/last (best effort)
-    //     $nameParts = explode(' ', trim($user->name));
-    //     $firstName = $nameParts[0] ?? '';
-    //     $lastName  = end($nameParts) ?? '';
-    //     $middleName = count($nameParts) > 2 ? $nameParts[1] : null;
-
-    //     $payload = [
-    //         "callback_url" => config('services.smile_identity.callback_url'),
-    //         "country" => "NG",
-    //         "id_type" => "NIN",          // async expects "NIN"
-    //         "id_number" => $nin,
-    //         "first_name" => $firstName,
-    //         "middle_name" => $middleName,
-    //         "last_name" => $lastName,
-    //         "partner_id" => $partner_id,
-    //         "partner_params" => [
-    //             "job_id" => (string) Str::uuid(),
-    //             "user_id" => (string) $user->id,
-    //         ],
-    //         "signature" => $signature,
-    //         "source_sdk" => "rest_api",
-    //         "source_sdk_version" => "2.0.0",
-    //         "timestamp" => $timestamp,
-    //     ];
-
-    //     $url = config('services.smile_identity.sid_server') === 'production'
-    //         ? 'https://api.smileidentity.com/v1/id_verification'
-    //         : 'https://testapi.smileidentity.com/v1/id_verification';
-
-    //     $response = Http::withoutVerifying()->post($url, $payload);
-    //     $result = $response->json();
-
-    //     // Async always returns {"success": true} if the request is accepted
-    //     return [
-    //         'success' => $result['success'] ?? false,
-    //         'raw' => $result,
-    //         'job_id' => $payload['partner_params']['job_id'],
-    //         'user_id' => $user->id,
-    //         'name_submitted' => $user->name,
-    //     ];
-    // }
-
 
     public function submitNin($user, $nin, array $extra = [])
     {
@@ -334,16 +223,20 @@ class SmileIdService
             "timestamp" => $timestamp,
         ];
 
-        $url = config('services.smile_identity.sid_server') === 'production'
-            ? 'https://api.smileidentity.com/v1/id_verification'
-            : 'https://testapi.smileidentity.com/v1/id_verification';
+        // FOR SANDBOX
+        // $response = Http::withoutVerifying()->post('https://testapi.smileidentity.com/v1/id_verification', $data);
 
-        $response = Http::withoutVerifying()->post($url, $payload);
+        // FOR PRODUCTION
+        $response = Http::withoutVerifying()
+            ->acceptJson()
+            ->asJson()
+            ->post('https://api.smileidentity.com/v1/id_verification', $payload);
+
         $result = $response->json();
 
 
         return [
-            'success' => isset($result['ResultCode']) && $result['ResultCode'] === '1020',
+            'success' => in_array($result['ResultCode'] ?? null, ['1020', '1021']),
             'raw' => $result,
             'verified' => ($result['Actions']['Verify_ID_Number'] ?? null) === 'Verified',
             'name_match' => ($result['Actions']['Names'] ?? null) === 'Exact Match',

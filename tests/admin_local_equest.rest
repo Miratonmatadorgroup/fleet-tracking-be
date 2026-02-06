@@ -412,7 +412,7 @@ Content-Type: application/json
 Accept: application/json
 Authorization: {{bearer}}
 
-//ADMIN VIEW LOOPFREIGHT MARCHANT WALLET ACCOUNT  TRANSACTIONS
+//ADMIN VIEW LoopFreight MARCHANT WALLET ACCOUNT  TRANSACTIONS
 ###
 GET {{url}}/admin/shanono/wallet/transactions
 Content-Type: application/json
@@ -515,8 +515,8 @@ Authorization: {{bearer}}
 
 {
   "name": "LoopFreight Delivery API",
-  "staging_base_url": "https://api.loopfreight.xyz/api",
-  "live_base_url": "https://api.useloopfreight.com/api",
+  "staging_base_url": "https://api.LoopFreight.xyz/api",
+  "live_base_url": "https://api.useLoopFreight.com/api",
    "description": "API ENPOINTS FOR BOOKING DELIVERY"
 
 }
@@ -599,7 +599,7 @@ Authorization: {{bearer}}
   "title": "Book Delivery",
   "method": "post",
   "path": "/external/book-delivery",
-  "full_url": "https://api.loopfreight.xyz/api/external/book-delivery",
+  "full_url": "https://api.LoopFreight.xyz/api/external/book-delivery",
   "version": "For Users To Book Delivery",
   "version": "V1"
 
@@ -624,13 +624,13 @@ Authorization: {{bearer}}
     "sender_whatsapp_number": "08012345678",
     "package_description": "Electronics package",
     "package_weight": 12.5,
-    "mode_of_transportation": "van", 
+    "mode_of_transportation": "van",
     "delivery_type": "next_day",
     "delivery_date": "2025-08-20",
     "delivery_time": "14:00",
     "receiver_name": "Joseph Dream",
     "receiver_phone": "08123456789",
-    "package_type": "fragile", 
+    "package_type": "fragile",
     "other_package_type": null,
     "pin": "1234",
     "deliveryPictures": {
@@ -710,6 +710,6 @@ Authorization: {{bearer}}
 
 
 
- 
+
 
 

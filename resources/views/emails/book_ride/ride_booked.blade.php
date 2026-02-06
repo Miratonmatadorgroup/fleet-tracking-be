@@ -106,7 +106,7 @@
 
                             <!-- Button -->
                             <p style="text-align: center; margin: 40px 0;">
-                                <a href="https://useloopfreight.com/"
+                                <a href="https://useLoopFreight.com/"
                                     style="display: inline-block; padding: 12px 24px; background-color: #421d95; color: #fff; text-decoration: none; border-radius: 6px; font-size: 16px;">
                                     View Booking
                                 </a>

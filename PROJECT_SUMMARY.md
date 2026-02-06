@@ -2,7 +2,7 @@
 
 ## Executive Summary
 
-This document provides a comprehensive overview of the Loops Freight Fleet Tracking Management System, a full-stack SaaS platform designed for real-time GPS tracking, fuel consumption monitoring, and fleet management across land, air, and sea assets.
+This document provides a comprehensive overview of the Loops Freight Fleet Tracking Management System, a full-stack SaaS platform designed for real-time GPS tracking, fuel consumption monitoring, and LoopFreight across land, air, and sea assets.
 
 ## Project Deliverables
 
@@ -12,7 +12,7 @@ This document provides a comprehensive overview of the Loops Freight Fleet Track
 **Key Components**:
 - **Client Layer**: Next.js 14 frontend with TypeScript
 - **API Gateway**: Laravel 12 REST API with Sanctum authentication
-- **Application Layer**: 8 core modules (Fleet Management, GPS Tracking, Fuel Calculation, Subscription, Geofencing, Notification, Remote Control, Audit Log)
+- **Application Layer**: 8 core modules (LoopFreight, GPS Tracking, Fuel Calculation, Subscription, Geofencing, Notification, Remote Control, Audit Log)
 - **Middleware Layer**: GPS data ingestion service with protocol normalization
 - **Data Layer**: PostgreSQL with PostGIS + Redis for caching/queues
 - **External Services**: Pusher, Stripe, Paystack, AWS S3, SendGrid, Twilio

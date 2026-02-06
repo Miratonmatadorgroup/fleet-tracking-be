@@ -106,15 +106,15 @@ return [
     ],
 
     'logistics' => [
-        'bank_client_id' => env('LOOPFREIGHT_BANK_CLIENT_ID'),
-        'bank_customer_id'  => env('LOOPFREIGHT_BANK_CUSTOMER_ID'),
-        'logistics_admins' => explode(',', env('LOOPFREIGHT_ADMIN_EMAILS', '')),
+        'bank_client_id' => env('LoopFreight_BANK_CLIENT_ID'),
+        'bank_customer_id'  => env('LoopFreight_BANK_CUSTOMER_ID'),
+        'logistics_admins' => explode(',', env('LoopFreight_ADMIN_EMAILS', '')),
     ],
 
     'tnt_logistics' => [
-        'tnt_client_id' => env('LOOPFREIGHT_TNT_CLIENT_ID'),
-        'tnt_customer_id'  => env('LOOPFREIGHT_TNT_CUSTOMER_ID'),
-        'tnt_logistics_admins' => explode(',', env('LOOPFREIGHT_TNT_ADMIN_EMAILS', '')),
+        'tnt_client_id' => env('LoopFreight_TNT_CLIENT_ID'),
+        'tnt_customer_id'  => env('LoopFreight_TNT_CUSTOMER_ID'),
+        'tnt_logistics_admins' => explode(',', env('LoopFreight_TNT_ADMIN_EMAILS', '')),
     ],
 
     'paystack' => [

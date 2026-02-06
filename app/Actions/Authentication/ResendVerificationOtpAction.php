@@ -25,16 +25,21 @@ class ResendVerificationOtpAction
 
         Cache::put($dto->reference, $pending, now()->addMinutes(10));
 
-        $channel    = $pending['channel'] ?? null;
-        $identifier = $pending['identifier'] ?? null;
+
+        $channel = $pending['channel'] ?? 'email';
+        $identifier = $pending['identifier'] ?? $pending['email'] ?? null;
         $name       = $pending['name'] ?? null;
+
+        if (! $identifier) {
+            throw new \Exception("No valid contact method available.", 400);
+        }
 
         if ($channel === 'email') {
             Mail::to($identifier)->send(new SendOtpMail($otp, $name));
         } elseif ($channel === 'phone') {
-            (new TermiiService())->sendSms($identifier, "Your LoopFreight verification code is: {$otp}");
+            (new TermiiService())->sendSms($identifier, "Your Fleet Management verification code is: {$otp}");
         } elseif ($channel === 'whatsapp') {
-            (new TwilioService())->sendWhatsAppMessage($identifier, "Your LoopFreight verification code is: {$otp}");
+            (new TwilioService())->sendWhatsAppMessage($identifier, "Your Fleet Management verification code is: {$otp}");
         } else {
             throw new \Exception("No valid contact method available.", 400);
         }

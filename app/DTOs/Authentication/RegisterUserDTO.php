@@ -10,7 +10,7 @@ class RegisterUserDTO
     public string $email;
     public string $password;
     public ?string $dob;           // New
-    public ?string $gender; 
+    public ?string $gender;
 
     public string $user_type;     // individual_operator | business_operator
     public ?string $business_type;
@@ -20,6 +20,10 @@ class RegisterUserDTO
     public ?string $cac_document;
 
     public bool $kyb_verified = false;
+
+    public ?string $nin_verification_status = null;
+    public ?float $nin_match_confidence = null;
+
 
 
 

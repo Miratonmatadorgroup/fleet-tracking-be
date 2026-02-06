@@ -47,7 +47,7 @@ class ShanonoPayService implements PaymentServiceInterface
             $payload = [
                 'firstName'   => $firstName,
                 'lastName'    => $lastName,
-                'email'       => $delivery->customer->email ?? 'admin@useloopfreight.com',
+                'email'       => $delivery->customer->email ?? 'admin@useLoopFreight.com',
                 'mobile'      => $delivery->customer->phone ?? '08000000000',
                 'country'     => 'NG',
                 'currency'    => 'NGN',

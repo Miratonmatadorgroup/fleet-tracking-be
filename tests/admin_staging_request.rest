@@ -1,7 +1,7 @@
 @bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTlhYzQxZi02YWJmLTcyYmEtODUxYy1mZTAyOGFmZjExZDEiLCJqdGkiOiI1YjJiN2Q0Zjg4NjVhYWJmYmViMWY3Y2U3ODAzNGEwNjkyYmJiM2Q2NmEyMzg3MTU4ZWQxZTNjZmU1MTgwYjlmMzk2Zjc4ZGRkY2EyMTVkNyIsImlhdCI6MTc2NDMxNzY0NC42MzM2MDMsIm5iZiI6MTc2NDMxNzY0NC42MzM2MDUsImV4cCI6MTc5NTg1MzY0NC42Mjk3ODUsInN1YiI6ImEzYmRiMTNhLWMwNjYtNDUxMC05NjhiLTMxOTkzMGUxNTQ4NiIsInNjb3BlcyI6W119.miZHgQ-26QlyfUWsSCl7yShMfNJtS9jkY3V7oG05ayFECYKwwIE7mOdqlQKYEn17J47LWipqSMWKsj57FdZLpTlVGbxNdH9bVFRhLRAHnBEIRVPT9Prdx9GZ-ptQj40z5ZdxA9TWqVMjB6kM70Gy9exXNNiTIi6jLxCsu9ITNAFoMLERCUbHwZuokvVkZyyCT1ND6gvF2Y__mO04Qmp4xuraFw0pjZTRoTdLeLCHxk1A2C3i3ON9lUBAQIvrcwa_0zyqvSFOkyIOGLlNV-mEarlwHwazIl6464IipAhJ8Ut8sC1qxOKLH-IkTd3xkCQGzHQVTB_E4un0mVt5lF36albJ0KlyXX1jmUBqjMpLIIlyGkpVO0zXJnMFDm1A3EvZaeUciqkWgxGqoLO0LDJqj1S-U8akoz3hjfb6-ApQGmaCXOHwEGfNjD2_9K-zsLMKR7Ecf9DV1LjJjyno6bAcPjijFBu_LyPIrBIu0EPwM1s6kPAm-VKHx2pXdRnE4k93izaUq2-JS99YzcphInhARqRO182D6YZwfUgcqd-4dfOQ8wvLFUfiGw2wsNvFvEoXNAC7KSX6CdAMXq2IzqsncAt8ZFDxn-ovSKGe9f3LEKFlDoq_zFTJ80vw-kOzqKo8NcLPgvNq0MLhYfPXz3q3PUkDK4F2S-FKYUHQimzWuyU
 
 
-@url=https://api.loopfreight.xyz/api
+@url=https://api.LoopFreight.xyz/api
 
 //ADMIN LOGIN
  ###
@@ -10,8 +10,8 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "identifier": "admin@useloopfreight.com",
-    "password": "loopFreight2@"
+    "identifier": "admin@useLoopFreight.com",
+    "password": "LoopFreight2@"
 }
 
 
@@ -193,7 +193,7 @@ Accept: application/json
 Authorization: {{bearer}}
 
 
-//ADMIN VIEW LOOPFREIGHT MARCHANT WALLET ACCOUNT  TRANSACTIONS
+//ADMIN VIEW LoopFreight MARCHANT WALLET ACCOUNT  TRANSACTIONS
 ###
 GET {{url}}/admin/shanono/wallet/transactions
 Content-Type: application/json

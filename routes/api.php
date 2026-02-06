@@ -13,6 +13,7 @@ use App\Http\Controllers\Api\DisputeController;
 use App\Http\Controllers\Api\PartnerController;
 use App\Http\Controllers\Api\PaymentController;
 use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\TrackerController;
 use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\DiscountController;
 use App\Http\Controllers\Api\InvestorController;
@@ -52,7 +53,7 @@ use App\Http\Controllers\Api\ShanonoBillsPaymentWebhookController;
 
 
 Route::get('/', function () {
-    $message = 'Welcome to FLEET MANAGEMENT App';
+    $message = 'Welcome to FleetManagement App';
     if (config('app.env') === 'production') {
         $message .= '. This API is in production environment';
     } else {
@@ -81,43 +82,9 @@ Route::middleware('guest')->group(function () {
     Route::post('/resend-verification-otp', [AuthController::class, 'resendVerificationOtp']);
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
-
-    // TRACK DELIVERY
-    Route::post('/track-delivery', [DeliveryController::class, 'showByTrackingNumber']);
-
-    // FOR EXTERNAL USERS
-    Route::post('/external/register/user', [AuthController::class, 'register'])->name('register');
-
-    Route::post('/external/resend-verification-otp', [AuthController::class, 'resendVerificationOtp']);
-
-    Route::post('/external/forgot-password', [AuthController::class, 'forgotPassword']);
-
-    Route::post('/external/reset-password', [AuthController::class, 'resetPassword']);
-
-    Route::post('/external/login', [AuthController::class, 'login'])->name('login');
 });
 
-Route::prefix('external')
-    ->middleware(['api.key', 'check.apiclient.blocked', 'throttle:' . env('PARTNER_RATE_LIMIT', 120) . ',1'])
-    ->group(function () {
 
-        // FOR ALL EXTERNAL USERS ONLY STARTS HERE
-
-        Route::post('/customized/preview-price', [ExternalDeliveryController::class, 'customizePreviewPrice']);
-
-        Route::post('/book-delivery', [ExternalDeliveryController::class, 'bookDelivery']);
-        Route::post('/track-delivery', [ExternalDeliveryController::class, 'trackDelivery']);
-        Route::get('/deliveries', [ExternalDeliveryController::class, 'listDeliveries']);
-
-        Route::get('/customized/external/fund-reconciliations', [FundReconciliationController::class, 'customizedViewDebt']);
-
-        Route::post('/customized/fund-reconciliations/{id}/debt-payment', [FundReconciliationController::class, 'pay']);
-
-        // FOR ALL EXTERNAL USERS ONLY ENDS HERE
-
-        Route::post('/confirm-complete', [ExternalDeliveryController::class, 'externalConfirmDelivery']);
-        Route::delete('/cancel/{delivery}', [ExternalDeliveryController::class, 'cancel']);
-    });
 
 // FOR USERS PAYMENTS STARTS HERE
 // Redirect after user finishes on Shanono checkout
@@ -127,14 +94,6 @@ Route::post('/payments/webhook', [PaymentController::class, 'webhookHandler'])->
 Route::post('/payments/verify', [PaymentController::class, 'verify'])->name('payment.verify');
 // FOR USERS PAYMENTS ENDS HERE
 
-// FOR USERS AS INVESTORS  PAYMENT STARTS HERE
-Route::post('/webhook', [InvestmentPaymentController::class, 'webhookHandler'])->name('investment.webhook');
-Route::get('/callback', [InvestmentPaymentController::class, 'redirectHandler'])->name('investment.callback');
-Route::post('/investment/verify', [InvestmentPaymentController::class, 'verify'])->name('investment.verify');
-
-//FOR INVESTOR REINVEST
-Route::post('/reinvest/verify', [InvestmentPaymentController::class, 'reinvestverify'])->name('reinvestment.verify');
-// FOR USERS AS INVESTORS  PAYMENT ENDS HERE
 // FOR USERS  TO CREDIT WALLET STARTS HERE
 Route::post('/wallet/pay/webhook', [WalletPaymentController::class, 'webhook'])->name('wallet.webhook');
 Route::post('/wallet/pay/verify', [WalletPaymentController::class, 'verify'])->name('wallet.verify');
@@ -145,9 +104,12 @@ Route::post('/webhooks/shanono/bills-payment', [ShanonoBillsPaymentWebhookContro
 Route::post('/webhooks/smile-id', [SmileIdWebhookController::class, 'handle']);
 
 Route::middleware(['auth:api', 'update.activity'])->group(function () {
+    // TRACKERS ROUTE STARTS HERE
+    Route::post('/tracker/inventory', [TrackerController::class, 'storeOrUpdate'])->middleware('permission:take-inventory');
+    Route::get('/tracker/inventory', [TrackerController::class, 'index'])->middleware('permission:view-all-trackers');
 
-    Route::patch('/drivers/{driverId}/available', [DriverStatusController::class, 'makeAvailable']);
-    Route::patch('/drivers/{driverId}/unavailable', [DriverStatusController::class, 'makeUnavailable']);
+    // TRACKER ROUTE ENDS HERE
+
     Route::post('/bank/verify-account', [DriverController::class, 'verifyAccountName']);
 
     Route::get('/activity/devices', [AuthController::class, 'devices']);
@@ -241,7 +203,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         ->middleware('permission:admin-user-payout-status');
     Route::get('/admin/payouts/global-status', [PayoutController::class, 'checkGlobalPayoutStatus'])
         ->middleware('permission:admin-global-payout-status');
-        // VIEW ALL PAYOUTS
+    // VIEW ALL PAYOUTS
     Route::get('/view/payouts', [PayoutController::class, 'index'])->middleware('permission:view-payouts');
     Route::post('/payouts/restrict-all', [PayoutController::class, 'restrictAll'])
         ->middleware('permission:admin-restrictall-payouts');

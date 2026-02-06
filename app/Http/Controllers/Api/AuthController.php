@@ -103,10 +103,6 @@ class AuthController extends Controller
             if ($request->operator_type === 'business') {
                 $smile = app(SmileIdService::class);
 
-                // temp user object ONLY for Smile ID NIN extraction
-                $tempUser = new User(['name' => $request->name]);
-
-
                 //CAC verification (capture response)
                 $cacResult = $smile->submitBusinessCAC([
                     'user_id'       => (string) Str::uuid(),
@@ -146,34 +142,50 @@ class AuthController extends Controller
                     return failureResponse('Unable to determine business owner from CAC', 422);
                 }
 
+                // Pick primary owner (first one)
+                $ownerNameFromCac = $cacOwnerNames[0];
 
-                //NIN verification
+                // temp user object ONLY for Smile ID NIN extraction
 
-                $ninResult = $smile->submitNin($tempUser, $request->owner_nin, [
-                    'date_of_birth' => $request->dob,
-                    'gender' => $request->gender,
+                $tempUser = new User([
+                    'name' => $ownerNameFromCac, // CAC owner, not business name
                 ]);
 
-                if (! ($ninResult['success'] ?? false)) {
-                    return failureResponse('Failed to submit NIN verification', 422);
+                //NIN verification
+                $ninResult = $smile->submitNin(
+                    $tempUser,
+                    $request->owner_nin,
+                    array_filter([
+                        'date_of_birth' => $request->dob,
+                        'gender'        => $request->gender,
+                    ])
+                );
+
+                if (! isset($ninResult['raw'])) {
+                    return failureResponse('NIN service unreachable', 422);
                 }
 
-                // You don’t block registration anymore — just note that NIN verification is pending
-                if (
-                    ! ($ninResult['verified'] ?? false) ||
-                    ! ($ninResult['name_match'] ?? false)
-                ) {
-                    return failureResponse(
-                        'Business owner name does not match NIN records',
-                        422
-                    );
-                }
+                Log::info('Smile NIN response actions', [
+                    'actions' => $ninResult['raw']['Actions'] ?? [],
+                ]);
+
+                $ninVerified = ($ninResult['raw']['Actions']['Verify_ID_Number'] ?? null) === 'Verified';
+
+                $ninNameMatched = ($ninResult['raw']['Actions']['Names'] ?? null) === 'Exact Match';
+
+                // Nigeria-safe: never block onboarding
+                $ninFinalStatus = ($ninVerified && $ninNameMatched) ? 'verified' : 'pending';
+
+
+                $ninVerified = $ninResult['verified'] ?? false;
             }
 
             // SAFE TO SEND OTP
             $dto  = RegisterUserDTO::fromRequest($request);
             if ($dto->user_type === 'business_operator') {
                 $dto->kyb_verified = true;
+                $dto->nin_verification_status = $ninFinalStatus;
+                $dto->nin_match_confidence   = $ninNameMatched ? 100 : null;
             }
             $data = $this->registerUserAction->execute($dto);
 
@@ -185,10 +197,11 @@ class AuthController extends Controller
             return failureResponse('Registration failed', 500, 'server_error', $e);
         }
     }
+
     private function normalizeName(string $name): string
     {
         return strtolower(
-            preg_replace('/\s+/', ' ', trim($name))
+            preg_replace('/[^a-z\s]/i', '', preg_replace('/\s+/', ' ', trim($name)))
         );
     }
 
@@ -260,7 +273,6 @@ class AuthController extends Controller
             if ($request->operator_type === 'business') {
                 $smile = app(SmileIdService::class);
 
-                $tempUser = new User(['name' => $request->name]);
 
                 // CAC verification
                 $cacResult = $smile->submitBusinessCAC([
