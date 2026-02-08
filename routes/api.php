@@ -17,6 +17,7 @@ use App\Http\Controllers\Api\TrackerController;
 use App\Http\Controllers\Api\DeliveryController;
 use App\Http\Controllers\Api\DiscountController;
 use App\Http\Controllers\Api\InvestorController;
+use App\Http\Controllers\Api\MerchantController;
 use App\Http\Controllers\Api\ApiClientController;
 use App\Http\Controllers\Api\ApiHeaderController;
 use App\Http\Controllers\Api\ApiRequestController;
@@ -107,8 +108,23 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     // TRACKERS ROUTE STARTS HERE
     Route::post('/tracker/inventory', [TrackerController::class, 'storeOrUpdate'])->middleware('permission:take-inventory');
     Route::get('/tracker/inventory', [TrackerController::class, 'index'])->middleware('permission:view-all-trackers');
-
+    Route::delete('/tracker/inventory/{tracker}', [TrackerController::class, 'destroy'])->middleware('permission:delete-a-tracker');
+    Route::delete('/bulk-delet/trackers', [TrackerController::class, 'bulkDelete'])->middleware('permission:bulk-delete-trackers');
+    Route::post('/assign/activate/trackers', [TrackerController::class, 'assignRange'])->middleware('permission:assign-trackers');
+    Route::post('/activate/tracker', [TrackerController::class, 'activate']);
     // TRACKER ROUTE ENDS HERE
+
+    // MERCHANT ROUTE STARTS HERE
+    Route::post('/merchants/{merchant}/suspend',[MerchantController::class, 'suspend'])->middleware('permission:suspend-merchant');
+    Route::post('/merchants/{merchant}/unsuspend',[MerchantController::class, 'unsuspend'])->middleware('permission:unsuspend-merchant');
+    // MERCHANT ROUTE ENDS HERE
+
+     // FOR USERS TO CREDIT WALLET STARTS HERE
+    Route::post('/wallet/pay/initiate', [WalletPaymentController::class, 'initiate'])->name('wallet.initiate');
+    Route::get('/wallet/pay/success', [WalletPaymentController::class, 'success'])->name('wallet.success');
+    Route::get('/wallet/pay/failed', [WalletPaymentController::class, 'failed'])->name('wallet.failed');
+
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     Route::post('/bank/verify-account', [DriverController::class, 'verifyAccountName']);
 
@@ -278,10 +294,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
 
     //INVESTOR ROUTE ENDS HERE
 
-    // FOR USERS TO CREDIT WALLET STARTS HERE
-    Route::post('/wallet/pay/initiate', [WalletPaymentController::class, 'initiate'])->name('wallet.initiate');
-    Route::get('/wallet/pay/success', [WalletPaymentController::class, 'success'])->name('wallet.success');
-    Route::get('/wallet/pay/failed', [WalletPaymentController::class, 'failed'])->name('wallet.failed');
+
 
     // FOR USERS TO CREDIT WALLET ENDS HERE
 

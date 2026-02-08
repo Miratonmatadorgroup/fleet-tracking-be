@@ -1,5 +1,7 @@
-@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTk3NTQ5ZS0xNmU3LTcwNmQtYTQzYi0xMWQzN2VjYmZjOTgiLCJqdGkiOiJlMWQ0MDVjZWI4OWI1ZTQzZjAyOGYwYTBmYzRjOWI0OGRlZGE0OGE2MGJlOWExOWFjN2RkMWZkNTJkMjM3NmM3NGZjNmYxYWVlOGFlMDk4MiIsImlhdCI6MTc2MjQ2MzA1OS40NDYyMDYsIm5iZiI6MTc2MjQ2MzA1OS40NDYyMTksImV4cCI6MTc5Mzk5OTA1OC43OTY3NDYsInN1YiI6ImZiOTAwMWNjLTA2NDEtNDUyMS1iYzUzLTczMDQ4NzI2Y2U5NyIsInNjb3BlcyI6W119.oWpi5z16ts4MgLoteAuxudxF5DPhSvOlTbv34WU_vZQ2VmeWzvA7B89jIfb_OMu7Bw9BxMrsUkBoAG6BQ_XdWHG8kac2MxKbu9bGp8mg8tXKpgoO3gCyhYBo-bWf_ZW5FpbhtbGSWx7SC5NfvFTBUMOxYnz1N_6o-Jnps5zcfcwfprI4lpKFPglwMvg832YjUlk9ff0Jmcc36ulvYdQibh79bJAktILJAjBMrAwOvd7HG-mexWIVGgH1DjfFQJhXO7fRyrQbWDADGB5qs4kMuHdmq3rEY-53MrY0-soCNh4utgHPGXVg0LzF01VXjZEimzmtboLQD1ajLTF_7AHNJgxHw0mgZEfWgJr2kJ3p0fn1l8_fWqCkQGgIoOGHYBM0SUZP_ddolJiUUklKg72g0r9SbgIP0xnNgH_FIwZLMayT-hAhXJDAsMPufLclFEoGRfJxH9b_n7sbWtB0cfWbVTmCPV2NHLWpNBjmyiQPcdZMb6NkpnXndkcBuhshGZwD2tZAN3ASOURPIiYLXfc_BSVHJ2xhQCHefw0EE_0Yxo1nROxRXUjPP-jPrPW9v46BEc67wTyOtfjt-Q9fdzmD41L3OGtQn9QRnDYNH8Ertf8msggYx7IhIhLH9ym_ZEcExxC3XnQ5Kk8jQ2kML_H2z8hilG7kdk5uykFN3o1Zlqk
-@url=http://127.0.0.1:8000/api
+@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTljMWQ2Mi03MDQ0LTczZmQtOGY1Yi1iM2FhNDIxMDhhZjMiLCJqdGkiOiI3NDJhMjBhMTU1M2NhZTk2OWZmZjVmYjIwNTM0MWQzM2VhNmFjZjgzZWU1NjU4ZjRlZDc0YzkyMmExZTRjNTgxMTcwYmIxNjY2NWE4YWI1MyIsImlhdCI6MTc3MDM0Njg1Ni45NDMwMjcsIm5iZiI6MTc3MDM0Njg1Ni45NDMwMzIsImV4cCI6MTgwMTg4Mjg1Ni45MDkzNzEsInN1YiI6IjAxYjFlZmMwLTM5OGItNDE5Mi05ZjBiLTgzN2IyY2JhZTFkNSIsInNjb3BlcyI6W119.UkDjERJMmZOlGkQ6MWVimbRIEJJ8BuNWZTUydEMIMfm-oBSMbkB1P6HHEikZIImHsVJXC5bY9yKqOoDzlCg7KqZLYU3vAHo4BKUCS892gZkc4_Hk8ZXAyGp93UcCmRdlbQjGLVTJi1BmB8ixXfZVNx6IZN5SHOfEdu5PyrexP2NdQa8zduz7AIw0bJygAGcKpEHcx1ggzSqmvvJLBmx7mQIbJzcOAtylKrguMUJpvuwGDKUDrZpFT7KopdeTAhO75TsL-znjWK-mZof-ChPnc_7qfvenuoAT85RNKjfEG6X1socGqiFi_dQrTyJVzBXD8BAkvuREY5CyLVWNOTkjgmQjh2mweuh2jP-kVdY7oK-g-Nz9GHgT8xQpzMKe8iVGWGti-RBMDkdIsoFeC3tLdYvD17CfN7qoTMLo7NbEEu-E3q-T8T1IaB1xOhqBuiaSliLGdL4uYS8kTaEN-qrSaV8CSy4Krka4fTisDM8wZmTkxwQEUQQuE7FG9T9Mgcm5VWvrMeHxLagy6LNhs5_8O6Y7jTGqIglj5CQW1_qFy2nl0DkXJ983cBsOIQPHMb8qne8LOXpZow7wGAjUBRgwu4wa5BqhVDQ5vWfIZaoQzaBfcKzBQYzr0MWmcPfksKIB9i48e0uluQH-DVV6K1b5qFPkTlYP4qwXtPQTpi6nwO0
+
+
+@url=http://127.0.0.1:8001/api
 
 //ADMIN LOGIN
  ###
@@ -8,8 +10,8 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "identifier": "+2347031010000",
-    "password": "password"
+    "identifier": "fecogo6463@helesco.com",
+    "password": "Password1@"
 }
 
 //ADMIN CREATE TRANSACTION PIN
@@ -20,7 +22,7 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "pin": "1111"
+    "transaction_pin": "1234"
 
 }
 
@@ -33,8 +35,8 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "old_pin": "1111",
-    "new_pin": "0000"
+    "old_pin": "1234",
+    "new_pin": "1111"
 
 }
 
@@ -91,8 +93,8 @@ Authorization: {{bearer}}
 {
     "role": "admin",
         "permissions": [
-           "admin-global-payout-status",
-           "admin-user-payout-status"
+           "unsuspend-merchant",
+           "suspend-merchant"
         ]
 }
 

@@ -235,6 +235,8 @@ class AuthController extends Controller
                 'name'          => 'required|string|max:255',
                 'email'         => 'required|email|unique:users,email',
                 'operator_type' => 'required|in:individual,business',
+                'dob'           => 'required|date',
+                'gender'        => 'required|in:male,female',
 
                 // Business only
                 'business_type' => 'required_if:operator_type,business|in:co,bn,it',
@@ -254,6 +256,9 @@ class AuthController extends Controller
                 return failureResponse($validator->errors(), 422, 'validation_error');
             }
 
+            /**
+             * Store CAC document early (can be cleaned up on failure)
+             */
             $cacDocumentPath = null;
 
             if ($request->hasFile('cac_document')) {
@@ -270,9 +275,11 @@ class AuthController extends Controller
             /**
              * BUSINESS VERIFICATION FIRST (NO USER CREATED)
              */
+            $ninFinalStatus  = null;
+            $ninNameMatched = null;
+
             if ($request->operator_type === 'business') {
                 $smile = app(SmileIdService::class);
-
 
                 // CAC verification
                 $cacResult = $smile->submitBusinessCAC([
@@ -286,7 +293,9 @@ class AuthController extends Controller
                     return failureResponse('CAC verification failed', 422);
                 }
 
-                // Extract CAC owner names
+                /**
+                 * Extract CAC owner names
+                 */
                 $cacOwnerNames = [];
 
                 if (in_array($request->business_type, ['bn', 'it'])) {
@@ -313,48 +322,45 @@ class AuthController extends Controller
                     return failureResponse('Unable to determine business owner from CAC', 422);
                 }
 
-                // NIN verification
-                $ninResult = $smile->submitNin($tempUser, $request->owner_nin);
+                /**
+                 * NIN verification (using CAC owner name)
+                 */
+                $tempUser = new User([
+                    'name' => $cacOwnerNames[0],
+                ]);
 
-                if (! ($ninResult['success'] ?? false)) {
+                $ninResult = $smile->submitNin(
+                    $tempUser,
+                    $request->owner_nin,
+                    array_filter([
+                        'date_of_birth' => $request->dob,
+                        'gender'        => $request->gender,
+                    ])
+                );
+
+                if (! isset($ninResult['raw'])) {
                     $this->cleanupCacDocument($cacDocumentPath);
-                    return failureResponse('Owner NIN verification failed', 422);
+                    return failureResponse('NIN service unreachable', 422);
                 }
 
-                $ninName   = $this->normalizeName($ninResult['details']['full_name']);
-                $ninTokens = explode(' ', $ninName);
+                $ninVerified     = ($ninResult['raw']['Actions']['Verify_ID_Number'] ?? null) === 'Verified';
+                $ninNameMatched  = ($ninResult['raw']['Actions']['Names'] ?? null) === 'Exact Match';
 
-                $matchFound = false;
-
-                foreach ($cacOwnerNames as $cacName) {
-                    $cac = $this->normalizeName($cacName);
-
-                    $matches = 0;
-                    foreach ($ninTokens as $token) {
-                        if (str_contains($cac, $token)) {
-                            $matches++;
-                        }
-                    }
-
-                    if ($matches >= 2) {
-                        $matchFound = true;
-                        break;
-                    }
-                }
-
-                if (! $matchFound) {
-                    $this->cleanupCacDocument($cacDocumentPath);
-                    return failureResponse(
-                        'Business owner name does not match CAC and NIN records',
-                        422
-                    );
-                }
+                // Nigeria-safe onboarding policy
+                $ninFinalStatus = ($ninVerified && $ninNameMatched) ? 'verified' : 'pending';
             }
 
             /**
              * SAFE TO CREATE USER + SEND OTP
              */
-            $dto  = RegisterUserDTO::fromRequest($request);
+            $dto = RegisterUserDTO::fromRequest($request);
+
+            if ($dto->user_type === 'business_operator') {
+                $dto->kyb_verified            = true;
+                $dto->nin_verification_status = $ninFinalStatus;
+                $dto->nin_match_confidence    = $ninNameMatched ? 100 : null;
+            }
+
             $data = $this->registerUserAction->execute($dto);
 
             return successResponse(
@@ -362,9 +368,15 @@ class AuthController extends Controller
                 ['reference' => $data['reference']]
             );
         } catch (\Throwable $e) {
-            return failureResponse('Admin user registration failed', 500, 'server_error', $e);
+            return failureResponse(
+                'Admin user registration failed',
+                500,
+                'server_error',
+                $e
+            );
         }
     }
+
 
 
     public function adminDeleteUser(Request $request, $userId, DeleteUserAction $action)

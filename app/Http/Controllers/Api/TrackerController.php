@@ -7,6 +7,7 @@ use App\Models\Merchant;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Enums\TrackerStatusEnums;
+use App\Enums\MerchantStatusEnums;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
@@ -71,7 +72,6 @@ class TrackerController extends Controller
             );
         }
     }
-
 
     public function index(Request $request)
     {
@@ -203,40 +203,102 @@ class TrackerController extends Controller
     {
         $request->validate([
             'merchant_code' => 'required|exists:merchants,merchant_code',
-            'start_serial' => 'required|string',
-            'end_serial' => 'required|string',
+            'start_serial'  => 'required|string',
+            'end_serial'    => 'required|string',
         ]);
 
-        $merchant = Merchant::where('merchant_code', $request->merchant_code)
-            ->where('status', 'approved')
-            ->firstOrFail();
+        try {
+            $merchant = Merchant::where('merchant_code', $request->merchant_code)->first();
 
-        $trackers = Tracker::whereBetween('serial_number', [
-            $request->start_serial,
-            $request->end_serial
-        ])
-            ->where('status', 'inactive')
-            ->lockForUpdate()
-            ->get();
+            if (! $merchant) {
+                return failureResponse('Merchant not found');
+            }
 
-        if ($trackers->isEmpty()) {
-            return failureResponse('No available trackers in this range');
+            if ($merchant->status === MerchantStatusEnums::SUSPENDED) {
+                return failureResponse('Suspended merchant cannot receive trackers', 422);
+            }
+
+            DB::transaction(function () use ($request, $merchant) {
+
+                $trackers = Tracker::whereBetween('serial_number', [
+                    $request->start_serial,
+                    $request->end_serial
+                ])
+                    ->where('status', TrackerStatusEnums::INACTIVE)
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($trackers->isEmpty()) {
+                    throw new \RuntimeException('No available trackers in this range');
+                }
+
+                Tracker::whereIn('id', $trackers->pluck('id'))
+                    ->update([
+                        'merchant_id' => $merchant->id,
+                        'status'      => TrackerStatusEnums::ASSIGNED,
+                        'is_assigned' => true,
+                    ]);
+
+                // Approve merchant after successful assignment
+                if ($merchant->status !== MerchantStatusEnums::APPROVED) {
+                    $merchant->approve(Auth::user());
+                }
+            });
+
+            return successResponse(
+                'Trackers assigned to merchant successfully'
+            );
+        } catch (\RuntimeException $e) {
+            return failureResponse($e->getMessage(), 422);
+        } catch (\Throwable $th) {
+            return failureResponse(
+                'Failed to assign trackers',
+                500,
+                'tracker_assignment_error',
+                $th
+            );
         }
-
-        DB::transaction(function () use ($request, $merchant) {
-            Tracker::whereBetween('serial_number', [
-                $request->start_serial,
-                $request->end_serial
-            ])
-                ->where('status', 'inactive')
-                ->update([
-                    'merchant_id' => $merchant->id,
-                    'status' => 'assigned',
-                ]);
-        });
-
-        return successResponse(
-            count($trackers) . ' trackers assigned to merchant'
-        );
     }
+
+
+    // public function assignRange(Request $request)
+    // {
+    //     $request->validate([
+    //         'merchant_code' => 'required|exists:merchants,merchant_code',
+    //         'start_serial' => 'required|string',
+    //         'end_serial' => 'required|string',
+    //     ]);
+
+    //     $merchant = Merchant::where('merchant_code', $request->merchant_code)
+    //         ->where('status', 'approved')
+    //         ->firstOrFail();
+
+    //     $trackers = Tracker::whereBetween('serial_number', [
+    //         $request->start_serial,
+    //         $request->end_serial
+    //     ])
+    //         ->where('status', 'inactive')
+    //         ->lockForUpdate()
+    //         ->get();
+
+    //     if ($trackers->isEmpty()) {
+    //         return failureResponse('No available trackers in this range');
+    //     }
+
+    //     DB::transaction(function () use ($request, $merchant) {
+    //         Tracker::whereBetween('serial_number', [
+    //             $request->start_serial,
+    //             $request->end_serial
+    //         ])
+    //             ->where('status', 'inactive')
+    //             ->update([
+    //                 'merchant_id' => $merchant->id,
+    //                 'status' => 'assigned',
+    //             ]);
+    //     });
+
+    //     return successResponse(
+    //         count($trackers) . ' trackers assigned to merchant'
+    //     );
+    // }
 }

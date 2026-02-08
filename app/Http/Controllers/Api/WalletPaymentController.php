@@ -109,7 +109,6 @@ class WalletPaymentController extends Controller
 
         $payment = Payment::where('reference', $reference)->first();
 
-
         // $payment = Payment::where('reference', $reference)
         //     ->orWhereRaw("$referenceColumn = ?", [$reference])
         //     ->first();

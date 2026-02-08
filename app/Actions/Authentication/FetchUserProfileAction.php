@@ -14,7 +14,7 @@ class FetchUserProfileAction
     {
         /** @var User $user */
         $user = Auth::user();
-        $user->load('wallet');
+        $user->load(['wallet', 'merchant']);
 
         if ($user->image) {
             $user->image_url = asset($user->image);
@@ -60,6 +60,7 @@ class FetchUserProfileAction
 
         return [
             'user' => $user,
+            'merchant_code' => $user->merchant?->merchant_code,
         ];
     }
 }

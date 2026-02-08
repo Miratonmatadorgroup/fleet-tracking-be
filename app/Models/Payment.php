@@ -18,24 +18,28 @@ class Payment extends Model
 
     protected $fillable = [
         'id',
+        'subscription_id',
+        'user_id',
         'delivery_id',
         'api_client_id',
+        'amount',
         'currency',
-        'user_id',
+        'transaction_id',
         'status',
         'reference',
-        'amount',
         'gateway',
-        'callback_url',
+        'gateway_response',
         'meta',
-        'original_price',
-        'final_price',
-        'subsidy_amount',
+        'callback_url',
+        'paid_at',
     ];
 
     protected $casts = [
-        'status' => PaymentStatusEnums::class,
-        'meta'   => 'array',
+        'status'           => PaymentStatusEnums::class,
+        'meta'             => 'array',
+        'gateway_response' => 'array',
+        'amount'           => 'decimal:2',
+        'paid_at'          => 'datetime',
     ];
 
     protected static function boot()
@@ -58,8 +62,14 @@ class Payment extends Model
     {
         return $this->belongsTo(Delivery::class);
     }
+
     public function apiClient(): BelongsTo
     {
         return $this->belongsTo(ApiClient::class);
+    }
+
+    public function subscription(): BelongsTo
+    {
+        return $this->belongsTo(Subscription::class);
     }
 }
