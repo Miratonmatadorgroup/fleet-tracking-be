@@ -19,10 +19,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
-use App\DTOs\Payment\PayWithWalletDTO;
+use App\DTOs\Payment\PaySubscriptionWithWalletDTO;
 use App\Enums\DeliveryAssignmentLogsEnums;
 use App\Services\DeliveryAssignmentService;
-use App\Actions\Payment\PayWithWalletAction;
+use App\Actions\Payment\PaySubscriptionWithWalletAction;
 use App\Events\Payment\PaymentSummaryViewed;
 use App\Services\Payments\ShanonoPayService;
 use App\Services\Payments\MockPaymentService;
@@ -409,7 +409,6 @@ class PaymentController extends Controller
         );
     }
 
-
     /**
      * Handle failed payments
      */
@@ -455,19 +454,22 @@ class PaymentController extends Controller
         ]);
     }
 
-
-    public function payWithWallet(Request $request, PayWithWalletAction $payWithWalletAction)
-    {
+    public function payWithWallet(Request $request, PaySubscriptionWithWalletAction $action) {
         try {
-            $dto = PayWithWalletDTO::fromRequest($request);
-            $delivery = $payWithWalletAction->execute($dto);
-            return successResponse('Payment successful via wallet.', $delivery);
+            $dto = PaySubscriptionWithWalletDTO::fromRequest($request);
+
+            $subscription = $action->execute($dto);
+
+            return successResponse(
+                'Subscription payment successful via wallet.',
+                $subscription
+            );
         } catch (\Throwable $e) {
             return failureResponse($e->getMessage(), 422);
         }
     }
 
-    public function adminPayWithWallet(Request $request, PayWithWalletAction $payWithWalletAction)
+    public function adminPayWithWallet(Request $request, PaySubscriptionWithWalletAction $payWithWalletAction)
     {
         try {
             $request->validate([

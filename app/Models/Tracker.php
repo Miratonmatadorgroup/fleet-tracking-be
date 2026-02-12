@@ -17,6 +17,7 @@ class Tracker extends Model
     protected $fillable = [
         'serial_number',
         'imei',
+        'label',
         'status',
         'is_assigned',
         'merchant_id',

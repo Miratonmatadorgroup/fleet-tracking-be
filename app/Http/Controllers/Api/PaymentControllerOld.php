@@ -20,10 +20,10 @@ use App\Http\Controllers\Controller;
 use App\Mail\DeliveryAssignedToUser;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
-use App\DTOs\Payment\PayWithWalletDTO;
+use App\DTOs\Payment\PaySubscriptionWithWalletDTO;
 use App\Mail\DeliveryAssignedToDriver;
-use App\Mail\PaymentSuccessButNoDriverYet;
-use App\Actions\Payment\PayWithWalletAction;
+use App\Mail\SubPaymentSuccessful;
+use App\Actions\Payment\PaySubscriptionWithWalletAction;
 use App\Events\Payment\PaymentSummaryViewed;
 use App\Services\Payments\ShanonoPayService;
 use App\Actions\Payment\GetPaymentSummaryAction;
@@ -151,7 +151,7 @@ class PaymentControllerOld extends Controller
 
                     try {
                         if ($customer->email) {
-                            Mail::to($customer->email)->send(new PaymentSuccessButNoDriverYet($delivery));
+                            Mail::to($customer->email)->send(new SubPaymentSuccessful($delivery));
                         }
                     } catch (\Throwable $e) {
                         Log::error('Fallback email failed', ['error' => $e->getMessage()]);
@@ -232,10 +232,10 @@ class PaymentControllerOld extends Controller
     }
 
 
-    public function payWithWallet(Request $request, PayWithWalletAction $payWithWalletAction)
+    public function payWithWallet(Request $request, PaySubscriptionWithWalletAction $payWithWalletAction)
     {
         try {
-            $dto = PayWithWalletDTO::fromRequest($request);
+            $dto = PaySubscriptionWithWalletDTO::fromRequest($request);
             $delivery = $payWithWalletAction->execute($dto);
             return successResponse('Payment successful via wallet.', $delivery);
         } catch (\Throwable $e) {

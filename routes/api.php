@@ -39,6 +39,7 @@ use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\SmileIdWebhookController;
 use App\Http\Controllers\Api\ExternalPaymentController;
 use App\Http\Controllers\Api\ExternalDeliveryController;
+use App\Http\Controllers\Api\SubscriptionPlanController;
 use App\Http\Controllers\Api\CommissionSettingController;
 use App\Http\Controllers\Api\InvestmentPaymentController;
 use App\Http\Controllers\Api\ProjectAssignmentController;
@@ -112,6 +113,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::delete('/bulk-delet/trackers', [TrackerController::class, 'bulkDelete'])->middleware('permission:bulk-delete-trackers');
     Route::post('/assign/activate/trackers', [TrackerController::class, 'assignRange'])->middleware('permission:assign-trackers');
     Route::post('/activate/tracker', [TrackerController::class, 'activate']);
+    Route::get('/view/my-trackers', [TrackerController::class, 'myTrackers']);
+
     // TRACKER ROUTE ENDS HERE
 
     // MERCHANT ROUTE STARTS HERE
@@ -167,7 +170,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/payments/initiate', [PaymentController::class, 'initiate'])->name('payment.initiate');
     Route::get('/payments/success', [PaymentController::class, 'success'])->name('payment.success');
     Route::get('/payments/failed', [PaymentController::class, 'failed'])->name('payment.failed');
-    Route::post('/pay-with-wallet', [PaymentController::class, 'payWithWallet']);
+    Route::post('/subscriptions/pay-with-wallet', [PaymentController::class, 'payWithWallet']);
 
     // BYPASS STARTS HERE
     Route::post('/create-roles', [RolePermissionController::class, 'createRoleWithPermissions']);
@@ -178,6 +181,16 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
 
     Route::post('/internal/webhooks/secret', [WebhookSecretController::class, 'generate'])
         ->middleware('permission:create-secret-key');
+
+    // SUBSCRIPTION PLAN ACTIONS BY SUPER_ADMIN/ADMIN
+    Route::get('/new-view/subscription-plans', [SubscriptionPlanController::class, 'index']);
+     Route::get('/view/subscription-plans', [SubscriptionPlanController::class, 'userPlans']);
+    Route::post('/create/subscription-plans', [SubscriptionPlanController::class, 'store'])
+        ->middleware('permission:create-sub-plans');
+    Route::put('/update/subscription-plans/{id}', [SubscriptionPlanController::class, 'update'])
+        ->middleware('permission:update-sub-plans');
+    Route::delete('/destroy/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy'])
+        ->middleware('permission:delete-sub-plans');
 
 
     // ROLES AND PERMISSIONS

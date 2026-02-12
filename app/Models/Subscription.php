@@ -4,17 +4,20 @@ namespace App\Models;
 
 use App\Enums\SubscriptionStatusEnums;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Subscription extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'user_id',
         'asset_id',
         'plan_id',
-        'billing_cycle',
         'price_per_month',
         'start_date',
         'end_date',

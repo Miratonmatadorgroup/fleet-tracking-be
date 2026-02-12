@@ -3,20 +3,28 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
-use App\Models\Driver;
-use App\Models\Payout;
-use App\Models\Partner;
-use App\Models\Project;
-use App\Models\Discount;
 use App\Enums\GenderEnums;
-use Illuminate\Support\Str;
+use App\Enums\SubscriptionFeatureEnums;
 use App\Enums\UserTypesEnums;
-use Laravel\Passport\HasApiTokens;
-use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Notifications\Notifiable;
+use App\Models\Delivery;
+use App\Models\Discount;
+use App\Models\Driver;
+use App\Models\Merchant;
+use App\Models\Partner;
+use App\Models\Payment;
+use App\Models\Payout;
+use App\Models\Project;
+use App\Models\Subscription;
+use App\Models\Tracker;
+use App\Models\UserToken;
+use App\Models\Wallet;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Laravel\Passport\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 /**
  * @method bool hasRole($roles, $guard = null)
@@ -117,6 +125,7 @@ class User extends Authenticatable
             'gender' => GenderEnums::class,
             'dob' => 'date',
             'nin_verified_at' => 'datetime',
+            'user_type'     => UserTypesEnums::class,
         ];
     }
 
@@ -242,5 +251,28 @@ class User extends Authenticatable
     public function verifiedMerchants()
     {
         return $this->hasMany(Merchant::class, 'verified_by');
+    }
+
+
+    public function activeSubscription()
+    {
+        return $this->hasOne(Subscription::class)
+            ->where('status', 'active')
+            ->whereDate('end_date', '>', now());
+    }
+
+    public function hasFeature(SubscriptionFeatureEnums|string $feature): bool
+    {
+        $subscription = $this->activeSubscription()->first();
+
+        if (! $subscription || ! $subscription->plan) {
+            return false;
+        }
+
+        $featureValue = $feature instanceof SubscriptionFeatureEnums
+            ? $feature->value
+            : $feature;
+
+        return in_array($featureValue, $subscription->plan->features, true);
     }
 }

@@ -162,6 +162,7 @@ class TrackerController extends Controller
     {
         $request->validate([
             'serial_number' => 'required|string',
+            'label'           => 'required|string|max:100',
             'transaction_pin' => 'required|digits:4',
         ]);
 
@@ -194,6 +195,7 @@ class TrackerController extends Controller
         $tracker->update([
             'status' => 'active',
             'user_id' => $user->id,
+            'label'   => $request->label,
         ]);
 
         return successResponse('Tracker activated successfully');
@@ -260,45 +262,49 @@ class TrackerController extends Controller
         }
     }
 
+    public function myTrackers(Request $request)
+    {
+        try {
+            $user = Auth::user();
 
-    // public function assignRange(Request $request)
-    // {
-    //     $request->validate([
-    //         'merchant_code' => 'required|exists:merchants,merchant_code',
-    //         'start_serial' => 'required|string',
-    //         'end_serial' => 'required|string',
-    //     ]);
+            $perPage = $request->input('per_page', 20);
 
-    //     $merchant = Merchant::where('merchant_code', $request->merchant_code)
-    //         ->where('status', 'approved')
-    //         ->firstOrFail();
+            $query = Tracker::with([
+                'merchant:id,name,email',        // adjust fields as needed
+            ])
+                ->where('user_id', $user->id);
 
-    //     $trackers = Tracker::whereBetween('serial_number', [
-    //         $request->start_serial,
-    //         $request->end_serial
-    //     ])
-    //         ->where('status', 'inactive')
-    //         ->lockForUpdate()
-    //         ->get();
+            // Optional: filter by status
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
 
-    //     if ($trackers->isEmpty()) {
-    //         return failureResponse('No available trackers in this range');
-    //     }
+            // Optional: search by serial, imei or label
+            if ($request->filled('search')) {
+                $search = $request->search;
 
-    //     DB::transaction(function () use ($request, $merchant) {
-    //         Tracker::whereBetween('serial_number', [
-    //             $request->start_serial,
-    //             $request->end_serial
-    //         ])
-    //             ->where('status', 'inactive')
-    //             ->update([
-    //                 'merchant_id' => $merchant->id,
-    //                 'status' => 'assigned',
-    //             ]);
-    //     });
+                $query->where(function ($q) use ($search) {
+                    $q->where('serial_number', 'like', "%{$search}%")
+                        ->orWhere('imei', 'like', "%{$search}%")
+                        ->orWhere('label', 'like', "%{$search}%");
+                });
+            }
 
-    //     return successResponse(
-    //         count($trackers) . ' trackers assigned to merchant'
-    //     );
-    // }
+            $trackers = $query
+                ->orderBy('created_at', 'desc')
+                ->paginate($perPage);
+
+            return successResponse(
+                'Your trackers retrieved successfully',
+                $trackers
+            );
+        } catch (\Throwable $th) {
+            return failureResponse(
+                'Failed to retrieve trackers',
+                500,
+                'my_tracker_error',
+                $th
+            );
+        }
+    }
 }

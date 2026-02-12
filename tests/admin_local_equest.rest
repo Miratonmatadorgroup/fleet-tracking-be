@@ -91,10 +91,12 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "admin",
+    "role": "super_admin",
         "permissions": [
-           "unsuspend-merchant",
-           "suspend-merchant"
+           "create-sub-plans",
+           "update-sub-plans",
+           "delete-sub-plans"
+
         ]
 }
 

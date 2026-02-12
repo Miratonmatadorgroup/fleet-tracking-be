@@ -76,7 +76,7 @@ class NotificationController extends Controller
                 \App\Notifications\User\DisputeStatusUpdatedNotification::class,
                 \App\Notifications\User\DriverAssignedNotification::class,
                 \App\Notifications\User\CustomerAssignedDriverNotification::class,
-                \App\Notifications\User\CustomerNoDriverYetNotification::class,
+                \App\Notifications\User\SubscriptionPaymentNotification::class,
                 \App\Notifications\User\DeliveryMarkedAsDeliveredNotification::class,
                 \App\Notifications\User\DeliveryCompletedInAppNotification::class,
                 \App\Notifications\User\InvestmentPaymentSuccessfulNotification::class,

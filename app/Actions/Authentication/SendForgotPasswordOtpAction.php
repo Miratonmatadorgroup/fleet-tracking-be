@@ -29,7 +29,7 @@ class SendForgotPasswordOtpAction
         $user->otp_expires_at = Carbon::now()->addMinutes(10);
         $user->save();
 
-        $message = "Your LoopFreight verification Otp is:{$otp}";
+        $message = "Your Fleet Management verification Otp is:{$otp}";
 
         if ($user->email === $identifier) {
             Mail::send('emails.forgot-password-otp', ['user' => $user, 'otp' => $otp], function ($mail) use ($user) {

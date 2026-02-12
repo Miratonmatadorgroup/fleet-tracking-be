@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Enums\UserTypesEnums;
 use App\Enums\BillingCycleEnums;
+use App\Enums\SubscriptionFeatureEnums;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 
@@ -21,6 +22,8 @@ class SubscriptionPlan extends Model
         'price',
         'features',
         'is_active',
+        'start_date',
+        'end_date',
     ];
 
     protected $casts = [
@@ -28,5 +31,7 @@ class SubscriptionPlan extends Model
         'billing_cycle' => BillingCycleEnums::class,
         'features'      => 'array',
         'is_active'     => 'boolean',
+        'start_date' => 'date',
+        'end_date'   => 'date',
     ];
 }

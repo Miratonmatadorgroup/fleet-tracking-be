@@ -19,8 +19,9 @@ return new class extends Migration
                 ->constrained('subscription_plans');
 
             $table->foreignUuid('asset_id')
+                ->nullable()
                 ->constrained('assets')
-                ->cascadeOnDelete();
+                ->nullOnDelete();
 
             $table->date('start_date');
             $table->date('end_date');

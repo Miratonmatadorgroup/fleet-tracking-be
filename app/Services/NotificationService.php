@@ -11,16 +11,17 @@ use App\Mail\RewardPaidMail;
 use App\Models\RewardCampaign;
 use App\Services\TermiiService;
 use App\Services\TwilioService;
+use App\Models\SubscriptionPlan;
 use App\Mail\RewardAvailableMail;
 use Illuminate\Support\Facades\Log;
 use App\Mail\DeliveryAssignedToUser;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\GuestDeliveryBookedMail;
+use App\Mail\GuestSubPaidMail;
 use App\Mail\DeliveryAssignedToDriver;
-use App\Mail\PaymentSuccessButNoDriverYet;
+use App\Mail\SubPaymentSuccessful;
 use App\Notifications\RewardAvailableNotification;
 use App\Notifications\User\DriverAssignedNotification;
-use App\Notifications\User\CustomerNoDriverYetNotification;
+use App\Notifications\User\SubscriptionPaymentNotification;
 use App\Notifications\User\CustomerAssignedDriverNotification;
 
 class NotificationService
@@ -31,220 +32,136 @@ class NotificationService
     ) {}
 
     /**
-     * Notify driver when assigned a delivery
+     * Notify user payment successful
      */
-    public function notifyDriver(?Driver $driver, Delivery $delivery): void
+    public function notifyUser(?User $userDetails, SubscriptionPlan $subPlan, ?Payment $payment): void
     {
-        if (!$driver) {
-            return; // Nothing to notify
+        if (!$userDetails) {
+            return;
         }
 
-        $customer = $delivery->customer;
+        $userName     = $userDetails->name ?? 'Customer';
+        $userPhone    = $userDetails->phone ?? null;
+        $userEmail    = $userDetails->email ?? null;
+        $userWhatsapp = $userDetails->whatsapp_number ?? null;
 
-        $customerName = $customer->name ?? 'Customer';
-        $customerContact = $customer->phone ?? $customer->email ?? $customer->whatsapp_number ?? 'N/A';
-        $receiverName = $delivery->receiver_name ?? 'Receiver';
-        $receiverContact = $delivery->receiver_phone ?? 'N/A';
+        $paymentDate = $payment->created_at?->format('d M, Y • h:i A');
 
-        $driverName = $driver->name ?? 'N/A';
-        $driverPhone = $driver->phone ?? 'N/A';
-        $driverWhatsapp = $driver->whatsapp_number ?? 'N/A';
+        // Make sure subscription relationship is loaded
+        $payment->loadMissing('subscription');
 
-        $msg = "Hi {$driverName}, you have a new LoopFreight delivery for {$delivery->delivery_date} at {$delivery->delivery_time}.
-        From: {$delivery->pickup_location} to {$delivery->dropoff_location}.
+        $expiryCarbon = $payment->subscription?->end_date;
 
-        Customer: {$customerName}
-        Contact: {$customerContact}
+        // Format for SMS/WhatsApp
+        $expiryDate = $expiryCarbon?->format('d M, Y') ?? '—';
 
-       Receiver: {$receiverName}
-       Receiver Contact: {$receiverContact}";
+        // Convert features array to readable string
+        $features = is_array($subPlan->features)
+            ? implode(', ', $subPlan->features)
+            : $subPlan->features;
 
-        // Email
-        // if ($driver?->email && $driver?->email_verified_at) {
-        //     $this->sendEmail(
-        //         $customer->email,
-        //         new DeliveryAssignedToDriver($delivery, $driver)
-        //     );
-        // }
+        $amount = number_format($subPlan->price, 2);
 
-        $this->sendEmail($driver->email, new DeliveryAssignedToDriver($delivery, $driver));
-
-        // SMS
-        $this->sendSmsMessage($driver->phone, $msg);
-
-        // WhatsApp
-        $this->sendWhatsapp($driver->whatsapp_number, $msg);
-
-        $driver->notify(new DriverAssignedNotification($delivery));
-    }
-
-    /**
-     * Notify customer when payment successful and driver assigned
-     */
-    public function notifyCustomerWithDriver(?User $customer, Delivery $delivery, ?Driver $driver, ?Payment $payment): void
-    {
-        $customerName = $customer->name ?? 'Customer';
-        $customerPhone = $customer->phone ?? $delivery->sender_phone ?? $delivery->receiver_phone ?? 'N/A';
-        $customerEmail = $customer->email ?? $delivery->sender_email ?? $delivery->receiver_email ?? null;
-        $customerWhatsapp = $customer->whatsapp_number ?? $delivery->sender_whatsapp_number ?? $delivery->receiver_whatsapp_number ?? null;
-
-        $driverName = $driver->name ?? 'N/A';
-        $driverPhone = $driver->phone ?? 'N/A';
-        $driverWhatsapp = $driver->whatsapp_number ?? 'N/A';
-
-        $msg = "Hi {$customerName}, your LoopFreight payment of ₦" . number_format($delivery->total_price, 2) . " was successful.
-    Tracking No: {$delivery->tracking_number}.
-    Waybill No: {$delivery->waybill_number}.
-    Driver: {$driverName}, Phone: {$driverPhone}, WhatsApp: {$driverWhatsapp}.";
-
-        $transport = $delivery->transport_mode ?? $driver?->transportModeDetails;
+        $msg = "Hi {$userName}, your Fleet Management subscription payment of ₦{$amount} was successful.\n\n"
+            . "Plan: {$subPlan->name}\n"
+            . "Billing Cycle: {$subPlan->billing_cycle->value}\n"
+            . "Payment Date: {$paymentDate}\n"
+            . "Expires On: {$expiryDate}\n"
+            . "Access Includes: {$features}\n\n"
+            . "Thank you for choosing " . config('app.name') . ".";
 
         // Email
-        // if ($customer?->email && $customer?->email_verified_at) {
-        //     $this->sendEmail(
-        //         $customer->email,
-        //         new DeliveryAssignedToUser($delivery, $driver, $transport, $payment)
-        //     );
-        // }
-
-        $this->sendEmail($customerEmail, new DeliveryAssignedToUser($delivery, $driver, $transport, $payment));
-
-        // SMS
-        $this->sendSmsMessage($customerPhone, $msg);
-
-        // WhatsApp
-        $this->sendWhatsapp($customerWhatsapp, $msg);
-
-        if ($customer) {
-            $customer->notify(new CustomerAssignedDriverNotification($delivery, $driver));
+        if ($userEmail) {
+            $this->sendEmail($userEmail, new SubPaymentSuccessful($subPlan, $payment));
         }
-    }
-
-    /**
-     * Notify customer when no driver is available yet
-     */
-    public function notifyCustomerNoDriver(?User $customer, Delivery $delivery, ?Payment $payment): void
-    {
-        $customerName = $customer->name ?? 'Customer';
-        $customerPhone = $customer->phone ?? $delivery->sender_phone ?? $delivery->receiver_phone ?? 'N/A';
-        $customerEmail = $customer->email ?? $delivery->sender_email ?? $delivery->receiver_email ?? null;
-        $customerWhatsapp = $customer->whatsapp_number ?? $delivery->sender_whatsapp_number ?? $delivery->receiver_whatsapp_number ?? null;
-
-        $msg = "Hi {$customerName}, your LoopFreight payment of ₦" . number_format($delivery->total_price, 2) . " was successful.
-        Tracking No: {$delivery->tracking_number}.
-        Waybill No: {$delivery->waybill_number}.
-        We will assign a driver shortly and notify you.";
-
-        // Email
-        // if ($customer?->email && $customer?->email_verified_at) {
-        //     $this->sendEmail(
-        //         $customer->email,
-        //         new PaymentSuccessButNoDriverYet($delivery, $payment)
-        //     );
-        // }
-
-        $this->sendEmail($customerEmail, new PaymentSuccessButNoDriverYet($delivery, $payment));
 
         // SMS
-        $this->sendSmsMessage($customerPhone, $msg);
+        if ($userPhone) {
+            $this->sendSmsMessage($userPhone, $msg);
+        }
 
         // WhatsApp
-        $this->sendWhatsapp($customerWhatsapp, $msg);
-
-        if ($customer) {
-            $customer->notify(new CustomerNoDriverYetNotification($delivery));
+        if ($userWhatsapp) {
+            $this->sendWhatsapp($userWhatsapp, $msg);
         }
+
+        // In-app notification (database)
+        $userDetails->notify(
+            new SubscriptionPaymentNotification(
+                $subPlan,
+                $userDetails,
+                $payment
+            )
+        );
     }
+
     /**
      * Notify Guest Not a registered user
      */
 
-    public function notifyGuest(?string $phone, ?string $email, ?string $whatsapp_number, string $msg): void
-    {
+    public function notifyGuest(User $user, SubscriptionPlan $subPlan, ?Payment $payment): void {
+        $userName     = $user->name ?? 'Customer';
+        $userPhone    = $user->phone;
+        $userEmail    = $user->email;
+        $userWhatsapp = $user->whatsapp_number;
+
+        // Convert features array to readable text
+        $featuresText = is_array($subPlan->features)
+            ? implode(', ', $subPlan->features)
+            : $subPlan->features;
+
+        $amount = number_format($subPlan->price, 2);
+
+        $msg = "Hi {$userName}, your subscription payment of ₦{$amount} was successful.\n\n"
+            . "Plan: {$subPlan->name}\n"
+            . "Billing Cycle: {$subPlan->billing_cycle}\n"
+            . "Access Includes: {$featuresText}\n\n"
+            . "Thank you for choosing " . config('app.name') . ".";
+
         // Email
-        if ($email) {
+        if ($userEmail) {
             try {
-                Mail::to($email)->send(new GuestDeliveryBookedMail($msg));
+                Mail::to($userEmail)->send(
+                    new GuestSubPaidMail($user, $subPlan, $payment)
+                );
             } catch (\Throwable $e) {
-                Log::error('Guest email failed', ['to' => $email, 'error' => $e->getMessage()]);
+                Log::error('Guest email failed', [
+                    'to' => $userEmail,
+                    'error' => $e->getMessage(),
+                ]);
             }
         }
+
         // SMS
-        if ($phone) {
+        if ($userPhone) {
             try {
-                $this->sendSmsMessage($phone, $msg);
+                $this->sendSmsMessage($userPhone, $msg);
             } catch (\Throwable $e) {
                 Log::error('Guest SMS failed', [
-                    'to' => $phone,
+                    'to' => $userPhone,
                     'error' => $e->getMessage(),
                 ]);
             }
         }
 
         // WhatsApp
-        if ($whatsapp_number) {
+        if ($userWhatsapp) {
             try {
-                $this->sendWhatsapp($whatsapp_number, $msg);
+                $this->sendWhatsapp($userWhatsapp, $msg);
             } catch (\Throwable $e) {
                 Log::error('Guest WhatsApp failed', [
-                    'to' => $whatsapp_number,
+                    'to' => $userWhatsapp,
                     'error' => $e->getMessage(),
                 ]);
             }
         }
     }
 
+
     /**
      * Notify Admin when no driver is available yet
      */
-    public function notifyAdminsNoDriver(Delivery $delivery): void
-    {
-        try {
-            $admins = User::role(['admin', 'customer_care'])->get();
-            \Illuminate\Support\Facades\Notification::send(
-                $admins,
-                new \App\Notifications\Admin\NoAvailableDriverNotification($delivery)
-            );
-        } catch (\Throwable $e) {
-            Log::error('Admin no-driver notification failed', [
-                'error' => $e->getMessage(),
-                'delivery_id' => $delivery->id
-            ]);
-        }
-    }
 
-    public function notifyRewardAvailable(User $driver, RewardCampaign $campaign): void
-    {
-        try {
-            // Message for SMS and WhatsApp
-            $msg = "Hi {$driver->name}, you’ve unlocked LoopFreight reward: ₦{$campaign->reward_amount} from the '{$campaign->name}' campaign! Login to your dashboard to claim.";
-
-            // Email
-            $this->sendEmail($driver->email, new RewardAvailableMail($driver, $campaign));
-
-            // SMS
-            $this->sendSmsMessage($driver->phone, $msg);
-
-            // WhatsApp
-            $this->sendWhatsapp($driver->whatsapp_number, $msg);
-
-            // In-app notification
-            $driver->notify(new RewardAvailableNotification($campaign));
-        } catch (\Throwable $e) {
-            Log::error("Failed to notify driver of reward: " . $e->getMessage());
-        }
-    }
-
-    public function notifyRewardPaid(User $driver, RewardClaim $claim): void
-    {
-        $msg = "Well done {$driver->name}. Your LoopFreight reward of ₦" . number_format($claim->amount, 2) . " has been credited to your wallet.";
-
-        $this->sendEmail($driver->email, new RewardPaidMail($driver, $claim));
-        $this->sendSmsMessage($driver->phone, $msg);
-        $this->sendWhatsapp($driver->whatsapp_number, $msg);
-
-        $driver->notify(new \App\Notifications\RewardPaidNotification($claim));
-    }
 
 
 
