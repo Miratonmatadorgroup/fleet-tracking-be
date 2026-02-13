@@ -1,28 +1,16 @@
 <?php
 
 namespace App\Services;
-
 use App\Models\User;
-use App\Models\Driver;
 use App\Models\Payment;
-use App\Models\Delivery;
-use App\Models\RewardClaim;
-use App\Mail\RewardPaidMail;
-use App\Models\RewardCampaign;
 use App\Services\TermiiService;
 use App\Services\TwilioService;
 use App\Models\SubscriptionPlan;
-use App\Mail\RewardAvailableMail;
 use Illuminate\Support\Facades\Log;
-use App\Mail\DeliveryAssignedToUser;
 use Illuminate\Support\Facades\Mail;
 use App\Mail\GuestSubPaidMail;
-use App\Mail\DeliveryAssignedToDriver;
 use App\Mail\SubPaymentSuccessful;
-use App\Notifications\RewardAvailableNotification;
-use App\Notifications\User\DriverAssignedNotification;
 use App\Notifications\User\SubscriptionPaymentNotification;
-use App\Notifications\User\CustomerAssignedDriverNotification;
 
 class NotificationService
 {

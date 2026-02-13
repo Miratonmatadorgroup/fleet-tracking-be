@@ -127,9 +127,11 @@ return [
 
     'ngbnk' => [
         'base_url' => env('NGBANKSAPI_URL')
+    ],
+
+
+    'app' => [
+        'url' => env('APP_URL'),
     ]
-
-
-
 
 ];

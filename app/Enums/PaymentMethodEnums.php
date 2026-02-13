@@ -8,4 +8,5 @@ enum PaymentMethodEnums: string
     case CARD      = 'card';
     case OFFLINE   = 'offline';
     case WALLET    = 'wallet';
+    case SHANONO = 'shanono';
 }

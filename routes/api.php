@@ -102,8 +102,11 @@ Route::post('/wallet/pay/verify', [WalletPaymentController::class, 'verify'])->n
 // FOR USERS TO CREDIT WALLET ENDS HERE
 
 Route::post('/webhooks/shanono/settlement', [ShanonoSettlementWebhookController::class, 'handle']);
-Route::post('/webhooks/shanono/bills-payment', [ShanonoBillsPaymentWebhookController::class, 'handle']);
 Route::post('/webhooks/smile-id', [SmileIdWebhookController::class, 'handle']);
+
+// Subscription verify with shanono payment gateway
+Route::post('/sub-payments/verify', [PaymentController::class, 'verifySubscription'])->name('subscription.verify');
+
 
 Route::middleware(['auth:api', 'update.activity'])->group(function () {
     // TRACKERS ROUTE STARTS HERE
@@ -167,10 +170,13 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/report-dispute', [DisputeController::class, 'reportDispute']);
 
     // PAYMENT HADNLER STARTS HERE
-    Route::post('/payments/initiate', [PaymentController::class, 'initiate'])->name('payment.initiate');
     Route::get('/payments/success', [PaymentController::class, 'success'])->name('payment.success');
     Route::get('/payments/failed', [PaymentController::class, 'failed'])->name('payment.failed');
-    Route::post('/subscriptions/pay-with-wallet', [PaymentController::class, 'payWithWallet']);
+    // Route::post('/subscriptions/pay-with-wallet', [PaymentController::class, 'payWithWallet']);
+    Route::post('/subscriptions/pay-with-wallet', [PaymentController::class, 'paySubscription']);
+    Route::post('/payments/initiate', [PaymentController::class, 'paySubscription'])->name('payments.initiate');
+
+
 
     // BYPASS STARTS HERE
     Route::post('/create-roles', [RolePermissionController::class, 'createRoleWithPermissions']);
@@ -184,7 +190,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
 
     // SUBSCRIPTION PLAN ACTIONS BY SUPER_ADMIN/ADMIN
     Route::get('/new-view/subscription-plans', [SubscriptionPlanController::class, 'index']);
-     Route::get('/view/subscription-plans', [SubscriptionPlanController::class, 'userPlans']);
+    Route::get('/view/subscription-plans', [SubscriptionPlanController::class, 'userPlans']);
     Route::post('/create/subscription-plans', [SubscriptionPlanController::class, 'store'])
         ->middleware('permission:create-sub-plans');
     Route::put('/update/subscription-plans/{id}', [SubscriptionPlanController::class, 'update'])

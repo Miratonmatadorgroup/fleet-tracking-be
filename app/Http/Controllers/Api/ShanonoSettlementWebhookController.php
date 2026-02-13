@@ -18,57 +18,143 @@ class ShanonoSettlementWebhookController extends Controller
 {
     public function handle(Request $request)
     {
-        $this->verifySignature($request);
+        Log::info('Shanono webhook hit', [
+            'payload' => $request->getContent()
+        ]);
+        Log::info($request->headers);
 
-        $data = $request->input('data');
+        try {
 
-        if (isset($data['account_number'])) {
-            return $this->handleWalletSettlement($data);
+            $this->verifySignature($request);
+
+            Log::info('Shanono webhook signature verified');
+
+            $data = $request->all();
+            $payload = $data['data'] ?? $data;
+
+            $isSuccessful =
+                ($payload['status'] ?? null) === 'success'
+                || ($payload['event'] ?? null) === 'payment.received';
+
+            $subAccount =
+                $payload['account_number']
+                ?? $payload['sub_account_number']
+                ?? null;
+
+            if ($isSuccessful && $subAccount && isset($payload['reference'])) {
+
+                $reference = $payload['reference'];
+                $amount    = (float) ($payload['amount'] ?? 0);
+
+                // Check if reference belongs to payout
+                $payout = Payout::where('provider_reference', $reference)->exists();
+
+                if ($payout) {
+
+                    $this->handlePayoutSettlement([
+                        'reference' => $reference,
+                        'amount'    => $amount,
+                        'status'    => 'success',
+                    ]);
+                } else {
+
+                    $this->handleWalletSettlement([
+                        'sub_account_number' => $subAccount,
+                        'amount'             => $amount,
+                        'reference'          => $reference,
+                        'status'             => 'success',
+                        'meta'               => $payload,
+                    ]);
+                }
+            } else {
+
+                Log::warning('Unhandled Shanono webhook payload', $payload);
+            }
+        } catch (\Throwable $e) {
+
+            Log::error('Webhook processing failed', [
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Invalid webhook'
+            ], 400);
         }
 
-        if (isset($data['reference'])) {
-            return $this->handlePayoutSettlement($data);
-        }
-
-        Log::warning('Unknown Shanono webhook payload', $data);
-
-        return response()->json(['status' => 'ignored']);
+        return response()->json(['status' => 'success'], 200);
     }
-
     protected function handleWalletSettlement(array $data)
     {
-        if (($data['status'] ?? null) !== 'successful') {
-            return response()->json(['status' => 'ignored']);
+        if (($data['status'] ?? null) !== 'success') {
+            return;
         }
 
         DB::transaction(function () use ($data) {
+            Log::info('Looking up wallet', [
+                'sub_account_number' => $data['sub_account_number'] ?? null,
+            ]);
 
-            $wallet = Wallet::where(
-                'external_account_number',
-                $data['account_number']
-            )->lockForUpdate()->first();
+
+            $wallet = Wallet::query()
+                ->where('external_account_number', trim((string) $data['sub_account_number']))
+                ->lockForUpdate()
+                ->first();
+
 
             if (! $wallet) {
-                Log::error('Wallet not found for settlement', $data);
+                Log::error('Wallet not found for sub-account transfer', [
+                    'sub_account_number' => $data['sub_account_number'],
+                ]);
                 return;
             }
 
-            if (WalletTransaction::where(
-                'reference',
-                $data['reference']
-            )->exists()) {
+            if (
+                WalletTransaction::where('provider', 'shanono')
+                ->where('provider_ref', $data['reference'])
+                ->exists()
+
+            ) {
+                Log::warning('Duplicate Shanono webhook ignored', [
+                    'reference' => $data['reference']
+                ]);
                 return;
             }
 
-            $wallet->increment('available_balance', $data['amount']);
-            $wallet->increment('total_balance', $data['amount']);
+            $amount = (float) $data['amount'];
 
+            Log::info('Incoming amount debug', [
+                'raw_amount' => $data['amount'],
+                'type' => gettype($data['amount']),
+            ]);
+
+
+            Log::info('Before wallet increment', [
+                'wallet_id' => $wallet->id,
+                'available_balance' => $wallet->available_balance,
+                'total_balance' => $wallet->total_balance,
+                'incoming_amount' => $data['amount'],
+            ]);
+
+            //Increment balances
+            $wallet->available_balance = bcadd($wallet->available_balance, $data['amount'], 2);
+            $wallet->total_balance = bcadd($wallet->total_balance, $data['amount'], 2);
+
+
+            $wallet->save();
+
+            // Debug: After increment
+            Log::info('After wallet increment', [
+                'wallet_id' => $wallet->id,
+                'new_available_balance' => $wallet->available_balance,
+                'new_total_balance' => $wallet->total_balance,
+            ]);
 
             WalletTransaction::create([
                 'wallet_id'    => $wallet->id,
                 'user_id'      => $wallet->user_id,
-                'reference'    => Str::uuid(),
-                'amount'       => $data['amount'],
+                'reference'    => $data['reference'],
+                'amount'       => $amount,
                 'type'         => 'credit',
                 'status'       => 'success',
                 'provider'     => 'shanono',
@@ -76,8 +162,6 @@ class ShanonoSettlementWebhookController extends Controller
                 'meta'         => $data,
             ]);
         });
-
-        return response()->json(['status' => 'ok']);
     }
 
     protected function handlePayoutSettlement(array $data)
@@ -114,6 +198,17 @@ class ShanonoSettlementWebhookController extends Controller
             }
 
             if (($data['status'] ?? null) === 'failed') {
+
+                //Idempotency check (VERY IMPORTANT)
+                if (
+                    WalletTransaction::where('provider', 'shanono')
+                    ->where('provider_ref', $data['reference'])
+                    ->exists()
+
+                ) {
+                    return;
+                }
+
                 $payout->update([
                     'status' => PayoutStatusEnums::FAILED,
                 ]);
@@ -123,15 +218,41 @@ class ShanonoSettlementWebhookController extends Controller
                     ->first();
 
                 if ($wallet) {
-                    $wallet->increment('available_balance', $payout->amount);
-                    $wallet->increment('total_balance', $payout->amount);
+                    //Normalize amount
+                    $amount = (float) $data['amount'];
+                    // $amount = bcdiv($data['amount'], '100', 2);
 
+                    Log::info('Incoming amount debug', [
+                        'raw_amount' => $data['amount'],
+                        'type' => gettype($data['amount']),
+                    ]);
+
+
+                    Log::info('Before wallet increment', [
+                        'wallet_id' => $wallet->id,
+                        'available_balance' => $wallet->available_balance,
+                        'total_balance' => $wallet->total_balance,
+                        'incoming_amount' => $data['amount'],
+                    ]);
+
+                    // Increment balances
+                    $wallet->available_balance = bcadd($wallet->available_balance, $data['amount'], 2);
+                    $wallet->total_balance = bcadd($wallet->total_balance, $data['amount'], 2);
+
+                    $wallet->save();
+
+                    // Debug: After increment
+                    Log::info('After wallet increment', [
+                        'wallet_id' => $wallet->id,
+                        'new_available_balance' => $wallet->available_balance,
+                        'new_total_balance' => $wallet->total_balance,
+                    ]);
 
                     WalletTransaction::create([
                         'wallet_id'    => $wallet->id,
                         'user_id'      => $payout->user_id,
-                        'reference'    => Str::uuid(),
-                        'amount'       => $payout->amount,
+                        'reference'    => $data['reference'],
+                        'amount'       => $amount,
                         'type'         => 'credit',
                         'status'       => 'success',
                         'provider'     => 'shanono',
@@ -146,13 +267,15 @@ class ShanonoSettlementWebhookController extends Controller
             }
         });
 
-        return response()->json(['status' => 'ok']);
+        return;
     }
-
     protected function verifySignature(Request $request): void
     {
-        $signature = $request->header('X-Signature');
-        $payload   = $request->getContent();
+        $signature = $request->headers->get('X-signature')
+            ?? $request->headers->get('X-Signature');
+
+
+        $payload = file_get_contents('php://input');
 
         $secret = app()->environment('production')
             ? config('services.shanono_bank.webhook_secret_production')
@@ -167,8 +290,8 @@ class ShanonoSettlementWebhookController extends Controller
             'env' => app()->environment(),
         ]);
 
-        if (! hash_equals($expected, $signature)) {
-            abort(401, 'Invalid signature');
+        if (! hash_equals(strtolower($expected), strtolower($signature))) {
+            throw new \Exception('Invalid webhook signature');
         }
     }
 }

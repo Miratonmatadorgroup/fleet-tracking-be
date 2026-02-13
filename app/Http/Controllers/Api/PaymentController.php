@@ -3,32 +3,38 @@
 namespace App\Http\Controllers\Api;
 
 
-use Throwable;
-use App\Models\Driver;
-use App\Models\Payment;
-use App\Models\Delivery;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use App\Services\DriverService;
-use App\Services\TermiiService;
-use App\Services\TwilioService;
-use App\Enums\PaymentStatusEnums;
-use Illuminate\Http\JsonResponse;
-use App\Enums\DeliveryStatusEnums;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
+use App\Actions\Payment\GetEarningsSummaryAction;
+use App\Actions\Payment\GetPaymentSummaryAction;
+use App\Actions\Payment\PaySubscriptionWithGatewayAction;
+use App\Actions\Payment\PaySubscriptionWithWalletAction;
 use App\DTOs\Payment\PaySubscriptionWithWalletDTO;
 use App\Enums\DeliveryAssignmentLogsEnums;
-use App\Services\DeliveryAssignmentService;
-use App\Actions\Payment\PaySubscriptionWithWalletAction;
-use App\Events\Payment\PaymentSummaryViewed;
-use App\Services\Payments\ShanonoPayService;
-use App\Services\Payments\MockPaymentService;
+use App\Enums\DeliveryStatusEnums;
+use App\Enums\PaymentStatusEnums;
+use App\Enums\SubscriptionStatusEnums;
 use App\Events\Delivery\DeliveryAssignedEvent;
-use App\Actions\Payment\GetPaymentSummaryAction;
-use App\Actions\Payment\GetEarningsSummaryAction;
+use App\Events\Payment\PaymentSummaryViewed;
+use App\Http\Controllers\Controller;
+use App\Models\Delivery;
+use App\Models\Driver;
+use App\Models\Payment;
+use App\Models\Subscription;
+use App\Models\SubscriptionPlan;
+use App\Models\User;
+use App\Services\DeliveryAssignmentService;
+use App\Services\DriverService;
+use App\Services\NotificationService;
+use App\Services\Payments\MockPaymentService;
+use App\Services\Payments\ShanonoPayService;
+use App\Services\TermiiService;
+use App\Services\TwilioService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Http\Request;
+
+use Throwable;
 
 
 class PaymentController extends Controller
@@ -258,7 +264,6 @@ class PaymentController extends Controller
         return $this->verify($req);
     }
 
-
     public function verify(Request $request)
     {
         $reference  = $request->input('reference') ?? $request->query('reference');
@@ -331,7 +336,6 @@ class PaymentController extends Controller
 
         return $this->handleFailedPayment($reference, $delivery->id, $payment);
     }
-
 
     private function handleSuccessfulPayment(Delivery $delivery, ?Payment $payment, string $reference): void
     {
@@ -454,7 +458,9 @@ class PaymentController extends Controller
         ]);
     }
 
-    public function payWithWallet(Request $request, PaySubscriptionWithWalletAction $action) {
+    // CURRENTLY WORKED ON STARTS HERE////////////////////////////////////////////////////////////////////////
+    public function payWithWallet(Request $request, PaySubscriptionWithWalletAction $action)
+    {
         try {
             $dto = PaySubscriptionWithWalletDTO::fromRequest($request);
 
@@ -469,6 +475,80 @@ class PaymentController extends Controller
         }
     }
 
+    public function paySubscription(Request $request)
+    {
+
+        return match ($request->payment_method) {
+
+            'wallet' => app(PaySubscriptionWithWalletAction::class)
+                ->execute(
+                    PaySubscriptionWithWalletDTO::fromRequest($request)
+                ),
+
+            'shanono' => app(PaySubscriptionWithGatewayAction::class)
+                ->execute($request),
+
+            default => failureResponse('Invalid payment method', 422)
+        };
+    }
+
+
+    public function verifySubscription(Request $request)
+    {
+        $reference = $request->query('reference');
+
+        $service = app(ShanonoPayService::class);
+
+        $verification = $service->verify($reference);
+
+        if (!($verification['status'] ?? false)) {
+            return failureResponse('Payment verification failed');
+        }
+
+        $payment = Payment::where('reference', $reference)->firstOrFail();
+
+        if ($payment->status === PaymentStatusEnums::PAID->value) {
+            return successResponse('Already processed');
+        }
+
+        $planId = data_get(json_decode($payment->meta, true), 'subscription_plan_id');
+
+        $plan = SubscriptionPlan::findOrFail($planId);
+
+        DB::transaction(function () use ($payment, $plan) {
+
+            $startDate = now();
+            $endDate = match ($plan->billing_cycle->value) {
+                'monthly' => now()->addMonth(),
+                'quarterly' => now()->addMonths(4),
+                'yearly' => now()->addYear(),
+                default => now()->addMonth(),
+            };
+
+            $subscription = Subscription::create([
+                'user_id'    => $payment->user_id,
+                'plan_id'    => $plan->id,
+                'start_date' => $startDate,
+                'end_date'   => $endDate,
+                'status'     => SubscriptionStatusEnums::ACTIVE,
+                'payment_method' => 'shanono',
+            ]);
+
+            $payment->status = PaymentStatusEnums::PAID;
+            $payment->subscription_id = $subscription->id;
+            $payment->paid_at = now();
+            $payment->expires_at = $endDate;
+            $payment->save();
+
+            app(NotificationService::class)
+                ->notifyUser(User::find($payment->user_id), $plan, $payment);
+        });
+
+        return successResponse('Subscription activated successfully.');
+    }
+
+
+    // CURENTLY WORKED ON ENDS HERE////////////////////////////////////////////////////////////////////////////////////////////
     public function adminPayWithWallet(Request $request, PaySubscriptionWithWalletAction $payWithWalletAction)
     {
         try {
@@ -488,7 +568,6 @@ class PaymentController extends Controller
             return failureResponse($e->getMessage(), 422);
         }
     }
-
 
 
     public function getPaymentSummary(GetPaymentSummaryAction $action): JsonResponse

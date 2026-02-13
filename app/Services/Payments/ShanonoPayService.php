@@ -3,10 +3,13 @@
 namespace App\Services\Payments;
 
 use App\Models\Payment;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Http;
+use App\Models\SubscriptionPlan;
+use App\Models\User;
 use App\Services\Payments\PaymentServiceInterface;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 
 class ShanonoPayService implements PaymentServiceInterface
@@ -20,7 +23,9 @@ class ShanonoPayService implements PaymentServiceInterface
         $this->baseUrl   = config('services.shanono.base_url');
         $this->publicKey = config('services.shanono.public');
         $this->secretKey = config('services.shanono.secret');
+        logger('Shanono Base URL: ' . $this->baseUrl);
     }
+
 
     /**
      * Initiate a payment request with Shanono
@@ -105,6 +110,90 @@ class ShanonoPayService implements PaymentServiceInterface
             return [
                 'status'  => false,
                 'message' => 'Unexpected error during payment initiation',
+                'error'   => $e->getMessage(),
+            ];
+        }
+    }
+
+    public function initiateSubscription(User $user, SubscriptionPlan $plan): array
+    {
+        try {
+            $reference = 'SUB' . uniqid() . rand(1000, 9999);
+
+            $callbackUrl = url('/api/sub-payments/verify?reference=' . $reference);
+
+            $webhookUrl = route('payments.webhook', [
+                'plan_id' => $plan->id,
+                'reference'   => $reference,
+            ]);
+
+            $names = explode(' ', $user->name ?? 'Customer User', 2);
+            $firstName = $names[0] ?? 'Customer';
+            $lastName  = $names[1] ?? 'User';
+
+            $payload = [
+                'firstName'   => $firstName,
+                'lastName'    => $lastName,
+                'email'       => $user->email,
+                'mobile'      => $user->phone ?? '08000000000',
+                'country'     => 'NG',
+                'currency'    => 'NGN',
+                'amount'      => (string) round($plan->price, 2),
+                'reference'   => $reference,
+                'description' => "Payment for Subscription Plan {$plan->name}",
+                'apiKey'      => $this->publicKey,
+                'callbackUrl' => $callbackUrl,
+            ];
+
+            Log::info('Shanono subscription initiate request', [
+                'payload' => $payload
+            ]);
+
+            $response = Http::baseUrl(rtrim($this->baseUrl, '/'))
+                ->withHeaders([
+                    'Authorization' => "Bearer {$this->secretKey}",
+                    'Content-Type'  => 'application/json',
+                ])
+                ->post('/merchant/initiate-payment', $payload);
+
+            $json = $response->json();
+
+            Log::info('Shanono subscription initiate response', [
+                'status' => $response->status(),
+                'body'   => $json,
+            ]);
+
+            if (!$response->successful()) {
+                return [
+                    'status'  => false,
+                    'message' => data_get($json, 'message', 'Failed to initiate payment'),
+                    'raw'     => $json,
+                ];
+            }
+            return [
+                'status'       => true,
+                'message'      => data_get($json, 'message', 'Payment request successful'),
+                'reference'    => $reference,
+                'checkout_url' => data_get($json, 'data.data.payment')
+                    ?? data_get($json, 'data.payment'),
+                'verify_url'   => route('subscription.verify', [
+                    'reference' => $reference,
+                    'user_id'   => $user->id,
+                ]),
+                'callback_url' => $callbackUrl,
+                'webhook_url'  => $webhookUrl,
+                'raw'          => $json,
+            ];
+        } catch (\Throwable $e) {
+
+            Log::error('Shanono subscription initiate exception', [
+                'error'   => $e->getMessage(),
+                'user_id' => $user->id,
+            ]);
+
+            return [
+                'status'  => false,
+                'message' => 'Unexpected error during subscription payment initiation',
                 'error'   => $e->getMessage(),
             ];
         }
