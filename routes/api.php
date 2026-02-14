@@ -1,54 +1,55 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\Request;
-use App\Http\Controllers\Api\AuthController;
-
-use App\Http\Controllers\Api\FlagController;
-use App\Http\Controllers\Api\UserController;
-use App\Http\Controllers\Api\DriverController;
-use App\Http\Controllers\Api\PayoutController;
+use App\Http\Controllers\Api\Admin\TransportPricingController;
+use App\Http\Controllers\Api\AdminBroadcastController;
 use App\Http\Controllers\Api\ApiAuthController;
-use App\Http\Controllers\Api\DisputeController;
-use App\Http\Controllers\Api\PartnerController;
-use App\Http\Controllers\Api\PaymentController;
-use App\Http\Controllers\Api\ProjectController;
-use App\Http\Controllers\Api\TrackerController;
-use App\Http\Controllers\Api\DeliveryController;
-use App\Http\Controllers\Api\DiscountController;
-use App\Http\Controllers\Api\InvestorController;
-use App\Http\Controllers\Api\MerchantController;
+
 use App\Http\Controllers\Api\ApiClientController;
+use App\Http\Controllers\Api\ApiEndpointController;
 use App\Http\Controllers\Api\ApiHeaderController;
 use App\Http\Controllers\Api\ApiRequestController;
-use App\Http\Controllers\Api\ApiEndpointController;
 use App\Http\Controllers\Api\ApiResponseController;
-use App\Http\Controllers\Api\RideBookingController;
+use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\CommissionSettingController;
+use App\Http\Controllers\Api\DeliveryController;
+use App\Http\Controllers\Api\DiscountController;
+use App\Http\Controllers\Api\DisputeController;
+use App\Http\Controllers\Api\DriverController;
+use App\Http\Controllers\Api\DriverLocationController;
 use App\Http\Controllers\Api\DriverStatusController;
 use App\Http\Controllers\Api\ExternalAuthController;
-use App\Http\Controllers\Api\ExternalUserController;
-use App\Http\Controllers\Api\NotificationController;
-use App\Http\Controllers\Api\RewardSystemController;
-use App\Http\Controllers\Api\TransportModeController;
-use App\Http\Controllers\Api\WalletPaymentController;
-use App\Http\Controllers\Api\WebhookSecretController;
-use App\Http\Controllers\Api\AdminBroadcastController;
-use App\Http\Controllers\Api\DriverLocationController;
-use App\Http\Controllers\Api\FinanceSummaryController;
-use App\Http\Controllers\Api\RolePermissionController;
-use App\Http\Controllers\Api\SmileIdWebhookController;
-use App\Http\Controllers\Api\ExternalPaymentController;
 use App\Http\Controllers\Api\ExternalDeliveryController;
-use App\Http\Controllers\Api\SubscriptionPlanController;
-use App\Http\Controllers\Api\CommissionSettingController;
-use App\Http\Controllers\Api\InvestmentPaymentController;
-use App\Http\Controllers\Api\ProjectAssignmentController;
-use App\Http\Controllers\Api\WalletTransactionController;
+use App\Http\Controllers\Api\ExternalPaymentController;
+use App\Http\Controllers\Api\ExternalUserController;
+use App\Http\Controllers\Api\FinanceSummaryController;
+use App\Http\Controllers\Api\FlagController;
 use App\Http\Controllers\Api\FundReconciliationController;
+use App\Http\Controllers\Api\InvestmentPaymentController;
+use App\Http\Controllers\Api\InvestorController;
+use App\Http\Controllers\Api\MerchantController;
+use App\Http\Controllers\Api\NotificationController;
+use App\Http\Controllers\Api\OfficeAdminController;
+use App\Http\Controllers\Api\PartnerController;
+use App\Http\Controllers\Api\PaymentController;
+use App\Http\Controllers\Api\PayoutController;
+use App\Http\Controllers\Api\ProjectAssignmentController;
+use App\Http\Controllers\Api\ProjectController;
+use App\Http\Controllers\Api\RewardSystemController;
+use App\Http\Controllers\Api\RideBookingController;
 use App\Http\Controllers\Api\RidePoolingPricingController;
-use App\Http\Controllers\Api\Admin\TransportPricingController;
-use App\Http\Controllers\Api\ShanonoSettlementWebhookController;
+use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\ShanonoBillsPaymentWebhookController;
+use App\Http\Controllers\Api\ShanonoSettlementWebhookController;
+use App\Http\Controllers\Api\SmileIdWebhookController;
+use App\Http\Controllers\Api\SubscriptionPlanController;
+use App\Http\Controllers\Api\TrackerController;
+use App\Http\Controllers\Api\TransportModeController;
+use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Api\WalletPaymentController;
+use App\Http\Controllers\Api\WalletTransactionController;
+use App\Http\Controllers\Api\WebhookSecretController;
+use Illuminate\Support\Facades\Request;
+use Illuminate\Support\Facades\Route;
 
 
 
@@ -176,8 +177,6 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/subscriptions/pay-with-wallet', [PaymentController::class, 'paySubscription']);
     Route::post('/payments/initiate', [PaymentController::class, 'paySubscription'])->name('payments.initiate');
 
-
-
     // BYPASS STARTS HERE
     Route::post('/create-roles', [RolePermissionController::class, 'createRoleWithPermissions']);
     Route::post('/assign-role', [RolePermissionController::class, 'assignRole']);
@@ -222,6 +221,23 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         ->middleware('permission:edit-role');
     Route::post('/admin/create-permissions', [RolePermissionController::class, 'adminCreateOrUpdatePermissions'])
         ->middleware('permission:create-permissions');
+
+    // OFFICE ADMIN ALSO KNOWN AS BUSINESS OPERATOR
+    Route::post('/assign/user/fleet-manager', [OfficeAdminController::class, 'assignFleetManager'])
+        ->middleware('permission:assign-user-fleet-manager');
+    Route::post('/unassign/user/fleet-manager', [OfficeAdminController::class, 'unassignFleetManager'])
+        ->middleware('permission:unassign-user-fleet-manager');
+
+    Route::post('/suspend/fleet-manager/{userId}', [OfficeAdminController::class, 'suspendFleetManager'])
+        ->middleware('permission:suspend-fleet-manager');
+    Route::post('/unsuspend/fleet-manager/{userId}', [OfficeAdminController::class, 'unsuspendFleetManager'])
+        ->middleware('permission:unsuspend-fleet-manager');
+
+    Route::get('/view/merchant/trackers', [OfficeAdminController::class, 'viewMyTrackers'])
+        ->middleware('permission:view-merhcant-trackers');
+
+    Route::put('/update/merchant/trackers/{trackerId}', [OfficeAdminController::class, 'updateTrackersWithLabel'])
+        ->middleware('permission:update-merchent-trackers');
 
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

@@ -91,11 +91,10 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "super_admin",
+    "role": "fleet_manager",
         "permissions": [
-           "create-sub-plans",
-           "update-sub-plans",
-           "delete-sub-plans"
+           "view-merhcant-trackers",
+           "update-merchent-trackers"
 
         ]
 }

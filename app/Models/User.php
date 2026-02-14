@@ -10,10 +10,8 @@ use App\Models\Delivery;
 use App\Models\Discount;
 use App\Models\Driver;
 use App\Models\Merchant;
-use App\Models\Partner;
 use App\Models\Payment;
 use App\Models\Payout;
-use App\Models\Project;
 use App\Models\Subscription;
 use App\Models\Tracker;
 use App\Models\UserToken;
@@ -91,6 +89,8 @@ class User extends Authenticatable
         'email_verified_at',
         'phone_verified_at',
         'nin_verified_at',
+        'merchant_id',
+        'is_suspended',
 
     ];
 
@@ -126,6 +126,7 @@ class User extends Authenticatable
             'dob' => 'date',
             'nin_verified_at' => 'datetime',
             'user_type'     => UserTypesEnums::class,
+            'is_suspended' => 'boolean',
         ];
     }
 
@@ -175,24 +176,11 @@ class User extends Authenticatable
             && !empty($this->cac_document);
     }
 
-
-
-
-    public function deliveries()
-    {
-        return $this->hasMany(Delivery::class, 'customer_id');
-    }
-
     // app/Models/User.php
 
     public function wallet()
     {
         return $this->hasOne(Wallet::class);
-    }
-
-    public function driver()
-    {
-        return $this->hasOne(Driver::class);
     }
 
     // app/Models/User.php
@@ -220,8 +208,14 @@ class User extends Authenticatable
 
     public function merchant()
     {
-        return $this->hasOne(Merchant::class);
+        return $this->belongsTo(Merchant::class);
     }
+
+
+    // public function merchant()
+    // {
+    //     return $this->hasOne(Merchant::class);
+    // }
 
     /*
     |--------------------------------------------------------------------------
