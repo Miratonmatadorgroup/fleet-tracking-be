@@ -298,4 +298,44 @@ class OfficeAdminController extends Controller
             return failureResponse($th->getMessage(), 500);
         }
     }
+
+    public function myFleetManagers(Request $request)
+    {
+        $officeAdmin = Auth::user();
+
+        if (! $officeAdmin->hasRole('office_admin')) {
+            return failureResponse('Unauthorized', 403);
+        }
+
+        $merchant = Merchant::where('user_id', $officeAdmin->id)->first();
+
+        if (! $merchant) {
+            return failureResponse('Office admin does not have a merchant account.', 404);
+        }
+
+        $search = $request->query('search');
+        $perPage = $request->query('per_page', 10); // default 10
+
+        $fleetManagers = User::role('fleet_manager')
+            ->where('merchant_id', $merchant->id)
+            ->when($search, function ($query) use ($search) {
+                $query->where(function ($q) use ($search) {
+                    $q->where('name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('phone', 'like', "%{$search}%");
+                });
+            })
+            ->select([
+                'id',
+                'name',
+                'email',
+                'phone',
+                'created_at',
+                'is_suspended'
+            ])
+            ->latest()
+            ->paginate($perPage);
+
+        return successResponse('Fleet managers retrieved successfully', $fleetManagers);
+    }
 }

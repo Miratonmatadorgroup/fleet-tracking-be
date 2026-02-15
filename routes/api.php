@@ -197,6 +197,10 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::delete('/destroy/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy'])
         ->middleware('permission:delete-sub-plans');
 
+    // FINANCIAL SUMMARY VIEW BY SUPER ADMIN
+    Route::get('/view/total-earnings', [FinanceSummaryController::class, 'subscriptionEarnings'])
+        ->middleware('permission:view-total-earnings');
+
 
     // ROLES AND PERMISSIONS
     Route::post('/admin/create-roles', [RolePermissionController::class, 'adminCreateRoleWithPermissions'])
@@ -239,6 +243,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::put('/update/merchant/trackers/{trackerId}', [OfficeAdminController::class, 'updateTrackersWithLabel'])
         ->middleware('permission:update-merchent-trackers');
 
+    Route::get('/merchant/fleet-managers', [OfficeAdminController::class, 'myFleetManagers'])
+        ->middleware('permission:view-my-fleet-managers');
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

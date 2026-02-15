@@ -4,7 +4,6 @@ namespace App\Models;
 
 use App\Enums\UserTypesEnums;
 use App\Enums\BillingCycleEnums;
-use App\Enums\SubscriptionFeatureEnums;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 

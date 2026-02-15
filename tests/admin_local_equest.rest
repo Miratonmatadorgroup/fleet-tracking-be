@@ -91,10 +91,9 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "fleet_manager",
+    "role": "super_admin",
         "permissions": [
-           "view-merhcant-trackers",
-           "update-merchent-trackers"
+           "view-total-earnings"
 
         ]
 }

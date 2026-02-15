@@ -3,10 +3,13 @@
 namespace App\Http\Controllers\Api;
 
 
-use Illuminate\Http\Request;
+use App\Enums\PaymentStatusEnums;
 use App\Http\Controllers\Controller;
 
+use App\Models\Payment;
 use App\Services\FinancialSummaryService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class FinanceSummaryController extends Controller
 {
@@ -30,5 +33,37 @@ class FinanceSummaryController extends Controller
                 'spendable_balance' => $summary['spendable_balance'],
             ]
         );
+    }
+
+    public function subscriptionEarnings(Request $request)
+    {
+        $user = Auth::user();
+
+        if (! $user->hasAnyRole( 'super_admin')) {
+            return failureResponse('Unauthorized', 403);
+        }
+
+        $startDate = $request->query('start_date');
+        $endDate   = $request->query('end_date');
+        $perPage   = min($request->query('per_page', 10), 50);
+
+        $query = Payment::query()
+            ->whereNotNull('payments.subscription_id')
+            ->where('payments.status', PaymentStatusEnums::PAID)
+            ->when($startDate, fn($q) => $q->whereDate('paid_at', '>=', $startDate))
+            ->when($endDate, fn($q) => $q->whereDate('paid_at', '<=', $endDate))
+            ->join('subscriptions', 'payments.subscription_id', '=', 'subscriptions.id')
+            ->join('subscription_plans', 'subscriptions.plan_id', '=', 'subscription_plans.id')
+            ->selectRaw('
+            subscription_plans.id as plan_id,
+            subscription_plans.name as plan_name,
+            SUM(payments.amount) as total_earnings,
+            COUNT(payments.id) as total_transactions
+        ')
+            ->groupBy('subscription_plans.id', 'subscription_plans.name');
+
+        $earnings = $query->paginate($perPage);
+
+        return successResponse('Subscription earnings retrieved successfully', $earnings);
     }
 }
