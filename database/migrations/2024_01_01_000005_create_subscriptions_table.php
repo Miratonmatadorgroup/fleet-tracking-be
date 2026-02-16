@@ -9,29 +9,35 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('subscriptions', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('user_id')->constrained()->onDelete('cascade');
-            $table->foreignId('asset_id')->constrained()->onDelete('cascade');
-            $table->enum('plan_class', ['A', 'B', 'C']);
-            $table->enum('billing_cycle', ['monthly', 'quarterly', 'biannual', 'yearly']);
-            $table->decimal('price_per_month', 10, 2);
+            $table->uuid('id')->primary();
+
+            $table->foreignUuid('user_id')
+                ->constrained('users')
+                ->cascadeOnDelete();
+
+            $table->foreignUuid('plan_id')
+                ->constrained('subscription_plans');
+
+            $table->foreignUuid('asset_id')
+                ->nullable()
+                ->constrained('assets')
+                ->nullOnDelete();
+
             $table->date('start_date');
             $table->date('end_date');
-            $table->enum('status', ['active', 'expired', 'cancelled', 'suspended'])->default('active');
-            $table->boolean('is_trial')->default(false);
-            $table->date('trial_end_date')->nullable();
+
+            $table->string('status')->default('active');
+
             $table->boolean('auto_renew')->default(true);
+            $table->boolean('is_trial')->default(false);
+
+            $table->date('trial_end_date')->nullable();
             $table->string('payment_method', 50)->nullable();
-            $table->string('stripe_subscription_id')->nullable();
-            $table->string('paystack_subscription_code')->nullable();
+
             $table->timestamps();
 
-            $table->index('user_id');
-            $table->index('asset_id');
-            $table->index('status');
-            $table->index('end_date');
-            $table->unique(['asset_id', 'status'], 'idx_subscriptions_active_asset')
-                  ->where('status', 'active');
+            // Optional but smart
+            $table->index(['user_id', 'status']);
         });
     }
 

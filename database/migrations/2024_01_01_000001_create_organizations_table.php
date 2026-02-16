@@ -9,7 +9,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('organizations', function (Blueprint $table) {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('name');
             $table->enum('type', ['b2b', 'b2c', 'b2g']);
             $table->string('partner_code', 50)->unique();

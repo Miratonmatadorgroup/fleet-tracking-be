@@ -9,9 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('assets', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('organization_id')->constrained()->onDelete('cascade');
-            $table->foreignId('driver_id')->nullable()->constrained('users')->onDelete('set null');
+            $table->uuid('id')->primary();
+            $table->uuid('organization_id');
+            $table->uuid('driver_id')->nullable();
+            $table->foreign('organization_id')
+                ->references('id')
+                ->on('organizations')
+                ->cascadeOnDelete();
+
+            $table->foreign('driver_id')
+                ->references('id')
+                ->on('users')
+                ->nullOnDelete();
             $table->string('equipment_id', 100)->unique();
             $table->enum('asset_type', ['car', 'bike', 'suv', 'truck', 'van', 'boat', 'helicopter', 'plane', 'ship']);
             $table->enum('class', ['A', 'B', 'C']);

@@ -1,0 +1,120 @@
+@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTk5OGJlZS0zOTQzLTcwMWEtOTZkNy0xZTAxYTMyY2EwYTIiLCJqdGkiOiI3ZWYwMjIzNWQxNzMwYTUyMGJkZTM2YzRkOTEwOWNjMTViYTJmNTAwOGM5YTI2Y2NiMDVlZWE1ZWJmYTU0YTg0YzI1OTE2NWFlNzEyNjU4NCIsImlhdCI6MTc2MDk1ODY3MS44NDUzMzksIm5iZiI6MTc2MDk1ODY3MS44NDUzNDIsImV4cCI6MTc5MjQ5NDY3MS44NDAyNzYsInN1YiI6ImQxZWE3MjZjLWU2YTctNDE3MS04MmRlLWUxOTE2NGE3MDc2MCIsInNjb3BlcyI6W119.Ew98K77tRuvYVRk4cRevnZxJ8fkTrFX6i8cGICj_tunBI47A4THNL5Gkswcwt97B03x_-o0RxI-8TaJ9u4lLRXRTHE11geNnXTKNGaaou5bu8uFWKBaQw7b4x4qbtHRWsHnENId-6aQK5mqtBgS7qSPnrqTiCH1O01IaahevkWvkOLcgzwZlwVaSdQXhW8LASDf5bjqlu9k0FPYitpNCthcUQ-WqXEcUKks_ZiZCusZVY3Xa5YmTI5kSXVxHX4xVAx-1hBLtReBLihBL4gAQ9Z7MrUw448yR0lE2uVnwiMG0fYd_JrB2byY0RFfQyAfqj5EMy-chhLg54E4KhBq3OSApwQVFj60HXZ8oDLSS1gRIZCN7Yf8oP7xhKwGi7FMatIwRX0Laiis6ekJQVr3cbPWNboURmFkwFo3paLY_H5KtveZN1BQigObEUMr8mje5lPbrmTAD2OK3FW1RA5IKn9Ld-PObzFAzHYV-cfJEWP2sD9WQ4uKr3cEVgrAzs5loXeMEgwS__vi3thwWZjdheGtUafkV3XllyhtUWVsnA5ilS8pxrvcu0L12KufP0hFPxEryMAmDfMIY-zDa2Y74urDnOMbYJI40uz4H1k1c0mo5LfrCFDKthvgPG4w9knXLgxI15bOaNBlrV3-gHqZY7ae_Evd9gZYVIlKwIXxoLuo
+@url=https://api.useLoopFreight.com/api
+
+//ADMIN LOGIN
+ ###
+POST {{url}}/login
+Content-Type: application/json
+Accept: application/json
+
+{
+    "identifier": "admin@useLoopFreight.com",
+    "password": "LoopFreight2"
+}
+
+//ADMIN ADD PERMISSIONS TO ROLE
+###
+POST {{url}}/add-permissions-to-role
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "role": "admin",
+        "permissions": [
+           "admin-global-payout-status",
+           "admin-user-payout-status"
+        ]
+}
+
+
+//ADMIN TO DELETE A USER
+###
+DELETE {{url}}/admin/delete-user/
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW FINANACIAL SUMMARY
+###
+GET {{url}}/admin/view/financial/summary
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW LoopFreight MARCHANT WALLET ACCOUNT  TRANSACTIONS
+###
+GET {{url}}/admin/shanono/wallet/transactions
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW ALL USERS
+###
+GET {{url}}/view/all-users
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN CREATE ROLE
+###
+POST {{url}}/admin/create-roles
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "role": "dev",
+    "permissions": [
+        "view-api-credentials",
+        "view-api-routes"
+    ]
+}
+
+
+//ADMIN RESTRICT A USER PAYOUT
+###
+POST {{url}}/users/d9a362cf-b913-4f77-a9b4-6eaac08cf028/restrict-payout
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+//ADMIN UNRESTRICT USER PAYOUT
+###
+POST {{url}}/users/d9a362cf-b913-4f77-a9b4-6eaac08cf028/unrestrict-payout
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN VIEW A USER PAYOUT STATUS
+###
+GET {{url}}/admin/users/d9a362cf-b913-4f77-a9b4-6eaac08cf028/payout-status
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN RESTRICT ALL USERS PAYOUTS
+###
+POST {{url}}/payouts/restrict-all
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN UNRESTRICT ALL USERS PAYOUTS
+###
+POST {{url}}/payouts/unrestrict-all
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN VIEW ALL USERS PAYOUT STATUS
+###
+GET {{url}}/admin/payouts/global-status
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}

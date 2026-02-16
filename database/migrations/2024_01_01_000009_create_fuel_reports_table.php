@@ -9,8 +9,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('fuel_reports', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('asset_id')->constrained()->onDelete('cascade');
+            $table->uuid('id')->primary();
+
+            // Use UUID for asset_id
+            $table->uuid('asset_id');
+
+            // Foreign key constraint
+            $table->foreign('asset_id')->references('id')->on('assets')->cascadeOnDelete();
+
             $table->timestamp('trip_start');
             $table->timestamp('trip_end');
             $table->decimal('distance_km', 10, 2);
@@ -35,3 +41,4 @@ return new class extends Migration
         Schema::dropIfExists('fuel_reports');
     }
 };
+

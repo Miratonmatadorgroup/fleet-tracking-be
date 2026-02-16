@@ -2,18 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
+use App\Enums\SubscriptionStatusEnums;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Subscription extends Model
 {
-    use HasFactory;
+    use HasFactory, HasUuids;
+
+    public $incrementing = false;
+    protected $keyType = 'string';
 
     protected $fillable = [
         'user_id',
         'asset_id',
-        'plan_class',
-        'billing_cycle',
+        'plan_id',
         'price_per_month',
         'start_date',
         'end_date',
@@ -29,6 +33,7 @@ class Subscription extends Model
     protected function casts(): array
     {
         return [
+            'status' => SubscriptionStatusEnums::class,
             'price_per_month' => 'decimal:2',
             'start_date' => 'date',
             'end_date' => 'date',
@@ -38,7 +43,12 @@ class Subscription extends Model
         ];
     }
 
-    // Relationships
+    /*
+    |--------------------------------------------------------------------------
+    | Relationships
+    |--------------------------------------------------------------------------
+    */
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -49,42 +59,55 @@ class Subscription extends Model
         return $this->belongsTo(Asset::class);
     }
 
+    public function plan()
+    {
+        return $this->belongsTo(SubscriptionPlan::class);
+    }
+
     public function payments()
     {
         return $this->hasMany(Payment::class);
     }
 
-    // Scopes
+    /*
+    |--------------------------------------------------------------------------
+    | Scopes (enum-safe)
+    |--------------------------------------------------------------------------
+    */
+
     public function scopeActive($query)
     {
-        return $query->where('status', 'active');
+        return $query->where('status', SubscriptionStatusEnums::ACTIVE);
     }
 
     public function scopeExpired($query)
     {
-        return $query->where('status', 'expired');
+        return $query->where('status', SubscriptionStatusEnums::EXPIRED);
     }
 
     public function scopeExpiringSoon($query, int $days = 7)
     {
-        return $query->where('status', 'active')
-                     ->whereBetween('end_date', [now(), now()->addDays($days)]);
+        return $query
+            ->where('status', SubscriptionStatusEnums::ACTIVE)
+            ->whereBetween('end_date', [now(), now()->addDays($days)]);
     }
 
-    public function scopeByClass($query, string $class)
-    {
-        return $query->where('plan_class', $class);
-    }
+    /*
+    |--------------------------------------------------------------------------
+    | Helpers
+    |--------------------------------------------------------------------------
+    */
 
-    // Helper methods
     public function isActive(): bool
     {
-        return $this->status === 'active' && $this->end_date->isFuture();
+        return $this->status === SubscriptionStatusEnums::ACTIVE
+            && $this->end_date->isFuture();
     }
 
     public function isExpired(): bool
     {
-        return $this->status === 'expired' || $this->end_date->isPast();
+        return $this->status === SubscriptionStatusEnums::EXPIRED
+            || $this->end_date->isPast();
     }
 
     public function daysUntilExpiry(): int
@@ -92,42 +115,18 @@ class Subscription extends Model
         return max(0, now()->diffInDays($this->end_date, false));
     }
 
-    public function getTotalAmount(): float
-    {
-        $months = match($this->billing_cycle) {
-            'monthly' => 1,
-            'quarterly' => 3,
-            'biannual' => 6,
-            'yearly' => 12,
-            default => 1,
-        };
-
-        return $this->price_per_month * $months;
-    }
-
     public function markAsExpired(): void
     {
-        $this->update(['status' => 'expired']);
+        $this->update([
+            'status' => SubscriptionStatusEnums::EXPIRED,
+        ]);
     }
 
-    public function renew(string $billingCycle, bool $autoRenew = true): self
+    public function cancel(): void
     {
-        $months = match($billingCycle) {
-            'monthly' => 1,
-            'quarterly' => 3,
-            'biannual' => 6,
-            'yearly' => 12,
-            default => 1,
-        };
-
         $this->update([
-            'billing_cycle' => $billingCycle,
-            'start_date' => now(),
-            'end_date' => now()->addMonths($months),
-            'status' => 'active',
-            'auto_renew' => $autoRenew,
+            'status' => SubscriptionStatusEnums::CANCELLED,
+            'auto_renew' => false,
         ]);
-
-        return $this;
     }
 }
