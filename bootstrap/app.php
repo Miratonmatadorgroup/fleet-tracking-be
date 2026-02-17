@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => RoleOrPermissionMiddleware::class,
             'api.key' => ApiKeyMiddleware::class,
             'check.apiclient.blocked' => CheckApiClientBlocked::class,
+            'check.subscription' => \App\Http\Middleware\CheckSubscription::class,
             'update.activity' => \App\Http\Middleware\UpdateUserActivity::class,
         ]);
 

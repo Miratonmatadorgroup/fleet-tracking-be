@@ -3,7 +3,6 @@
 namespace App\Mail;
 
 use App\Models\Payment;
-use App\Models\Delivery;
 use App\Models\SubscriptionPlan;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;

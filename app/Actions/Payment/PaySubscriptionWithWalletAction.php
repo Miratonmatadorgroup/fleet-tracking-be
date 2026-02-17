@@ -99,7 +99,7 @@ class PaySubscriptionWithWalletAction
         $startDate = now();
         $endDate = match ($plan->billing_cycle->value) {
             'monthly' => now()->addMonth(),
-            'quarterly' => now()->addMonths(4),
+            'quarterly' => now()->addMonths(3),
             'yearly' => now()->addYear(),
             default => now()->addMonth(),
         };

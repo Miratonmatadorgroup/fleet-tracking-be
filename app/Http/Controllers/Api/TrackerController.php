@@ -2,16 +2,17 @@
 
 namespace App\Http\Controllers\Api;
 
-use App\Models\Tracker;
-use App\Models\Merchant;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use App\Enums\TrackerStatusEnums;
 use App\Enums\MerchantStatusEnums;
-use Illuminate\Support\Facades\DB;
+use App\Enums\TrackerStatusEnums;
 use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
+use App\Models\Asset;
+use App\Models\Merchant;
+use App\Models\Tracker;
+use App\Services\TrackerService;
 use App\Services\TransactionPinService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class TrackerController extends Controller
 {
@@ -306,5 +307,106 @@ class TrackerController extends Controller
                 $th
             );
         }
+    }
+
+
+    public function tracking(Request $request, TrackerService $trackerService)
+    {
+        $request->validate([
+            'asset_id' => 'required|exists:assets,id'
+        ]);
+
+        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+
+        if (! $asset->tracker) {
+            return failureResponse('No tracker assigned to this asset');
+        }
+
+        $deviceId = $asset->tracker->imei; // or serial_number depending on provider
+
+        $response = $trackerService->getLastPosition([$deviceId]);
+
+        // Optionally store last known position
+        if (isset($response['records'][0])) {
+
+            $position = $response['records'][0];
+
+            $asset->update([
+                'last_known_lat' => $position['silent'],
+                'last_known_lng' => $position['callon'],
+                'last_ping_at'   => now(),
+            ]);
+        }
+
+        return successResponse('Live tracking data', $response);
+    }
+
+
+    public function remoteShutdown(Request $request, TrackerService $trackerService)
+    {
+        $request->validate([
+            'asset_id' => 'required|exists:assets,id'
+        ]);
+
+        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+
+        if (! $asset->tracker) {
+            return failureResponse('No tracker assigned');
+        }
+
+        $response = $trackerService->lockVehicle(
+            $asset->tracker->imei,
+            1 // or store device_type in tracker table
+        );
+
+        // Log command
+        $asset->remoteCommands()->create([
+            'command' => 'lock',
+            'response' => json_encode($response),
+            'status' => $response['status'] ?? null
+        ]);
+
+        return successResponse('Shutdown command sent', $response);
+    }
+
+
+    public function geoFencing(Request $request, TrackerService $trackerService)
+    {
+        $request->validate([
+            'asset_id' => 'required|exists:assets,id',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'radius' => 'required|integer'
+        ]);
+
+        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+
+        $response = $trackerService->addGeofence(
+            $asset->tracker->imei,
+            $request->latitude,
+            $request->longitude,
+            $request->radius
+        );
+
+        return successResponse('Geofence added', $response);
+    }
+
+    public function assignTrackerToAsset(Request $request)
+    {
+        $request->validate([
+            'asset_id' => 'required|exists:assets,id',
+            'tracker_id' => 'required|exists:trackers,id'
+        ]);
+
+        $asset = Asset::findOrFail($request->asset_id);
+        $tracker = Tracker::where('id', $request->tracker_id)
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $asset->update([
+            'tracker_id' => $tracker->id
+        ]);
+
+        return successResponse('Tracker assigned to asset');
     }
 }

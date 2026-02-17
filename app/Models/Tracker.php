@@ -32,6 +32,12 @@ class Tracker extends Model
         'status' => TrackerStatusEnums::class,
     ];
 
+    public function asset()
+    {
+        return $this->hasOne(Asset::class);
+    }
+
+
     /*
     |--------------------------------------------------------------------------
     | Relationships
