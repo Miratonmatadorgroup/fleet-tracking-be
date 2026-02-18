@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
+use App\Models\AuditLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -68,7 +69,7 @@ class AssetController extends Controller
         $asset = Asset::create($validated);
 
         // Log audit
-        \App\Models\AuditLog::create([
+        AuditLog::create([
             'user_id' => $request->user()->id,
             'action' => 'created',
             'entity_type' => 'Asset',
