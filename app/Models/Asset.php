@@ -13,6 +13,7 @@ class Asset extends Model
         'organization_id',
         'driver_id',
         'equipment_id',
+        'tracker_id',
         'asset_type',
         'class',
         'make',
