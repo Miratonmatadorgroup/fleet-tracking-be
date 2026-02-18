@@ -22,10 +22,8 @@ class Kernel extends ConsoleKernel
         $schedule->command('report:send-client-debt-summary')->dailyAt('06:00');
         $schedule->command('report:send-client-debt-summary')->weeklyOn(1, '06:00');
         $schedule->command('commissions:release-pending')->hourly();
-        $schedule->command('bills:resolve-pending')
-        ->everyFiveMinutes()
-        ->withoutOverlapping()
-        ->onOneServer();
+        $schedule->command('bills:resolve-pending')->everyFiveMinutes()->withoutOverlapping()->onOneServer();
+        $schedule->command('subscriptions:process-expired')->daily();
     }
     /**
      * Register the commands for the application.

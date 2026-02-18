@@ -45,6 +45,12 @@ class Asset extends Model
         ];
     }
 
+    public function tracker()
+    {
+        return $this->belongsTo(Tracker::class);
+    }
+
+
     // Relationships
     public function organization()
     {

@@ -6,9 +6,7 @@ namespace App\Models;
 use App\Enums\GenderEnums;
 use App\Enums\SubscriptionFeatureEnums;
 use App\Enums\UserTypesEnums;
-use App\Models\Delivery;
 use App\Models\Discount;
-use App\Models\Driver;
 use App\Models\Merchant;
 use App\Models\Payment;
 use App\Models\Payout;
@@ -247,7 +245,11 @@ class User extends Authenticatable
         return $this->hasMany(Merchant::class, 'verified_by');
     }
 
-
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class);
+    }
+    
     public function activeSubscription()
     {
         return $this->hasOne(Subscription::class)

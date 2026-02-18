@@ -1,0 +1,422 @@
+@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTljMWQ2Mi03MDQ0LTczZmQtOGY1Yi1iM2FhNDIxMDhhZjMiLCJqdGkiOiJjNzM5NWQxOWNkNGFkYmFjMzg5Yzg3ZWM4ZGE2ZTVmN2FhZGM5ZGNkYjMyM2FiOWI0MDI5YTAyZDU4MTNmMGEwM2M0ODgwMDE0ZDIyZjMyYiIsImlhdCI6MTc3MTM1NzM0OS41NTU0MDEsIm5iZiI6MTc3MTM1NzM0OS41NTU0MDYsImV4cCI6MTgwMjg5MzM0OS4wNDU4NTcsInN1YiI6ImM3OTliNDViLTZlZjItNDNhOC05ZWFkLWU1NGVhMTY5YWMzZSIsInNjb3BlcyI6W119.gZWFM3_iM-zD7FJfPSxP7LJKt444iaZKCDVz1i25mmnl2xIjOLHjnVmh0Z35L5BNJFIQYGSzEQgNMqtDB-mH-9mCsaKxJoiGo4Xphp4tyRIWg5rupFrbE_XBgtjy6DS921o0mtZB1mlhuYUgUOuxpvmvXF3MjhXq1BYXEqNFFGZ4-0vG_jDZ_pqpo139LJoUNWwTMWQaZDO16MUWHAJ9PicUblcLELCP2S9n2VWJHyc4uIQriA8kFPLwIUg-9EbD7RPhNyZRhJ3Zj94WGo0lBCMNzelNIZI2oc7iSXgFyGjy2DOv2tiqveuPOeR-TtOcAHT3DiIfVIMtRw5Q_GFuAjcbyYkZLjvY-pWxPcMIOsGNoudMuZF1em1yaHjApk18oX929bIKRlu3b5Xmqkkv6AHiLz3dX2x_9h_0HhiJz85qWsDfDfCgsB80vtYZElkC8xJrPFo_nq01vPpnOOnSA7BRSAIayQ4bc0wrJEcl9o17iB4ZvbM13-BlvGrd6pTsLu4Fu7v3MvKBdYFyGJiP9oXrcEslJHcviEYBfvYTvM-UETDD2eLEoZGJDzT5-E5i7L5eCyIIjBPui8tyJQC6BxzUL2Ad4REHjZa9gEpygBdxxgmcTa-feUa9aW8xYUXonJe8UtSC--HG3sthI8X0Fhnn9tuMSpU-TNcllbooi7E
+
+@url=http://127.0.0.1:8001/api
+# @url=https://api.LoopFreight.xyz/api
+# @url=https://api.useLoopFreight.com/api
+
+
+
+//OFFICE ADMIN LOGIN
+ ###
+POST {{url}}/login
+Content-Type: application/json
+Accept: application/json
+
+{
+    "identifier": "camporse21@aol.com",
+    "password": "Password1@"
+}
+
+
+// VIEW MY FLEET MANAGERS
+###
+GET {{url}}/merchant/fleet-managers
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//OFFICE ADMIN PROFILE
+###
+GET {{url}}/user-profile
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//OFFICE ADMIN WALLET TRANSACTIONS
+###
+GET {{url}}/user/transactions
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//USER PAYOUT TRANSFER FUNDS TO OTHER BANKS
+###
+POST {{url}}/user/transfer
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "amount": 15000,
+  "narration": "Bank transfer test",
+  "transaction_pin": "1234",
+  "account_source": "user"
+}
+
+
+
+//USER BUY AIRTIME
+###
+POST {{url}}/user/buy/airtime
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "phone": "+2347031011573",
+  "provider": "MTN",
+  "amount": 1000,
+  "transaction_pin": "1234"
+}
+
+//USER VIEW LIST OF DATA PLANSA
+###
+GET {{url}}/provider/data/plans
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "provider": "MTN"
+}
+
+//USER BUY AIRTIME
+###
+POST {{url}}/user/buy/data
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "phone": "+2348012345678",
+  "provider": "MTN",
+  "plan_code": "md10",
+  "transaction_pin": "1234"
+}
+
+//USER BUY ELECTRICITY
+###
+POST {{url}}/user/buy/electricity
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "meter": "454012345678",
+  "disco": "EKEDC",
+  "amount": 2000,
+  "transaction_pin": "1234"
+}
+
+//USER BUY CABLE TV
+###
+POST {{url}}/user/buy/cable/tv
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "meter": "454012345678",
+  "disco": "DSTV",
+  "amount": 2000,
+  "transaction_pin": "1234"
+}
+
+
+//USER SHANONO WALLET TRANSACTIONS
+###
+GET {{url}}/user/shanono/wallet/transactions
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "account_number": "7800000253"
+}
+
+
+//USER CREATE PIN
+###
+POST {{url}}/transaction-pin/create
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "transaction_pin": "1234"
+
+}
+
+
+//USER CHANGE TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/change
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "old_pin": "1111",
+    "new_pin": "1234"
+
+}
+
+//USER FORGOT TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/forgot
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//USER RESET TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/reset
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "otp": "294231",
+    "new_pin": "1111"
+
+}
+
+//USER CHEK TRANSACTION PIN STATUS
+###
+GET {{url}}/user/transaction-pin-status
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+
+//USER BOOK DELIVERY
+###
+POST {{url}}/book-delivery
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "pickup_location": "No.3 John Great Court, Chevron, Alternative Rte, Lekki, Lagos.",
+   "dropoff_location": "Oshodi, Lagos",
+   "mode_of_transportation": "van",
+   "delivery_type": "standard",
+   "package_description": "New laptop in original packaging",
+   "package_weight": 2.5,
+   "delivery_pics": [],
+   "delivery_date": "2025-10-25",
+   "delivery_time": "13:30",
+   "receiver_name": "John Doe",
+   "receiver_phone": "+2348012345678",
+   "sender_name": "Jane Doe",
+   "sender_phone": "+2348098765432",
+   "package_type": "electronics",
+   "other_package_type": null
+}
+
+//USER UPDATE DELIVERY
+###
+PUT {{url}}/update-booking/019a01dd-8c05-729f-9419-1003340d6499
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "pickup_location": "No.3 John Great Court, Chevron, Alternative Rte, Lekki, Lagos.",
+   "dropoff_location": "Ikeja GRA, Lagos",
+   "mode_of_transportation": "van",
+   "delivery_type": "standard",
+   "package_description": "New laptop in original packaging",
+   "package_weight": 40,
+   "delivery_pics": [],
+   "delivery_date": "2025-10-25",
+   "delivery_time": "13:30",
+   "receiver_name": "Harison Esien",
+   "receiver_phone": "+2348012345678",
+   "sender_name": "Jane Doe",
+   "sender_phone": "+2348098765432",
+   "package_type": "electronics",
+   "other_package_type": null
+}
+
+//USER PAY FOR DELIVERY FROM WALLET
+###
+POST {{url}}/pay-with-wallet
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "delivery_id": "019a0749-b56d-71b7-8087-e1aff328df4c"
+}
+
+//USER MARK DELIVERY COMPLETED
+###
+POST {{url}}/sender/deliveries/019a0324-81e9-70fe-9c75-4e720fc7884c/confirm-completed
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//USER RATE DRIVER
+###
+POST {{url}}/rate/drivers
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "delivery_id": "019a02e0-5a82-717f-a8a2-3836d71343b4",
+   "rating": "4",
+   "comment": "Sharp Guy"
+
+}
+
+//USER NOTIFICATIONS
+###
+GET {{url}}/user/notifications
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//USER VIEW LIST OF RIDES
+###
+GET {{url}}/user/view-rides
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//USER CREDIT WALLET VIA SHANONO PAYMENTGATEWAY
+###
+POST {{url}}/wallet/pay/initiate
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "user_id": "c42bddfe-0bcd-41c3-82c9-6bf07bebc9b8",
+  "amount": 5000
+}
+
+
+//MARK DRIVER AVAILABLE
+###
+POST {{url}}/drivers/{driverId}/available
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "driverer_id": "c42bddfe-0bcd-41c3-82c9-6bf07bebc9b8"
+}
+
+//MARK DRIVER unAVAILABLE
+###
+POST {{url}}/drivers/{driverId}/unavailable
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "driverer_id": "c42bddfe-0bcd-41c3-82c9-6bf07bebc9b8"
+}
+
+//USER SEARCH FOR RIDE
+###
+POST {{url}}/ride/search
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+   "pickup": "No.3 John Great Court, Chevron, Alternative Rte, Lekki, Lagos.",
+   "dropoff": "",
+   "transport_mode": "car",
+   "ride_pool_category": "",
+   "usage_hours": "2"
+
+}
+
+
+//USER BOOK RIDE
+###
+POST {{url}}/book/ride
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "driver_id": "019a6e47-2cea-71ed-a649-39c5572e8782",
+    "transport_mode_id": "019abf14-6ab7-721e-899a-f5b1ceccbef9",
+    "estimate_token": "ride_estimate_d9a362cf-b913-4f77-a9b4-6eaac08cf028_e22c66bb-d3f0-4c94-88f4-52e2545565fd"
+
+}
+
+//USER CANCEL RIDE
+###
+POST {{url}}/cancel/ride/30ff297d-bb23-4059-8bd3-9354c779c249
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//USER ACTIVE RIDES
+###
+GET {{url}}/user/active-ride
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//USER RATING LAST RIDE POOL DRIVER
+###
+GET {{url}}/rating/last-ride
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//USER DISMISS RATING RIDE POOL DRIVER
+###
+POST {{url}}/rating/dismiss
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+  "ride_pool_id": "ba6f0eb9-a629-4dbc-bf56-30c608cca7a3"
+}
+
+//USER RATE RIDE POOL DRIVER
+###
+POST {{url}}/rate/ride-pool/drivers
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "ride_pool_id": "ba6f0eb9-a629-4dbc-bf56-30c608cca7a3",
+    "rating": "5",
+    "comment": "Quite Impressive"
+
+}
+
+//USER VIEW RIDE POOLING PRICING
+###
+GET {{url}}/ride-pooling-pricing
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//USER VIEW USER DEVICE ACTIVITIES
+###
+GET {{url}}/activity/devices
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}

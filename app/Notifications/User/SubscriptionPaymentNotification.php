@@ -2,7 +2,6 @@
 
 namespace App\Notifications\User;
 
-use App\Models\Delivery;
 use App\Models\Payment;
 use App\Models\SubscriptionPlan;
 use App\Models\User;
