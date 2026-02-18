@@ -5,16 +5,11 @@ namespace App\Services;
 use Exception;
 use ZipArchive;
 use App\Models\User;
-use GuzzleHttp\Client;
-use GuzzleHttp\Psr7\Utils;
 use Illuminate\Support\Str;
 
-use App\Models\NinVerification;
 use Illuminate\Support\Facades\Log;
 
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
-use App\Enums\NinVerificationStatusEnums;
 
 class SmileIdService
 {
