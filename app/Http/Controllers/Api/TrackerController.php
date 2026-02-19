@@ -159,12 +159,32 @@ class TrackerController extends Controller
         }
     }
 
+    public function assignTrackerToAsset(Request $request)
+    {
+        $request->validate([
+            'asset_id' => 'required|exists:assets,id',
+            'tracker_id' => 'required|exists:trackers,id'
+        ]);
+
+        $asset = Asset::findOrFail($request->asset_id);
+        $tracker = Tracker::where('id', $request->tracker_id)
+            ->where('status', 'active')
+            ->firstOrFail();
+
+        $asset->update([
+            'tracker_id' => $tracker->id
+        ]);
+
+        return successResponse('Tracker assigned to asset');
+    }
+
     public function activate(Request $request)
     {
         $request->validate([
-            'serial_number' => 'required|string',
-            'label'           => 'required|string|max:100',
+            'serial_number'  => 'required|string',
+            'label'          => 'required|string|max:100',
             'transaction_pin' => 'required|digits:4',
+            'asset_id'       => 'required|uuid|exists:assets,id',
         ]);
 
         $user = Auth::user();
@@ -177,30 +197,48 @@ class TrackerController extends Controller
             return failureResponse('Invalid or already activated tracker');
         }
 
-        // PIN logic
         $pinService = app(TransactionPinService::class);
 
         try {
             if ($user->transaction_pin) {
-                // Verify existing PIN
                 $pinService->checkPin($user, $request->transaction_pin);
             } else {
-                // First-time PIN creation
                 $pinService->createPin($user, $request->transaction_pin);
             }
         } catch (\Exception $e) {
             return failureResponse($e->getMessage());
         }
 
-        // Activate tracker
-        $tracker->update([
-            'status' => 'active',
-            'user_id' => $user->id,
-            'label'   => $request->label,
-        ]);
+        DB::transaction(function () use ($tracker, $request, $user) {
 
-        return successResponse('Tracker activated successfully');
+            // Lock asset
+            $asset = Asset::where('id', $request->asset_id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            //Prevent attaching tracker to multiple assets
+            if ($tracker->asset_id) {
+                throw new \RuntimeException('Tracker already assigned to an asset');
+            }
+
+            // Update tracker
+            $tracker->update([
+                'status'      => 'active',
+                'user_id'     => $user->id,
+                'label'       => $request->label,
+                'asset_id'    => $asset->id,
+                'is_assigned' => 1,
+            ]);
+
+            // Update asset
+            $asset->update([
+                'status' => 'active',
+            ]);
+        });
+
+        return successResponse('Tracker activated and linked successfully');
     }
+
 
     public function assignRange(Request $request)
     {
@@ -263,6 +301,99 @@ class TrackerController extends Controller
         }
     }
 
+    public function bulkAssignRange(Request $request)
+    {
+        $request->validate([
+            'merchant_code'   => 'required|exists:merchants,merchant_code',
+            'start_serial'    => 'required|string',
+            'end_serial'      => 'required|string',
+            'start_equipment' => 'required|string',
+            'end_equipment'   => 'required|string',
+        ]);
+
+        try {
+
+            $merchant = Merchant::where('merchant_code', $request->merchant_code)->firstOrFail();
+
+            if ($merchant->status === MerchantStatusEnums::SUSPENDED) {
+                return failureResponse('Suspended merchant cannot activate trackers', 422);
+            }
+
+            DB::transaction(function () use ($request, $merchant) {
+
+                // 1️⃣ Get Trackers by Serial Range
+                $trackers = Tracker::whereBetween('serial_number', [
+                    $request->start_serial,
+                    $request->end_serial
+                ])
+                    ->where('merchant_id', $merchant->id)
+                    ->where('status', TrackerStatusEnums::ASSIGNED)
+                    ->orderBy('serial_number')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($trackers->isEmpty()) {
+                    throw new \RuntimeException('No assigned trackers found in this serial range.');
+                }
+
+                // 2️⃣ Get Assets by Equipment Range
+                $assets = Asset::whereBetween('equipment_id', [
+                    $request->start_equipment,
+                    $request->end_equipment
+                ])
+                    ->whereNull('tracker_id') // prevent double assignment
+                    ->orderBy('equipment_id')
+                    ->lockForUpdate()
+                    ->get();
+
+                if ($assets->isEmpty()) {
+                    throw new \RuntimeException('No available assets found in this equipment range.');
+                }
+
+                if ($trackers->count() !== $assets->count()) {
+                    throw new \RuntimeException('Tracker count and Asset count do not match.');
+                }
+
+                // 3️⃣ Pair Automatically
+                foreach ($trackers as $index => $tracker) {
+
+                    $asset = $assets[$index];
+
+                    // Update Tracker (LIKE YOUR INDIVIDUAL FLOW)
+                    $tracker->update([
+                        'status'      => 'active',
+                        'user_id'     => Auth::id(),
+                        'asset_id'    => $asset->id,
+                        'is_assigned' => 1,
+                    ]);
+
+                    // Update Asset
+                    $asset->update([
+                        'status' => 'active',
+                        'tracker_id' => $tracker->id, // keep only if column exists
+                    ]);
+                }
+
+                if ($merchant->status !== MerchantStatusEnums::APPROVED) {
+                    $merchant->approve(Auth::user());
+                }
+            });
+
+            return successResponse('Bulk tracker activation completed successfully.');
+        } catch (\RuntimeException $e) {
+            return failureResponse($e->getMessage(), 422);
+        } catch (\Throwable $th) {
+            return failureResponse(
+                'Bulk tracker activation failed',
+                500,
+                'bulk_tracker_asset_link_error',
+                $th
+            );
+        }
+    }
+
+
+
     public function myTrackers(Request $request)
     {
         try {
@@ -271,7 +402,8 @@ class TrackerController extends Controller
             $perPage = $request->input('per_page', 20);
 
             $query = Tracker::with([
-                'merchant:id,name,email',        // adjust fields as needed
+                'merchant:id,name,email',
+                'asset.driver'
             ])
                 ->where('user_id', $user->id);
 
@@ -310,6 +442,10 @@ class TrackerController extends Controller
     }
 
 
+
+
+
+    // TRACKER API CONSUMPTION STARTS HERE
     public function tracking(Request $request, TrackerService $trackerService)
     {
         $request->validate([
@@ -389,24 +525,5 @@ class TrackerController extends Controller
         );
 
         return successResponse('Geofence added', $response);
-    }
-
-    public function assignTrackerToAsset(Request $request)
-    {
-        $request->validate([
-            'asset_id' => 'required|exists:assets,id',
-            'tracker_id' => 'required|exists:trackers,id'
-        ]);
-
-        $asset = Asset::findOrFail($request->asset_id);
-        $tracker = Tracker::where('id', $request->tracker_id)
-            ->where('status', 'active')
-            ->firstOrFail();
-
-        $asset->update([
-            'tracker_id' => $tracker->id
-        ]);
-
-        return successResponse('Tracker assigned to asset');
     }
 }

@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('assets', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('organization_id');
+            $table->uuid('organization_id')->nullable();
             $table->uuid('driver_id')->nullable();
             $table->foreign('organization_id')
                 ->references('id')
@@ -19,8 +19,9 @@ return new class extends Migration
 
             $table->foreign('driver_id')
                 ->references('id')
-                ->on('users')
+                ->on('drivers')
                 ->nullOnDelete();
+
             $table->string('equipment_id', 100)->unique();
             $table->enum('asset_type', ['car', 'bike', 'suv', 'truck', 'van', 'boat', 'helicopter', 'plane', 'ship']);
             $table->enum('class', ['A', 'B', 'C']);

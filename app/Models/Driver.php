@@ -2,17 +2,16 @@
 
 namespace App\Models;
 
-use App\Models\User;
-use App\Models\Delivery;
-use App\Models\TransportMode;
-use App\Models\DriverLocation;
+use App\Enums\DriverApplicationStatusEnums;
 use App\Enums\DriverStatusEnums;
 use App\Enums\TransportModeEnums;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Notifications\Notifiable;
-use App\Enums\DriverApplicationStatusEnums;
+use App\Models\Asset;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Facades\Storage;
+
+
 
 class Driver extends Model
 {
@@ -92,10 +91,6 @@ class Driver extends Model
         return $this->hasOne(TransportMode::class);
     }
 
-    public function deliveries()
-    {
-        return $this->hasMany(Delivery::class);
-    }
 
     public function user()
     {
@@ -103,25 +98,10 @@ class Driver extends Model
     }
 
     // Driver.php
-    public function partner()
+
+    public function asset()
     {
-        return $this->hasOneThrough(
-            Partner::class,
-            TransportMode::class,
-            'driver_id',
-            'id',
-            'id',
-            'partner_id'
-        );
+        return $this->hasOne( Asset::class);
     }
 
-    public function locations()
-    {
-        return $this->hasMany(DriverLocation::class);
-    }
-
-    public function flaggedByUser()
-    {
-        return $this->belongsTo(User::class, 'flagged_by');
-    }
 }
