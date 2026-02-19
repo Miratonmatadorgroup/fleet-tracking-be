@@ -2,11 +2,12 @@
 
 namespace App\Models;
 
-use App\Models\Merchant;
-use App\Enums\TrackerStatusEnums;
 use App\Enums\MerchantStatusEnums;
-use Illuminate\Database\Eloquent\Model;
+use App\Enums\TrackerStatusEnums;
+use App\Models\Asset;
+use App\Models\Merchant;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 
 class Tracker extends Model
 {
@@ -19,6 +20,7 @@ class Tracker extends Model
         'imei',
         'label',
         'status',
+        'asset_id',
         'is_assigned',
         'merchant_id',
         'user_id',
@@ -34,7 +36,7 @@ class Tracker extends Model
 
     public function asset()
     {
-        return $this->hasOne(Asset::class);
+        return $this->belongsTo(Asset::class, 'asset_id');
     }
 
 

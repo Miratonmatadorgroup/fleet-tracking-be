@@ -1,10 +1,5 @@
 <?php
 
-use App\Jobs\SendMail;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
-
 function successResponse($message, $data = null, $status = 200, $extras = [])
 {
     if (is_string($message) && str_contains(strtolower($message), "created")) {

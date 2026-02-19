@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminBroadcastController;
+use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DisputeController;
 use App\Http\Controllers\Api\DriverController;
@@ -87,11 +88,19 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::get('/tracker/inventory', [TrackerController::class, 'index'])->middleware('permission:view-all-trackers');
     Route::delete('/tracker/inventory/{tracker}', [TrackerController::class, 'destroy'])->middleware('permission:delete-a-tracker');
     Route::delete('/bulk-delet/trackers', [TrackerController::class, 'bulkDelete'])->middleware('permission:bulk-delete-trackers');
-    Route::post('/assign/activate/trackers', [TrackerController::class, 'assignRange'])->middleware('permission:assign-trackers');
+    Route::post('/assign/activate/trackers', [TrackerController::class, 'bulkAssignRange'])->middleware('permission:assign-trackers');
     Route::post('/activate/tracker', [TrackerController::class, 'activate']);
     Route::get('/view/my-trackers', [TrackerController::class, 'myTrackers']);
 
     // TRACKER ROUTE ENDS HERE
+
+    // ASSET ROUTE STARTS HERE
+    Route::post('/create/asset', [AssetController::class, 'store']);
+    Route::put('/update/asset/{id}', [AssetController::class, 'update']);
+    Route::get('/view/myasset', [AssetController::class, 'myAssets']);
+
+
+    // ASSET ROUTE ENDS HERE
 
     // MERCHANT ROUTE STARTS HERE
     Route::post('/merchants/{merchant}/suspend', [MerchantController::class, 'suspend'])->middleware('permission:suspend-merchant');

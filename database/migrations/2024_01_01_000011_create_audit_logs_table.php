@@ -13,7 +13,7 @@ return new class extends Migration
             $table->uuid('user_id')->nullable();
             $table->string('action', 100);
             $table->string('entity_type', 100);
-            $table->bigInteger('entity_id')->nullable();
+            $table->uuid('entity_id')->nullable();
             $table->json('old_values')->nullable();
             $table->json('new_values')->nullable();
             $table->ipAddress('ip_address')->nullable();

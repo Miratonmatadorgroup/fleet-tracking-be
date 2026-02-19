@@ -2,12 +2,16 @@
 
 namespace App\Models;
 
+use App\Models\FuelReport;
+use App\Models\GeofenceBreach;
+use App\Models\RemoteCommand;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Asset extends Model
 {
-    use HasFactory;
+    use HasUuids, HasFactory;
 
     protected $fillable = [
         'organization_id',
@@ -48,8 +52,9 @@ class Asset extends Model
 
     public function tracker()
     {
-        return $this->belongsTo(Tracker::class);
+        return $this->hasOne(Tracker::class, 'asset_id');
     }
+
 
 
     // Relationships
@@ -60,8 +65,9 @@ class Asset extends Model
 
     public function driver()
     {
-        return $this->belongsTo(User::class, 'driver_id');
+        return $this->belongsTo(Driver::class, 'driver_id');
     }
+
 
     public function gpsLogs()
     {
