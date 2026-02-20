@@ -311,6 +311,14 @@ class TrackerController extends Controller
             'end_equipment'   => 'required|string',
         ]);
 
+        if ($request->start_serial > $request->end_serial) {
+            return failureResponse('Start serial must be less than end serial', 422);
+        }
+
+        if ($request->start_equipment > $request->end_equipment) {
+            return failureResponse('Start equipment must be less than end equipment', 422);
+        }
+
         try {
 
             $merchant = Merchant::where('merchant_code', $request->merchant_code)->firstOrFail();
@@ -321,27 +329,23 @@ class TrackerController extends Controller
 
             DB::transaction(function () use ($request, $merchant) {
 
-                // 1️⃣ Get Trackers by Serial Range
                 $trackers = Tracker::whereBetween('serial_number', [
                     $request->start_serial,
                     $request->end_serial
                 ])
-                    ->where('merchant_id', $merchant->id)
-                    ->where('status', TrackerStatusEnums::ASSIGNED)
+                    ->where('status', TrackerStatusEnums::INACTIVE)
                     ->orderBy('serial_number')
                     ->lockForUpdate()
                     ->get();
 
                 if ($trackers->isEmpty()) {
-                    throw new \RuntimeException('No assigned trackers found in this serial range.');
+                    throw new \RuntimeException('No available trackers in this range.');
                 }
 
-                // 2️⃣ Get Assets by Equipment Range
                 $assets = Asset::whereBetween('equipment_id', [
                     $request->start_equipment,
                     $request->end_equipment
                 ])
-                    ->whereNull('tracker_id') // prevent double assignment
                     ->orderBy('equipment_id')
                     ->lockForUpdate()
                     ->get();
@@ -354,23 +358,20 @@ class TrackerController extends Controller
                     throw new \RuntimeException('Tracker count and Asset count do not match.');
                 }
 
-                // 3️⃣ Pair Automatically
                 foreach ($trackers as $index => $tracker) {
 
                     $asset = $assets[$index];
 
-                    // Update Tracker (LIKE YOUR INDIVIDUAL FLOW)
                     $tracker->update([
-                        'status'      => 'active',
+                        'merchant_id' => $merchant->id,
+                        'status'      => TrackerStatusEnums::ACTIVE,
                         'user_id'     => Auth::id(),
                         'asset_id'    => $asset->id,
-                        'is_assigned' => 1,
+                        'is_assigned' => true,
                     ]);
 
-                    // Update Asset
                     $asset->update([
                         'status' => 'active',
-                        'tracker_id' => $tracker->id, // keep only if column exists
                     ]);
                 }
 
@@ -379,7 +380,7 @@ class TrackerController extends Controller
                 }
             });
 
-            return successResponse('Bulk tracker activation completed successfully.');
+            return successResponse('Bulk tracker activated and assigned successfully.');
         } catch (\RuntimeException $e) {
             return failureResponse($e->getMessage(), 422);
         } catch (\Throwable $th) {
@@ -391,8 +392,6 @@ class TrackerController extends Controller
             );
         }
     }
-
-
 
     public function myTrackers(Request $request)
     {
@@ -440,9 +439,6 @@ class TrackerController extends Controller
             );
         }
     }
-
-
-
 
 
     // TRACKER API CONSUMPTION STARTS HERE
