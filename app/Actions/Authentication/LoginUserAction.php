@@ -28,7 +28,7 @@ class LoginUserAction
 
             return [
                 'error'   => true,
-                'status'  => 401,
+                'status'  => 400,
                 'message' => 'Invalid credentials.'
             ];
         }
