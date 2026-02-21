@@ -91,9 +91,9 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "super_admin",
+    "role": "office_admin",
         "permissions": [
-           "view-total-earnings"
+           "allow-user-view-myassets"
 
         ]
 }

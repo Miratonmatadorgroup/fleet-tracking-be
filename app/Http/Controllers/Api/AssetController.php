@@ -4,8 +4,10 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
+use App\Models\AssetViewPermission;
 use App\Models\AuditLog;
 use App\Models\Driver;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
@@ -191,59 +193,186 @@ class AssetController extends Controller
         }
     }
 
+    // public function myAssets(Request $request)
+    // {
+    //     try {
+    //         $userId = $request->user()->id;
+
+    //         // Start the query
+    //         $query = Asset::whereHas('driver', function ($q) use ($userId) {
+    //             $q->where('user_id', $userId);
+    //         })->with(['driver', 'organization']);
+
+
+    //         if ($request->filled('asset_type')) {
+    //             $query->where('asset_type', $request->input('asset_type'));
+    //         }
+
+    //         if ($request->filled('status')) {
+    //             $query->where('status', $request->input('status'));
+    //         }
+
+    //         if ($request->filled('class')) {
+    //             $query->where('class', $request->input('class'));
+    //         }
+
+    //         if ($request->filled('make')) {
+    //             $query->where('make', 'like', '%' . $request->input('make') . '%');
+    //         }
+
+    //         if ($request->filled('model')) {
+    //             $query->where('model', 'like', '%' . $request->input('model') . '%');
+    //         }
+
+
+    //         $perPage = $request->input('per_page', 10); // allows overriding per page if needed
+    //         $assets = $query->paginate($perPage);
+
+    //         return successResponse(
+    //             'Your assets retrieved successfully.',
+    //             $assets
+    //         );
+    //     } catch (\Throwable $th) {
+    //         return failureResponse(
+    //             'Failed to retrieve your assets.',
+    //             500,
+    //             'server_error',
+    //             $th
+    //         );
+    //     }
+    // }
+
+    // public function myAssets(Request $request)
+    // {
+    //     try {
+    //         $authUser = $request->user();
+    //         $targetUserId = $authUser->id;
+
+    //         // If viewing another user’s assets
+    //         if ($request->filled('owner_id')) {
+
+    //             $hasAccess = AssetViewPermission::where([
+    //                 'owner_id' => $request->owner_id,
+    //                 'viewer_id' => $authUser->id
+    //             ])->exists();
+
+    //             if (!$hasAccess) {
+    //                 return failureResponse('You are not authorized to view these assets', 403);
+    //             }
+
+    //             $targetUserId = $request->owner_id;
+    //         }
+
+    //         $query = Asset::whereHas('driver', function ($q) use ($targetUserId) {
+    //             $q->where('user_id', $targetUserId);
+    //         })->with(['driver', 'organization']);
+
+    //         // Filters
+    //         if ($request->filled('asset_type')) {
+    //             $query->where('asset_type', $request->asset_type);
+    //         }
+
+    //         if ($request->filled('status')) {
+    //             $query->where('status', $request->status);
+    //         }
+
+    //         if ($request->filled('class')) {
+    //             $query->where('class', $request->class);
+    //         }
+
+    //         if ($request->filled('make')) {
+    //             $query->where('make', 'like', '%' . $request->make . '%');
+    //         }
+
+    //         if ($request->filled('model')) {
+    //             $query->where('model', 'like', '%' . $request->model . '%');
+    //         }
+
+    //         $assets = $query->paginate($request->input('per_page', 10));
+
+    //         return successResponse('Assets retrieved successfully.', $assets);
+    //     } catch (\Throwable $th) {
+    //         return failureResponse(
+    //             'Failed to retrieve assets.',
+    //             500,
+    //             'server_error',
+    //             $th
+    //         );
+    //     }
+    // }
+
+
     public function myAssets(Request $request)
     {
         try {
-            $userId = $request->user()->id;
+            $authUser = $request->user();
 
-            // Start the query
-            $query = Asset::whereHas('driver', function ($q) use ($userId) {
-                $q->where('user_id', $userId);
+            // Check if this user has been granted access by someone
+            $permission = AssetViewPermission::where('viewer_id', $authUser->id)->first();
+
+            if ($permission) {
+                $targetUserId = $permission->owner_id;
+            } else {
+                $targetUserId = $authUser->id;
+            }
+
+            $query = Asset::whereHas('driver', function ($q) use ($targetUserId) {
+                $q->where('user_id', $targetUserId);
             })->with(['driver', 'organization']);
 
-            // =========================
-            // FILTERS
-            // =========================
-            if ($request->filled('asset_type')) {
-                $query->where('asset_type', $request->input('asset_type'));
-            }
+            $assets = $query->paginate($request->input('per_page', 10));
 
-            if ($request->filled('status')) {
-                $query->where('status', $request->input('status'));
-            }
-
-            if ($request->filled('class')) {
-                $query->where('class', $request->input('class'));
-            }
-
-            if ($request->filled('make')) {
-                $query->where('make', 'like', '%' . $request->input('make') . '%');
-            }
-
-            if ($request->filled('model')) {
-                $query->where('model', 'like', '%' . $request->input('model') . '%');
-            }
-
-            // =========================
-            // PAGINATION (default 10)
-            // =========================
-            $perPage = $request->input('per_page', 10); // allows overriding per page if needed
-            $assets = $query->paginate($perPage);
-
-            return successResponse(
-                'Your assets retrieved successfully.',
-                $assets
-            );
+            return successResponse('Assets retrieved successfully.', $assets);
         } catch (\Throwable $th) {
             return failureResponse(
-                'Failed to retrieve your assets.',
+                'Failed to retrieve assets.',
                 500,
                 'server_error',
                 $th
             );
         }
     }
-// /////////////////////////////////////////////////////////////////////////////////
+
+
+    public function grantAssetAccess(Request $request)
+    {
+        try {
+            $request->validate([
+                'identifier' => 'required|string',
+            ]);
+
+            $owner = $request->user();
+
+            // Find user by email OR phone
+            $viewer = User::where('email', $request->identifier)
+                ->orWhere('phone', $request->identifier)
+                ->first();
+
+            if (!$viewer) {
+                return failureResponse('User not found', 404);
+            }
+
+            if ($viewer->id === $owner->id) {
+                return failureResponse('You already have access', 400);
+            }
+
+            AssetViewPermission::firstOrCreate([
+                'owner_id' => $owner->id,
+                'viewer_id' => $viewer->id,
+            ]);
+
+            return successResponse('Access granted successfully');
+        } catch (\Throwable $th) {
+            return failureResponse(
+                'Failed to grant access',
+                500,
+                'server_error',
+                $th
+            );
+        }
+    }
+
+    // /////////////////////////////////////////////////////////////////////////////////
 
     public function destroy(Request $request, Asset $asset)
     {

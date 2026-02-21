@@ -98,6 +98,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/create/asset', [AssetController::class, 'store']);
     Route::put('/update/asset/{id}', [AssetController::class, 'update']);
     Route::get('/view/myasset', [AssetController::class, 'myAssets']);
+    Route::post('/allow/view/myasset', [AssetController::class, 'grantAssetAccess'])->middleware('permission:allow-user-view-myassets');
+
 
 
     // ASSET ROUTE ENDS HERE
