@@ -4,14 +4,10 @@ namespace App\Enums;
 
 enum TransportModeEnums: string
 {
-    case BIKE = 'bike';
-    case BOAT = 'boat';
-    case SHIP = 'ship';
+    case ROAD = 'road';
+    case RAIL = 'rail';
+    case WATER = 'water';
+    case MARINE = 'marine';
     case AIR = 'air';
-    case TRUCK = 'truck';
-    case VAN = 'van';
-    case BUS = 'bus';
-    case CAR = 'car';
-    case SUV = 'suv';
     case OTHERS = 'others';
 }
