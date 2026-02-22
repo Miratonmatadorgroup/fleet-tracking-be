@@ -11,6 +11,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Log;
+
 
 
 class AssetController extends Controller
@@ -40,6 +42,12 @@ class AssetController extends Controller
                 'phone' => 'nullable|string|max:20|required_without:email',
                 'transport_mode' => 'required|string',
             ]);
+
+            Log::info('Auth User Debug', [
+                'user' => $request->user(),
+                'organization_id' => optional($request->user())->organization_id,
+            ]);
+
 
             DB::beginTransaction();
 
@@ -88,6 +96,14 @@ class AssetController extends Controller
         } catch (\Throwable $th) {
 
             DB::rollBack();
+            Log::error('Asset & Driver Creation Failed', [
+                'message' => $th->getMessage(),
+                'file' => $th->getFile(),
+                'line' => $th->getLine(),
+                'trace' => $th->getTraceAsString(),
+                'payload' => $request->all(),
+                'user_id' => optional($request->user())->id,
+            ]);
 
             return failureResponse(
                 'Failed to create asset and driver.',

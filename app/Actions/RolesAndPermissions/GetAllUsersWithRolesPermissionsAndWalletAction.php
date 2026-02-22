@@ -3,8 +3,9 @@
 namespace App\Actions\RolesAndPermissions;
 
 use App\Models\User;
-use Illuminate\Support\Facades\Log;
 use App\Services\ExternalBankService;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class GetAllUsersWithRolesPermissionsAndWalletAction
 {
@@ -14,8 +15,15 @@ class GetAllUsersWithRolesPermissionsAndWalletAction
     ) {}
     public function execute(?string $search = null, int $perPage = 10)
     {
+        $authUser = Auth::user();
         $query = User::with('wallet')
             ->orderBy('created_at', 'desc');
+
+        if (!$authUser->hasRole('super_admin')) {
+            $query->whereDoesntHave('roles', function ($q) {
+                $q->where('name', 'super_admin');
+            });
+        }
 
         if (!empty($search)) {
             $search = strtolower($search);
