@@ -2,8 +2,9 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class TrackerService
 {
@@ -15,40 +16,106 @@ class TrackerService
     {
         $this->baseUrl = config('services.tracker.tracker_base_url');
         $this->username = config('services.tracker.tracker_username');
-        $this->password = config('services.tracker.tracker_password');
+        $this->password = config('services.tracker.tracker_tracker_password');
     }
 
-    public function login()
-    {
-        if (Cache::has('tracker_token')) {
-            return Cache::get('tracker_token');
-        }
+    /**
+     * Get login token (cached for 23 hours)
+     */
 
-        $response = Http::post($this->baseUrl . '?action=login', [
-            "type" => "USER",
-            "from" => "WEB",
-            "username" => $this->username,
-            "password" => md5($this->password),
-            "browser" => "Laravel"
+    public function getToken(): array
+    {
+        return Cache::remember('china_tracker_token', now()->addHours(23), function () {
+
+            $response = Http::post($this->baseUrl . '?action=login', [
+                "type" => "USER",
+                "from" => "WEB",
+                "username" => $this->username,
+                "password" => md5($this->password),
+                "browser" => "Chrome/104.0.0.0"
+            ]);
+
+            $data = $response->json();
+
+            Log::info('Tracker login response', ['response' => $data]);
+
+
+            if (($data['status'] ?? -1) !== 0) {
+                throw new \Exception($data['cause'] ?? 'China tracker login failed');
+            }
+
+            return [
+                'token' => $data['token'],
+                'serverid' => $data['serverid'] ?? 0
+            ];
+        });
+    }
+
+    /**
+     * Add Activate A device
+     */
+    public function addDevice(string $imei, string $deviceName): array
+    {
+        $auth = $this->getToken();
+
+        $url = "{$this->baseUrl}?action=adddevice&token={$auth['token']}";
+
+        Log::info('Tracker AddDevice Request', [
+            'url' => $url,
+            'payload' => [
+                "deviceid" => $imei,
+                "devicename" => $deviceName,
+            ]
         ]);
+
+        $response = Http::asForm()->post($url, [
+            "deviceid" => $imei,
+            "devicename" => $deviceName,
+            "devicetype" => 1,
+            "creator" => $this->username,
+            "groupid" => 0,
+            "calmileageway" => 0,
+            "deviceenable" => 1,
+            "loginenable" => 1,
+            "timezone" => 8
+        ]);
+
+        if (!$response->successful()) {
+
+            Log::warning('Tracker AddDevice HTTP failed', [
+                'status_code' => $response->status(),
+                'body' => $response->body()
+            ]);
+
+            throw new \Exception('Tracker HTTP request failed');
+        }
 
         $data = $response->json();
 
-        if ($data['status'] != 0) {
-            throw new \Exception('Tracker login failed: ' . $data['cause']);
+        Log::info('Tracker AddDevice Response', [
+            'status_code' => $response->status(),
+            'response_body' => $data
+        ]);
+
+        $status = $data['status'] ?? null;
+
+        if ($status === 0) {
+            return $data;
         }
 
-        Cache::put('tracker_token', $data['token'], now()->addHours(23));
-        Cache::put('tracker_server_id', $data['servers'], now()->addHours(23));
+        if ($status === 1) {
+            return $data;
+        }
 
-        return $data['token'];
+        throw new \Exception($data['cause'] ?? 'Failed to add device');
     }
+
 
     public function getLastPosition(array $deviceIds, $lastQueryTime = 0)
     {
         return $this->request('lastposition', [
             "username" => $this->username,
-            "deviceids" => $deviceIds,
+            "deviceids" => json_encode($deviceIds),
             "lastquerypositiontime" => $lastQueryTime
         ]);
     }
@@ -87,7 +154,7 @@ class TrackerService
 
     private function request(string $action, array $payload = [])
     {
-        $token = $this->login();
+        $token = $this->getToken();
 
         $response = Http::post(
             $this->baseUrl . '?action=' . $action . '&token=' . $token,
@@ -102,7 +169,7 @@ class TrackerService
             Cache::forget('tracker_token');
 
             // retry once
-            $token = $this->login();
+            $token = $this->getToken();
 
             $response = Http::post(
                 $this->baseUrl . '?action=' . $action . '&token=' . $token,

@@ -91,6 +91,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/assign/activate/trackers', [TrackerController::class, 'bulkAssignRange'])->middleware('permission:assign-trackers');
     Route::post('/activate/tracker', [TrackerController::class, 'activate']);
     Route::get('/view/my-trackers', [TrackerController::class, 'myTrackers']);
+    Route::get('/view/tracker-asset/count', [TrackerController::class, 'trackerSummary']);
+
 
     // TRACKER ROUTE ENDS HERE
 
@@ -234,8 +236,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
 
     Route::middleware('check.subscription')->group(function () {
 
-        Route::get('/fleet/vehicles/tracking', [TrackerController::class, 'tracking'])
-            ->middleware('permission:view-vehicle-tracking');
+        Route::get('/fleet/vehicles/tracking', [TrackerController::class, 'tracking']);
 
         Route::post('/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown'])
             ->middleware('permission:remote-shutdown');

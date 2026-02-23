@@ -13,9 +13,19 @@ use App\Services\TransactionPinService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class TrackerController extends Controller
 {
+
+    protected TrackerService $trackerService;
+
+    public function __construct(TrackerService $trackerService)
+    {
+        $this->trackerService = $trackerService;
+    }
+
+
     public function storeOrUpdate(Request $request)
     {
         try {
@@ -209,36 +219,46 @@ class TrackerController extends Controller
             return failureResponse($e->getMessage());
         }
 
-        DB::transaction(function () use ($tracker, $request, $user) {
 
-            // Lock asset
-            $asset = Asset::where('id', $request->asset_id)
-                ->lockForUpdate()
-                ->firstOrFail();
+        try {
+            DB::transaction(function () use ($tracker, $request, $user) {
 
-            //Prevent attaching tracker to multiple assets
-            if ($tracker->asset_id) {
-                throw new \RuntimeException('Tracker already assigned to an asset');
-            }
+                $asset = Asset::where('id', $request->asset_id)
+                    ->lockForUpdate()
+                    ->firstOrFail();
 
-            // Update tracker
-            $tracker->update([
-                'status'      => 'active',
-                'user_id'     => $user->id,
-                'label'       => $request->label,
-                'asset_id'    => $asset->id,
-                'is_assigned' => 1,
+                if ($tracker->asset_id) {
+                    throw new \RuntimeException('Tracker already assigned to an asset');
+                }
+
+                $this->trackerService->addDevice(
+                    $tracker->imei,
+                    $request->label
+                );
+
+                $tracker->update([
+                    'status'      => 'active',
+                    'user_id'     => $user->id,
+                    'label'       => $request->label,
+                    'asset_id'    => $asset->id,
+                    'is_assigned' => 1,
+                ]);
+
+                $asset->update([
+                    'status' => 'active',
+                ]);
+            });
+        } catch (\Exception $e) {
+
+            Log::error('Tracker Activation Failed', [
+                'error' => $e->getMessage()
             ]);
 
-            // Update asset
-            $asset->update([
-                'status' => 'active',
-            ]);
-        });
+            return failureResponse($e->getMessage());
+        }
 
         return successResponse('Tracker activated and linked successfully');
     }
-
 
     public function assignRange(Request $request)
     {
@@ -440,39 +460,148 @@ class TrackerController extends Controller
         }
     }
 
+    public function trackerSummary(Request $request)
+    {
+        try {
+            $user = Auth::user();
+
+            $userId = $user->id;
+
+            // Get merchant record if exists
+            $merchant = Merchant::where('user_id', $userId)->first();
+            $merchantId = $merchant?->id;
+
+            $summary = Tracker::selectRaw("
+                COUNT(*) as total_trackers,
+                SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active_trackers,
+                SUM(CASE WHEN asset_id IS NOT NULL THEN 1 ELSE 0 END) as total_assets
+            ", [TrackerStatusEnums::ACTIVE])
+                ->where(function ($q) use ($userId, $merchantId) {
+
+                    // Directly owned trackers
+                    $q->where('user_id', $userId);
+
+                    // Merchant-owned trackers
+                    if ($merchantId) {
+                        $q->orWhere('merchant_id', $merchantId);
+                    }
+                })
+                ->first();
+
+            return successResponse('Tracker summary retrieved successfully', [
+                'total_trackers'  => (int) $summary->total_trackers,
+                'active_trackers' => (int) $summary->active_trackers,
+                'total_assets'    => (int) $summary->total_assets,
+            ]);
+        } catch (\Throwable $th) {
+            return failureResponse(
+                'Failed to retrieve tracker summary',
+                500,
+                'tracker_summary_error',
+                $th
+            );
+        }
+    }
+
+
+
+
 
     // TRACKER API CONSUMPTION STARTS HERE
     public function tracking(Request $request, TrackerService $trackerService)
     {
+        // Validate that asset_id is an array of existing asset IDs
         $request->validate([
-            'asset_id' => 'required|exists:assets,id'
+            'asset_id' => 'required|array|min:1',
+            'asset_id.*' => 'required|string|exists:assets,id'
         ]);
 
-        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        // Fetch all requested assets with their tracker
+        $assets = Asset::with('tracker')
+            ->whereIn('id', $request->asset_id)
+            ->get();
 
-        if (! $asset->tracker) {
-            return failureResponse('No tracker assigned to this asset');
+        // Collect all device IMEIs for assets that have a tracker
+        $deviceIds = [];
+        foreach ($assets as $asset) {
+            if ($asset->tracker) {
+                $deviceIds[] = preg_replace('/\D/', '', $asset->tracker->imei);
+            }
         }
 
-        $deviceId = $asset->tracker->imei; // or serial_number depending on provider
+        if (empty($deviceIds)) {
+            return failureResponse('No tracker assigned to any of the selected assets');
+        }
 
-        $response = $trackerService->getLastPosition([$deviceId]);
+        // Call the GPS API once for all device IDs
+        $response = $trackerService->getLastPosition(
+            $deviceIds,
+            0 // or you could customize last query time if needed per asset
+        );
 
-        // Optionally store last known position
-        if (isset($response['records'][0])) {
+        if (($response['status'] ?? -1) !== 0) {
+            return failureResponse($response['cause'] ?? 'Tracking API error');
+        }
 
-            $position = $response['records'][0];
+        // Update each asset with its latest position
+        if (!empty($response['records'])) {
+            foreach ($response['records'] as $record) {
+                // Find the matching asset by comparing IMEIs
+                $matchedAsset = $assets->firstWhere(
+                    fn($asset) => $asset->tracker && preg_replace('/\D/', '', $asset->tracker->imei) == $record['deviceid']
+                );
 
-            $asset->update([
-                'last_known_lat' => $position['silent'],
-                'last_known_lng' => $position['callon'],
-                'last_ping_at'   => now(),
-            ]);
+                if ($matchedAsset) {
+                    $matchedAsset->update([
+                        'last_known_lat' => $record['latitude'] ?? null,
+                        'last_known_lng' => $record['longitude'] ?? null,
+                        'last_ping_at'   => now(),
+                        'last_query_position_time' => $record['servertime'] ?? 0, // or whatever your API returns
+                    ]);
+                }
+            }
         }
 
         return successResponse('Live tracking data', $response);
     }
+    // public function tracking(Request $request, TrackerService $trackerService)
+    // {
+    //     $request->validate([
+    //         'asset_id' => 'required|exists:assets,id'
+    //     ]);
 
+    //     $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+
+    //     if (! $asset->tracker) {
+    //         return failureResponse('No tracker assigned to this asset');
+    //     }
+
+    //     // $deviceId = $asset->tracker->imei;
+    //     $deviceId = preg_replace('/\D/', '', $asset->tracker->imei);
+
+
+    //     $response = $trackerService->getLastPosition(
+    //         [$deviceId],
+    //         $asset->last_query_position_time ?? 0
+    //     );
+
+    //     if (($response['status'] ?? -1) !== 0) {
+    //         return failureResponse($response['cause'] ?? 'Tracking API error');
+    //     }
+
+    //     if (!empty($response['records'])) {
+    //         $position = $response['records'][0];
+
+    //         $asset->update([
+    //             'last_known_lat' => $position['silent'] ?? null,
+    //             'last_known_lng' => $position['callon'] ?? null,
+    //             'last_ping_at'   => now(),
+    //             'last_query_position_time' => $response['lastquerypositiontime'] ?? 0,
+    //         ]);
+    //     }
+
+    //     return successResponse('Live tracking data', $response);
+    // }
 
     public function remoteShutdown(Request $request, TrackerService $trackerService)
     {
