@@ -35,6 +35,7 @@ class Asset extends Model
         'last_known_lat',
         'last_known_lng',
         'last_ping_at',
+        'last_query_position_time',
     ];
 
     protected function casts(): array
