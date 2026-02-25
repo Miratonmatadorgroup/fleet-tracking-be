@@ -460,38 +460,88 @@ class TrackerController extends Controller
         }
     }
 
+    // public function trackerSummary(Request $request)
+    // {
+    //     try {
+    //         $user = Auth::user();
+
+    //         $userId = $user->id;
+
+    //         // Get merchant record if exists
+    //         $merchant = Merchant::where('user_id', $userId)->first();
+    //         $merchantId = $merchant?->id;
+
+    //         $summary = Tracker::selectRaw("
+    //             COUNT(*) as total_trackers,
+    //             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active_trackers,
+    //             SUM(CASE WHEN asset_id IS NOT NULL THEN 1 ELSE 0 END) as total_assets
+    //         ", [TrackerStatusEnums::ACTIVE])
+    //             ->where(function ($q) use ($userId, $merchantId) {
+
+    //                 // Directly owned trackers
+    //                 $q->where('user_id', $userId);
+
+    //                 // Merchant-owned trackers
+    //                 if ($merchantId) {
+    //                     $q->orWhere('merchant_id', $merchantId);
+    //                 }
+    //             })
+    //             ->first();
+
+    //         return successResponse('Tracker summary retrieved successfully', [
+    //             'total_trackers'  => (int) $summary->total_trackers,
+    //             'active_trackers' => (int) $summary->active_trackers,
+    //             'total_assets'    => (int) $summary->total_assets,
+    //         ]);
+    //     } catch (\Throwable $th) {
+    //         return failureResponse(
+    //             'Failed to retrieve tracker summary',
+    //             500,
+    //             'tracker_summary_error',
+    //             $th
+    //         );
+    //     }
+    // }
+
     public function trackerSummary(Request $request)
     {
         try {
             $user = Auth::user();
-
             $userId = $user->id;
 
             // Get merchant record if exists
             $merchant = Merchant::where('user_id', $userId)->first();
             $merchantId = $merchant?->id;
 
-            $summary = Tracker::selectRaw("
+            // Base tracker query
+            $baseTrackerQuery = Tracker::where(function ($q) use ($userId, $merchantId) {
+                $q->where('user_id', $userId);
+
+                if ($merchantId) {
+                    $q->orWhere('merchant_id', $merchantId);
+                }
+            });
+
+            // Clone for summary
+            $summary = (clone $baseTrackerQuery)
+                ->selectRaw("
                 COUNT(*) as total_trackers,
                 SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active_trackers,
-                SUM(CASE WHEN asset_id IS NOT NULL THEN 1 ELSE 0 END) as total_assets
+                SUM(CASE WHEN asset_id IS NOT NULL THEN 1 ELSE 0 END) as assigned_assets
             ", [TrackerStatusEnums::ACTIVE])
-                ->where(function ($q) use ($userId, $merchantId) {
-
-                    // Directly owned trackers
-                    $q->where('user_id', $userId);
-
-                    // Merchant-owned trackers
-                    if ($merchantId) {
-                        $q->orWhere('merchant_id', $merchantId);
-                    }
-                })
                 ->first();
 
+            // Clone for asset count
+            $totalOwnedAssets = (clone $baseTrackerQuery)
+                ->whereNotNull('asset_id')
+                ->distinct()
+                ->count('asset_id');
+
             return successResponse('Tracker summary retrieved successfully', [
-                'total_trackers'  => (int) $summary->total_trackers,
-                'active_trackers' => (int) $summary->active_trackers,
-                'total_assets'    => (int) $summary->total_assets,
+                'total_trackers'   => (int) $summary->total_trackers,
+                'active_trackers'  => (int) $summary->active_trackers,
+                'assigned_assets'  => (int) $summary->assigned_assets,
+                'total_assets'     => (int) $totalOwnedAssets,
             ]);
         } catch (\Throwable $th) {
             return failureResponse(
@@ -502,10 +552,6 @@ class TrackerController extends Controller
             );
         }
     }
-
-
-
-
 
     // TRACKER API CONSUMPTION STARTS HERE
     public function tracking(Request $request, TrackerService $trackerService)
