@@ -539,6 +539,10 @@ class TrackerController extends Controller
             0 // or you could customize last query time if needed per asset
         );
 
+        if (!$response) {
+            return failureResponse('Tracker returned empty response. Device may be offline.');
+        }
+
         if (($response['status'] ?? -1) !== 0) {
             return failureResponse($response['cause'] ?? 'Tracking API error');
         }
@@ -564,6 +568,32 @@ class TrackerController extends Controller
 
         return successResponse('Live tracking data', $response);
     }
+
+    public function geoFencing(Request $request, TrackerService $trackerService)
+    {
+        $request->validate([
+            'asset_id' => 'required|exists:assets,id',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'radius' => 'required|integer'
+        ]);
+
+        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+
+        if (!$asset->tracker) {
+            return failureResponse('Asset does not have a tracker attached', 400);
+        }
+
+        $response = $trackerService->addGeofence(
+            $asset->tracker->imei,
+            $request->latitude,
+            $request->longitude,
+            $request->radius
+        );
+
+        return successResponse('Geofence added successfully', $response['record'] ?? $response);
+    }
+
     // public function tracking(Request $request, TrackerService $trackerService)
     // {
     //     $request->validate([
@@ -628,27 +658,5 @@ class TrackerController extends Controller
         ]);
 
         return successResponse('Shutdown command sent', $response);
-    }
-
-
-    public function geoFencing(Request $request, TrackerService $trackerService)
-    {
-        $request->validate([
-            'asset_id' => 'required|exists:assets,id',
-            'latitude' => 'required|numeric',
-            'longitude' => 'required|numeric',
-            'radius' => 'required|integer'
-        ]);
-
-        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
-
-        $response = $trackerService->addGeofence(
-            $asset->tracker->imei,
-            $request->latitude,
-            $request->longitude,
-            $request->radius
-        );
-
-        return successResponse('Geofence added', $response);
     }
 }

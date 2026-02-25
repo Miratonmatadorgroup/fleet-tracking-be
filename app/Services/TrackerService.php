@@ -111,12 +111,36 @@ class TrackerService
     }
 
 
-    public function getLastPosition(array $deviceIds, $lastQueryTime = 0)
+    // public function getLastPosition(array $deviceIds, $lastQueryTime = 0)
+    // {
+    //      $auth = $this->getToken();
+    //     return $this->request('lastposition', [
+    //         "username" => $this->username,
+    //         "serverid" => $auth['serverid'],
+    //         "deviceids" => implode(',', $deviceIds),
+    //         "lastquerypositiontime" => $lastQueryTime
+    //     ]);
+    // }
+
+    public function getLastPosition(array $deviceIds)
     {
         return $this->request('lastposition', [
             "username" => $this->username,
-            "deviceids" => json_encode($deviceIds),
-            "lastquerypositiontime" => $lastQueryTime
+            "deviceids" => implode(',', $deviceIds),
+            "serverid" => 0,
+        ]);
+    }
+
+    public function addGeofence(string $deviceId, float $lat, float $lon, int $radius)
+    {
+        $deviceId = str_replace('IMEI', '', $deviceId); // remove IMEI prefix
+
+        return $this->request('addgeorecord', [
+            "deviceid" => $deviceId,
+            "type" => 1,
+            "lat1" => $lat,
+            "lon1" => $lon,
+            "radius1" => $radius
         ]);
     }
 
@@ -132,16 +156,7 @@ class TrackerService
     }
 
 
-    public function addGeofence($deviceId, $lat, $lon, $radius)
-    {
-        return $this->request('addgeorecord', [
-            "deviceid" => $deviceId,
-            "type" => 1,
-            "lat1" => $lat,
-            "lon1" => $lon,
-            "radius1" => $radius
-        ]);
-    }
+
 
     public function generateShareUrl($deviceId, $minutes)
     {
@@ -151,34 +166,26 @@ class TrackerService
         ]);
     }
 
-
     private function request(string $action, array $payload = [])
     {
-        $token = $this->getToken();
+        $auth = $this->getToken();
 
-        $response = Http::post(
-            $this->baseUrl . '?action=' . $action . '&token=' . $token,
-            $payload
-        );
+        $url = $this->baseUrl
+            . '?action=' . $action
+            . '&token=' . $auth['token'];
 
-        $data = $response->json();
+        Log::info('Tracker Request', [
+            'url' => $url,
+            'payload' => $payload
+        ]);
 
-        //HANDLE TOKEN EXPIRED
-        if (isset($data['status']) && $data['status'] == 9903) {
+        $response = Http::asForm()->post($url, $payload);
 
-            Cache::forget('tracker_token');
+        Log::info('Tracker Raw Response', [
+            'status_code' => $response->status(),
+            'body' => $response->body()
+        ]);
 
-            // retry once
-            $token = $this->getToken();
-
-            $response = Http::post(
-                $this->baseUrl . '?action=' . $action . '&token=' . $token,
-                $payload
-            );
-
-            return $response->json();
-        }
-
-        return $data;
+        return $response->json();
     }
 }
