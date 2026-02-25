@@ -4,7 +4,6 @@ namespace App\Http\Controllers\Api;
 
 use App\Models\Payout;
 use App\Models\Wallet;
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Enums\PayoutStatusEnums;
 use App\Models\WalletTransaction;
@@ -13,6 +12,8 @@ use Illuminate\Support\Facades\Log;
 use App\Http\Controllers\Controller;
 use App\Notifications\User\PayoutFailedNotification;
 use App\Notifications\User\PayoutCompletedNotification;
+use Illuminate\Support\Facades\Http;
+
 
 class ShanonoSettlementWebhookController extends Controller
 {
