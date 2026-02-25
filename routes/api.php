@@ -236,13 +236,11 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
 
     Route::middleware('check.subscription')->group(function () {
 
-        Route::get('/fleet/vehicles/tracking', [TrackerController::class, 'tracking']);
+        Route::post('/fleet/vehicles/tracking', [TrackerController::class, 'tracking']);
 
-        Route::post('/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown'])
-            ->middleware('permission:remote-shutdown');
+        Route::post('/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown']);
 
-        Route::get('/fleet/vehicles/geofencing', [TrackerController::class, 'geoFencing'])
-            ->middleware('permission:view-geo-fencing');
+        Route::post('/fleet/vehicles/geofencing', [TrackerController::class, 'geoFencing']);
     });
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
