@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('assets', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->uuid('organization_id')->nullable();
+            $table->uuid('organization_id');
             $table->uuid('driver_id')->nullable();
             $table->foreign('organization_id')
                 ->references('id')
