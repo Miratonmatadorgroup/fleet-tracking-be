@@ -110,18 +110,7 @@ class TrackerService
         throw new \Exception($data['cause'] ?? 'Failed to add device');
     }
 
-
-    // public function getLastPosition(array $deviceIds, $lastQueryTime = 0)
-    // {
-    //      $auth = $this->getToken();
-    //     return $this->request('lastposition', [
-    //         "username" => $this->username,
-    //         "serverid" => $auth['serverid'],
-    //         "deviceids" => implode(',', $deviceIds),
-    //         "lastquerypositiontime" => $lastQueryTime
-    //     ]);
-    // }
-
+    // TRACKING
     public function getLastPosition(array $deviceIds)
     {
         return $this->request('lastposition', [
@@ -131,6 +120,7 @@ class TrackerService
         ]);
     }
 
+    // GEOFENCING RESTRICTION
     public function addGeofence(string $deviceId, float $lat, float $lon, int $radius)
     {
         $deviceId = str_replace('IMEI', '', $deviceId); // remove IMEI prefix
@@ -144,18 +134,69 @@ class TrackerService
         ]);
     }
 
-    public function lockVehicle(string $deviceId, int $deviceType)
+    public function lockVehicle(string $deviceId, int $deviceType = 1)
     {
+        // 808 device
+        if ($deviceType == 1) {
+            return $this->request('sendcmd', [
+                "deviceid"   => $deviceId,
+                "devicetype" => 1,
+                "cmdcode"    => "TYPE_SERVER_LOCK_CAR",
+                "params"     => [],
+                "cmdpwd"     => "zhuyi"
+            ]);
+        }
+
+        // GT06 device
+        // return $this->request('sendcmd', [
+        //     "deviceid" => $deviceId,
+        //     "cmdcode"  => "TYPE_SERVER_SET_RELAY_OIL",
+        //     "params"   => ["1"], // 1 = cut oil, 0 = restore
+        //     "cmdpwd"   => "zhuyi"
+        // ]);
         return $this->request('sendcmd', [
-            "deviceid" => $deviceId,
-            "devicetype" => $deviceType,
-            "cmdcode" => "TYPE_SERVER_LOCK_CAR",
-            "params" => [],
-            "cmdpwd" => "zhuyi"
+            "deviceid"   => $deviceId,
+            "devicetype" => 26, // GT06 usually 26 (confirm from deviceinfo)
+            "cmdcode"    => "TYPE_SERVER_SET_RELAY_OIL",
+            "params"     => ["1"],
+            "cmdpwd"     => "zhuyi"
+        ]);
+    }
+
+    public function unlockVehicle(string $deviceId, int $deviceType = 1)
+    {
+        $deviceId = preg_replace('/\D/', '', $deviceId);
+
+        if ($deviceType == 1) {
+            return $this->request('sendcmd', [
+                "deviceid"   => $deviceId,
+                "devicetype" => 1,
+                "cmdcode"    => "TYPE_SERVER_UNLOCK_CAR",
+                "params"     => [],
+                "cmdpwd"     => "zhuyi"
+            ]);
+        }
+
+        return $this->request('sendcmd', [
+            "deviceid"   => $deviceId,
+            "devicetype" => 26,
+            "cmdcode"    => "TYPE_SERVER_SET_RELAY_OIL",
+            "params"     => ["0"], // 0 = restore fuel
+            "cmdpwd"     => "zhuyi"
         ]);
     }
 
 
+    // GET VEHICLE DETAILS
+    public function getMileageDetail(string $deviceId, string $startDay, string $endDay, int $offset = 8)
+    {
+        return $this->request('reportmileagedetail', [
+            "deviceid" => $deviceId,
+            "startday" => $startDay,
+            "endday"   => $endDay,
+            "offset"   => $offset
+        ]);
+    }
 
 
     public function generateShareUrl($deviceId, $minutes)

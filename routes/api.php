@@ -214,33 +214,36 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/admin/create-permissions', [RolePermissionController::class, 'adminCreateOrUpdatePermissions'])
         ->middleware('permission:create-permissions');
 
-    // OFFICE ADMIN ALSO KNOWN AS BUSINESS OPERATOR
-    Route::post('/assign/user/fleet-manager', [OfficeAdminController::class, 'assignFleetManager'])
-        ->middleware('permission:assign-user-fleet-manager');
-    Route::post('/unassign/user/fleet-manager', [OfficeAdminController::class, 'unassignFleetManager'])
-        ->middleware('permission:unassign-user-fleet-manager');
 
-    Route::post('/suspend/fleet-manager/{userId}', [OfficeAdminController::class, 'suspendFleetManager'])
-        ->middleware('permission:suspend-fleet-manager');
-    Route::post('/unsuspend/fleet-manager/{userId}', [OfficeAdminController::class, 'unsuspendFleetManager'])
-        ->middleware('permission:unsuspend-fleet-manager');
-
-    Route::get('/view/merchant/trackers', [OfficeAdminController::class, 'viewMyTrackers'])
-        ->middleware('permission:view-merhcant-trackers');
-
-    Route::put('/update/merchant/trackers/{trackerId}', [OfficeAdminController::class, 'updateTrackersWithLabel'])
-        ->middleware('permission:update-merchent-trackers');
-
-    Route::get('/merchant/fleet-managers', [OfficeAdminController::class, 'myFleetManagers'])
-        ->middleware('permission:view-my-fleet-managers');
 
     Route::middleware('check.subscription')->group(function () {
+        // OFFICE ADMIN ALSO KNOWN AS BUSINESS OPERATOR
+        Route::post('/assign/user/fleet-manager', [OfficeAdminController::class, 'assignFleetManager'])
+            ->middleware('permission:assign-user-fleet-manager');
+        Route::post('/unassign/user/fleet-manager', [OfficeAdminController::class, 'unassignFleetManager'])
+            ->middleware('permission:unassign-user-fleet-manager');
 
+        Route::post('/suspend/fleet-manager/{userId}', [OfficeAdminController::class, 'suspendFleetManager'])
+            ->middleware('permission:suspend-fleet-manager');
+        Route::post('/unsuspend/fleet-manager/{userId}', [OfficeAdminController::class, 'unsuspendFleetManager'])
+            ->middleware('permission:unsuspend-fleet-manager');
+
+        Route::get('/view/merchant/trackers', [OfficeAdminController::class, 'viewMyTrackers'])
+            ->middleware('permission:view-merhcant-trackers');
+
+        Route::put('/update/merchant/trackers/{trackerId}', [OfficeAdminController::class, 'updateTrackersWithLabel'])
+            ->middleware('permission:update-merchent-trackers');
+
+        Route::get('/merchant/fleet-managers', [OfficeAdminController::class, 'myFleetManagers'])
+            ->middleware('permission:view-my-fleet-managers');
+
+
+        // SUBPLAN FEATURES USING TRACKER API
         Route::post('/fleet/vehicles/tracking', [TrackerController::class, 'tracking']);
-
-        Route::post('/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown']);
-
         Route::post('/fleet/vehicles/geofencing', [TrackerController::class, 'geoFencing']);
+        Route::post('/fleet/vehicles/details', [TrackerController::class, 'milageDetails']);
+        Route::post('/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown']);
+        Route::post('/fleet/vehicles/unlock', [TrackerController::class, 'remoteUnlock']);
     });
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

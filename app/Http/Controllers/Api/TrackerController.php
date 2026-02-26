@@ -460,49 +460,6 @@ class TrackerController extends Controller
         }
     }
 
-    // public function trackerSummary(Request $request)
-    // {
-    //     try {
-    //         $user = Auth::user();
-
-    //         $userId = $user->id;
-
-    //         // Get merchant record if exists
-    //         $merchant = Merchant::where('user_id', $userId)->first();
-    //         $merchantId = $merchant?->id;
-
-    //         $summary = Tracker::selectRaw("
-    //             COUNT(*) as total_trackers,
-    //             SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active_trackers,
-    //             SUM(CASE WHEN asset_id IS NOT NULL THEN 1 ELSE 0 END) as total_assets
-    //         ", [TrackerStatusEnums::ACTIVE])
-    //             ->where(function ($q) use ($userId, $merchantId) {
-
-    //                 // Directly owned trackers
-    //                 $q->where('user_id', $userId);
-
-    //                 // Merchant-owned trackers
-    //                 if ($merchantId) {
-    //                     $q->orWhere('merchant_id', $merchantId);
-    //                 }
-    //             })
-    //             ->first();
-
-    //         return successResponse('Tracker summary retrieved successfully', [
-    //             'total_trackers'  => (int) $summary->total_trackers,
-    //             'active_trackers' => (int) $summary->active_trackers,
-    //             'total_assets'    => (int) $summary->total_assets,
-    //         ]);
-    //     } catch (\Throwable $th) {
-    //         return failureResponse(
-    //             'Failed to retrieve tracker summary',
-    //             500,
-    //             'tracker_summary_error',
-    //             $th
-    //         );
-    //     }
-    // }
-
     public function trackerSummary(Request $request)
     {
         try {
@@ -532,10 +489,9 @@ class TrackerController extends Controller
                 ->first();
 
             // Clone for asset count
-            $totalOwnedAssets = (clone $baseTrackerQuery)
-                ->whereNotNull('asset_id')
-                ->distinct()
-                ->count('asset_id');
+            $totalOwnedAssets = Asset::whereHas('driver', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })->count();
 
             return successResponse('Tracker summary retrieved successfully', [
                 'total_trackers'   => (int) $summary->total_trackers,
@@ -553,7 +509,7 @@ class TrackerController extends Controller
         }
     }
 
-    // TRACKER API CONSUMPTION STARTS HERE
+    // TRACKER API CONSUMPTION STARTS HERE WHICH IS THE SUB PLAN FEATURES
     public function tracking(Request $request, TrackerService $trackerService)
     {
         // Validate that asset_id is an array of existing asset IDs
@@ -640,44 +596,36 @@ class TrackerController extends Controller
         return successResponse('Geofence added successfully', $response['record'] ?? $response);
     }
 
-    // public function tracking(Request $request, TrackerService $trackerService)
-    // {
-    //     $request->validate([
-    //         'asset_id' => 'required|exists:assets,id'
-    //     ]);
+    // Vehicle Details
+    public function milageDetails(Request $request)
+    {
+        $request->validate([
+            'asset_id'  => 'required|exists:assets,id',
+            'startday'  => 'required|date_format:Y-m-d',
+            'endday'    => 'required|date_format:Y-m-d',
+        ]);
 
-    //     $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
 
-    //     if (! $asset->tracker) {
-    //         return failureResponse('No tracker assigned to this asset');
-    //     }
+        if (!$asset->tracker) {
+            return failureResponse('Asset does not have tracker attached', 400);
+        }
 
-    //     // $deviceId = $asset->tracker->imei;
-    //     $deviceId = preg_replace('/\D/', '', $asset->tracker->imei);
+        $deviceId = preg_replace('/\D/', '', $asset->tracker->imei);
 
+        $response = $this->trackerService->getMileageDetail(
+            $deviceId,
+            $request->startday,
+            $request->endday,
+            8 // China timezone
+        );
 
-    //     $response = $trackerService->getLastPosition(
-    //         [$deviceId],
-    //         $asset->last_query_position_time ?? 0
-    //     );
+        if (($response['status'] ?? -1) !== 0) {
+            return failureResponse($response['cause'] ?? 'Mileage API error');
+        }
 
-    //     if (($response['status'] ?? -1) !== 0) {
-    //         return failureResponse($response['cause'] ?? 'Tracking API error');
-    //     }
-
-    //     if (!empty($response['records'])) {
-    //         $position = $response['records'][0];
-
-    //         $asset->update([
-    //             'last_known_lat' => $position['silent'] ?? null,
-    //             'last_known_lng' => $position['callon'] ?? null,
-    //             'last_ping_at'   => now(),
-    //             'last_query_position_time' => $response['lastquerypositiontime'] ?? 0,
-    //         ]);
-    //     }
-
-    //     return successResponse('Live tracking data', $response);
-    // }
+        return successResponse('Mileage report retrieved', $response);
+    }
 
     public function remoteShutdown(Request $request, TrackerService $trackerService)
     {
@@ -687,22 +635,86 @@ class TrackerController extends Controller
 
         $asset = Asset::with('tracker')->findOrFail($request->asset_id);
 
-        if (! $asset->tracker) {
+        if (!$asset->tracker) {
             return failureResponse('No tracker assigned');
         }
 
+        // Create command FIRST as pending
+        $command = $asset->remoteCommands()->create([
+            'user_id'      => Auth::id(),
+            'command_type' => 'shutdown',
+            'status'       => 'pending',
+        ]);
+
+        $deviceId = preg_replace('/\D/', '', $asset->tracker->imei);
+
         $response = $trackerService->lockVehicle(
-            $asset->tracker->imei,
-            1 // or store device_type in tracker table
+            $deviceId,
+            $asset->tracker->device_type ?? 1
         );
 
-        // Log command
-        $asset->remoteCommands()->create([
-            'command' => 'lock',
-            'response' => json_encode($response),
-            'status' => $response['status'] ?? null
+        // Map GPS status to your enum
+        $mappedStatus = $this->mapGpsStatusToCommandStatus($response['status'] ?? null);
+
+        // Update command record
+        $command->update([
+            'status'       => $mappedStatus,
+            'api_response' => $response,
+            'executed_at'  => now(),
         ]);
 
         return successResponse('Shutdown command sent', $response);
+    }
+
+    public function remoteUnlock(Request $request, TrackerService $trackerService)
+    {
+        $request->validate([
+            'asset_id' => 'required|exists:assets,id'
+        ]);
+
+        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+
+        if (!$asset->tracker) {
+            return failureResponse('No tracker assigned');
+        }
+
+        $deviceId = preg_replace('/\D/', '', $asset->tracker->imei);
+
+        $command = $asset->remoteCommands()->create([
+            'user_id'      => Auth::id(),
+            'command_type' => 'unlock',
+            'status'       => 'pending',
+        ]);
+
+        // Send unlock command
+        $response = $trackerService->unlockVehicle(
+            $deviceId,
+            $asset->tracker->device_type ?? 1
+        );
+
+        // Map GPS numeric status → enum
+        $mappedStatus = $this->mapGpsStatusToCommandStatus(
+            $response['status'] ?? null
+        );
+
+        // Update command record
+        $command->update([
+            'status'       => $mappedStatus,
+            'api_response' => $response,
+            'executed_at'  => now(),
+        ]);
+
+        return successResponse('Unlock command sent', $response);
+    }
+
+
+    private function mapGpsStatusToCommandStatus(?int $status): string
+    {
+        return match ($status) {
+            0 => 'sent',          // sent successfully
+            6 => 'acknowledged',  // confirmed by device
+            -1, 1, 2, 3, 4, 5, 7, 8 => 'failed',
+            default => 'failed',
+        };
     }
 }
