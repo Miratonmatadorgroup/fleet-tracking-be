@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Middleware\SuperAdmin;
 use App\Jobs\RetryDriverAssignmentJob;
 use Illuminate\Foundation\Application;
 use App\Http\Middleware\ApiKeyMiddleware;

@@ -17,6 +17,15 @@ use Illuminate\Support\Facades\Http;
 
 class ShanonoSettlementWebhookController extends Controller
 {
+
+    protected function verifyInternalSecret(Request $request): void
+    {
+        $secret = $request->header('X-Internal-Secret');
+
+        if ($secret !== config('app.internal_webhook_secret')) {
+            throw new \Exception('Unauthorized webhook source');
+        }
+    }
     public function handle(Request $request)
     {
         Log::info('Shanono webhook hit', [
@@ -26,6 +35,10 @@ class ShanonoSettlementWebhookController extends Controller
 
         try {
 
+            //FIRST: verify request came from LoopFreight
+            $this->verifyInternalSecret($request);
+
+            //THEN: verify Shanono signature
             $this->verifySignature($request);
 
             Log::info('Shanono webhook signature verified');
@@ -33,10 +46,8 @@ class ShanonoSettlementWebhookController extends Controller
             $data = $request->all();
             $payload = $data['data'] ?? $data;
 
-            $status = strtolower($payload['status'] ?? '');
-
             $isSuccessful =
-                in_array($status, ['success', 'successful'])
+                ($payload['status'] ?? null) === 'success'
                 || ($payload['event'] ?? null) === 'payment.received';
 
             $subAccount =
@@ -49,7 +60,30 @@ class ShanonoSettlementWebhookController extends Controller
                 $reference = $payload['reference'];
                 $amount    = (float) ($payload['amount'] ?? 0);
 
-                // Check if reference belongs to payout
+                // FIRST: Check if wallet exists in LoopFreight
+                $wallet = Wallet::where(
+                    'external_account_number',
+                    trim((string) $subAccount)
+                )->first();
+
+                //If wallet NOT found → Forward to FleetManagement
+                if (! $wallet) {
+
+                    Log::info('Wallet not found in LoopFreight. Forwarding to FleetManagement.', [
+                        'sub_account_number' => $subAccount
+                    ]);
+
+                    Http::withHeaders([
+                        'X-Signature' => $request->header('X-Signature')
+                    ])->post(
+                        config('services.fleet_management.webhook_url'),
+                        $request->all()
+                    );
+
+                    return response()->json(['status' => 'forwarded'], 200);
+                }
+
+                // Continue normal LoopFreight logic
                 $payout = Payout::where('provider_reference', $reference)->exists();
 
                 if ($payout) {
