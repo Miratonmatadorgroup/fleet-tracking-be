@@ -97,6 +97,12 @@ return [
         'app_production_url' => env('APP_WEBHOOK_PRODUCTION_URL'),
     ],
 
+
+    'fleet_management' => [
+        'webhook_url' => env('FLEET_MANAGEMENT_WEBHOOK_URL'),
+        'internal_secret' => env('INTERNAL_WEBHOOK_SECRET'),
+    ],
+
     'tracker' => [
         'tracker_base_url' => env('TRACKER_BASE_URL'),
         'tracker_username'     => env('TRACKER_USERNAME'),

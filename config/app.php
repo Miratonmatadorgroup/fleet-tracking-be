@@ -54,6 +54,8 @@ return [
 
     'url' => env('APP_URL', 'http://localhost'),
 
+    'internal_webhook_secret' => env('INTERNAL_WEBHOOK_SECRET'),
+
     /*
     |--------------------------------------------------------------------------
     | Application Timezone
