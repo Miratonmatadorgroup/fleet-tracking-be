@@ -33,8 +33,10 @@ class ShanonoSettlementWebhookController extends Controller
             $data = $request->all();
             $payload = $data['data'] ?? $data;
 
+            $status = strtolower($payload['status'] ?? '');
+
             $isSuccessful =
-                ($payload['status'] ?? null) === 'success'
+                in_array($status, ['success', 'successful'])
                 || ($payload['event'] ?? null) === 'payment.received';
 
             $subAccount =
