@@ -13,7 +13,7 @@
             <td align="center">
                 <table width="600" cellpadding="0" cellspacing="0"
                     style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-                    <tr style="background-color: #421d95;">
+                    <tr style="background-color: #2d5a3a;">
                         <td align="center" style="padding: 30px;">
                             <img src="{{ asset('assets/images/white-logo.png') }}" alt="Company Logo" width="200"
                                 height="50" style="display: block;">
@@ -26,7 +26,7 @@
                                 Please be informed that the delivery previously assigned to you has been reassigned.
                             </p>
 
-                            <h3 style="color: #421d95;;">Unassigned Delivery:</h3>
+                            <h3 style="color: #2d5a3a;;">Unassigned Delivery:</h3>
                             <ul style="color: #555;">
                                 <li><strong>Tracking Number:</strong> {{ $delivery->tracking_number }}</li>
                                 <li><strong>Pickup Location:</strong> {{ $delivery->pickup_location }}</li>
@@ -44,7 +44,7 @@
                             &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.<br>
                             No.3 John Great Court, Chevron, Lekki, Lagos.<br>
                             <a href="https://useLoopFreight.com/"
-                                style="color: #421d95;; text-decoration: none;">https://useLoopFreight.com/</a>
+                                style="color: #2d5a3a;; text-decoration: none;">https://useLoopFreight.com/</a>
                         </td>
                     </tr>
                 </table>

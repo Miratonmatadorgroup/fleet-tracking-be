@@ -10,7 +10,7 @@
             <td align="center">
                 <table width="600" cellpadding="0" cellspacing="0"
                        style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
-                    <tr style="background-color: #421d95;">
+                    <tr style="background-color: #2d5a3a;">
                         <td align="center" style="padding: 30px;">
                             <img src="{{ asset('assets/images/white-logo.png') }}" alt="Company Logo" width="200" height="50" style="display: block;">
                         </td>
@@ -24,7 +24,7 @@
                                 Please review the details below.
                             </p>
 
-                            <h3 style="color: #421d95;;">Delivery Details:</h3>
+                            <h3 style="color: #2d5a3a;;">Delivery Details:</h3>
                             <ul style="color: #555;">
                                 <li><strong>Pickup:</strong> {{ $delivery->pickup_location }}</li>
                                 <li><strong>Drop-off:</strong> {{ $delivery->dropoff_location }}</li>
@@ -32,7 +32,7 @@
                                 <li><strong>Time:</strong> {{ $delivery->delivery_time }}</li>
                             </ul>
 
-                            <h3 style="color: #421d95;;">Receiver Info:</h3>
+                            <h3 style="color: #2d5a3a;;">Receiver Info:</h3>
                             <ul style="color: #555;">
                                 <li><strong>Name:</strong> {{ $delivery->receiver_name }}</li>
                                 <li><strong>Phone:</strong> {{ $delivery->receiver_phone }}</li>
@@ -47,7 +47,7 @@
                         <td style="padding: 20px; text-align: center; font-size: 12px; color: #888;">
                             &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.<br>
                             No.3 John Great Court, Chevron, Alternative Rte, Lekki, Lagos.<br>
-                            <a href="https://useLoopFreight.com/" style="color: #421d95;; text-decoration: none;">https://useLoopFreight.com/</a>
+                            <a href="https://useLoopFreight.com/" style="color: #2d5a3a;; text-decoration: none;">https://useLoopFreight.com/</a>
                         </td>
                     </tr>
                 </table>

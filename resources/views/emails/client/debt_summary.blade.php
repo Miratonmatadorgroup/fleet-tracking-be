@@ -9,7 +9,7 @@
         <tr>
             <td align="center">
                 <table width="600" cellpadding="0" cellspacing="0" style="background: white; border-radius: 10px;">
-                    <tr style="background-color: #421d95;">
+                    <tr style="background-color: #2d5a3a;">
                         <td align="center" style="padding: 30px;">
                             <img src="{{ asset('assets/images/white-logo.png') }}" alt="Company Logo" width="200">
                         </td>
@@ -38,7 +38,7 @@
                         <td style="padding: 20px; text-align: center; font-size: 12px; color: #888;">
                             &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.<br>
                             No.3 John Great Court, Chevron, Alternative Rte, Lekki, Lagos.<br>
-                            <a href="https://useLoopFreight.com/" style="color: #421d95; text-decoration: none;">
+                            <a href="https://useLoopFreight.com/" style="color: #2d5a3a; text-decoration: none;">
                                 https://useLoopFreight.com/
                             </a>
                         </td>

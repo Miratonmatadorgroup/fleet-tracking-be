@@ -15,7 +15,7 @@
                     style="background-color:#fff;border-radius:8px;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,0.05);">
 
                     <!-- Header -->
-                    <tr style="background-color:#421d95;">
+                    <tr style="background-color:#2d5a3a;">
                         <td align="center" style="padding:30px;">
                             <img src="{{ asset('assets/images/white-logo.png') }}" alt="Company Logo" width="200"
                                 height="50">
@@ -42,7 +42,7 @@
                                 </tr>
                                 <tr>
                                     <td style="border:1px solid #ddd;">Paid Amount</td>
-                                    <td style="border:1px solid #ddd;font-weight:bold;color:#421d95;">
+                                    <td style="border:1px solid #ddd;font-weight:bold;color:#2d5a3a;">
                                         ₦{{ number_format((float) ($payload['paid_amount'] ?? 0), 2) }}
                                     </td>
                                 </tr>
@@ -71,7 +71,7 @@
                             &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.<br>
                             No.3 John Great Court, Chevron, Lekki, Lagos.<br>
                             <a href="https://useLoopFreight.com/"
-                                style="color:#421d95;text-decoration:none;">https://useLoopFreight.com/</a>
+                                style="color:#2d5a3a;text-decoration:none;">https://useLoopFreight.com/</a>
                         </td>
                     </tr>
 

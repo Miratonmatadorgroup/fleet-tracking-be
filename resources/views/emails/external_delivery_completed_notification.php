@@ -7,7 +7,7 @@
 <body style="font-family: Arial, sans-serif; background-color: #f5f7fa; padding: 40px 0;">
 
 <table align="center" width="600" cellpadding="0" cellspacing="0" style="background-color: #ffffff; border-radius: 8px; overflow: hidden;">
-    <tr style="background-color: #421d95;">
+    <tr style="background-color: #2d5a3a;">
         <td align="center" style="padding: 30px;">
             <img src="{{ asset('assets/images/white-logo.png') }}" alt="Company Logo" width="200" height="50">
         </td>
@@ -51,7 +51,7 @@
             </ul>
 
             <p style="text-align:center; margin-top: 30px;">
-                <a href="https://useLoopFreight.com/" style="padding: 12px 24px; background-color: #421d95;; color: #fff; text-decoration: none; border-radius: 6px;">
+                <a href="https://useLoopFreight.com/" style="padding: 12px 24px; background-color: #2d5a3a;; color: #fff; text-decoration: none; border-radius: 6px;">
                     View Delivery History
                 </a>
             </p>

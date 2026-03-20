@@ -16,7 +16,7 @@
                     style="background-color: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
 
                     <!-- Header -->
-                    <tr style="background-color: #421d95;">
+                    <tr style="background-color: #2d5a3a;">
                         <td align="center" style="padding: 30px;">
                             <img src="{{ asset('assets/images/white-logo.png') }}" width="200" height="50"
                                 alt="Logo">
@@ -44,7 +44,7 @@
                             </p>
 
                             <!-- Transport Mode Section -->
-                            <h3 style="margin:30px 0 10px; color:#421d95;">Transport Mode Details</h3>
+                            <h3 style="margin:30px 0 10px; color:#2d5a3a;">Transport Mode Details</h3>
 
                             <table width="100%" cellpadding="0" cellspacing="0"
                                 style="background:#fafafa; border:1px solid #eee; border-radius:6px; padding:20px;">
@@ -98,7 +98,7 @@
                             </table>
 
                             <!-- Ride Details -->
-                            <h3 style="margin:40px 0 10px; color:#421d95;">Ride Details</h3>
+                            <h3 style="margin:40px 0 10px; color:#2d5a3a;">Ride Details</h3>
 
                             <table width="100%" cellpadding="0" cellspacing="0"
                                 style="background:#fafafa; border:1px solid #eee; border-radius:6px; padding:20px;">
@@ -145,7 +145,7 @@
                             <!-- CTA Button -->
                             <p style="text-align:center; margin: 40px 0;">
                                 <a href="https://useLoopFreight.com/"
-                                    style="display:inline-block; padding:12px 24px; background-color:#421d95; color:#fff;
+                                    style="display:inline-block; padding:12px 24px; background-color:#2d5a3a; color:#fff;
                                           text-decoration:none; border-radius:6px; font-size:16px;">
                                     View Booking
                                 </a>
