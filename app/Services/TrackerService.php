@@ -57,19 +57,22 @@ class TrackerService
     public function addDevice(string $imei, string $deviceName): array
     {
         $auth = $this->getToken();
+         Log::info('Auth data', $auth);
 
         $url = "{$this->baseUrl}?action=adddevice&token={$auth['token']}";
 
         Log::info('Tracker AddDevice Request', [
             'url' => $url,
             'payload' => [
-                "deviceid" => $imei,
+                // "deviceid" => $imei,
+                "deviceid" => "IMEI" . $imei,
                 "devicename" => $deviceName,
             ]
         ]);
 
         $response = Http::asForm()->post($url, [
-            "deviceid" => $imei,
+            // "deviceid" => $imei,
+            "deviceid" => "IMEI" . $imei,
             "devicename" => $deviceName,
             "devicetype" => 1,
             "creator" => $this->username,
@@ -91,6 +94,7 @@ class TrackerService
         }
 
         $data = $response->json();
+
 
         Log::info('Tracker AddDevice Response', [
             'status_code' => $response->status(),

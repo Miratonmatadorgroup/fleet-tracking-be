@@ -31,7 +31,7 @@ Authorization: {{bearer}}
 
 //ADMIN TO DELETE A USER
 ###
-DELETE {{url}}/admin/delete-user/00dc48f2-2013-4579-b333-9a31481429e3
+DELETE {{url}}/admin/delete-user/c55173c3-141a-4768-9e7f-ffe9e0255628
 Content-Type: application/json
 Accept: application/json
 Authorization: {{bearer}}
