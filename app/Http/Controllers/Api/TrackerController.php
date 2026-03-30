@@ -251,7 +251,8 @@ class TrackerController extends Controller
         } catch (\Exception $e) {
 
             Log::error('Tracker Activation Failed', [
-                'error' => $e->getMessage()
+                'message' => $e->getMessage(),
+                'trace'   => $e->getTraceAsString(),
             ]);
 
             return failureResponse($e->getMessage());
