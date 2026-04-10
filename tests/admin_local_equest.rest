@@ -91,9 +91,9 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "office_admin",
+    "role": "admin",
         "permissions": [
-           "allow-user-view-myassets"
+           "view-sub-features"
 
         ]
 }
@@ -499,214 +499,18 @@ Content-Type: application/json
 Accept: application/json
 Authorization: {{bearer}}
 
-//ADMIN VIEW BILLS PAYMENT COMMISSIONS
-# bills/commissions?bill_payment_type=airtime OR bills/commissions?start_date=2025-01-01&end_date=2025-01-31 OR bills/commissions?page=2&per_page=50
+
+//ADMIN VIEW SUBSCRIPTION FEATURES
 ###
-GET {{url}}/bills/commissions
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-//API DOCUMENTATION
-//ADMIN CREATE A PROJECT API DOCS
-###
-POST {{url}}/docs/projects
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-{
-  "name": "LoopFreight Delivery API",
-  "staging_base_url": "https://api.LoopFreight.xyz/api",
-  "live_base_url": "https://api.useLoopFreight.com/api",
-   "description": "API ENPOINTS FOR BOOKING DELIVERY"
-
-}
-
-//ADMIN VIEW PROJECT API DOCS
-###
-GET {{url}}/docs/projects
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-//ADMIN VIEW A PARTICULAR PROJECT API DOCS
-###
-GET {{url}}/docs/projects/019c071d-3ed4-718a-b4dd-63367b5f69dc
+GET {{url}}/view/subscription-features
 Content-Type: application/json
 Accept: application/json
 Authorization: {{bearer}}
 
 
 
-//ADMIN ASSIGN PROJECT TO A USER
-###
-POST {{url}}/projects/assign
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-{
-  "project_id": "",
-  "user_id": ""
-
-}
-
-//ADMIN UNASSIGN PROJECT TO A USER
-###
-POST {{url}}/projects/unassign
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-{
-  "project_id": "",
-  "user_id": ""
-
-}
-
-//ADMIN MARK PROJECT PUBLIC TO DEV
-###
-POST {{url}}/projects/marked/public
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-{
-  "project_id": "019c071d-3ed4-718a-b4dd-63367b5f69dc"
-
-}
-
-//ADMIN MARK PROJECT PRIVATE TO DEV
-###
-POST {{url}}/projects/marked/private
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-{
-  "project_id": ""
-
-}
-
-//ADMIN CREATE API ENDPOINTS
-###
-POST {{url}}/docs/api-endpoints
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-{
-  "project_id": "019c071d-3ed4-718a-b4dd-63367b5f69dc",
-  "title": "Book Delivery",
-  "method": "post",
-  "path": "/external/book-delivery",
-  "full_url": "https://api.LoopFreight.xyz/api/external/book-delivery",
-  "version": "For Users To Book Delivery",
-  "version": "V1"
-
-}
-
-//ADMIN CREATE API REQUEST BODY
-###
-POST {{url}}/docs/api-requests
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-{
-  "api_endpoint_id": "019c073c-25a2-705c-98e2-3ee62575bce6",
-  "type": "body",
-  "content_type": "multipart/form-data",
-  "schema": {
-    "pickup_location": "Lagos,Nigeria",
-    "dropoff_location": "Abuja,NIGERIA",
-    "sender_name": "Harry Potter",
-    "sender_phone": "08012345678",
-    "sender_whatsapp_number": "08012345678",
-    "package_description": "Electronics package",
-    "package_weight": 12.5,
-    "mode_of_transportation": "van",
-    "delivery_type": "next_day",
-    "delivery_date": "2025-08-20",
-    "delivery_time": "14:00",
-    "receiver_name": "Joseph Dream",
-    "receiver_phone": "08123456789",
-    "package_type": "fragile",
-    "other_package_type": null,
-    "pin": "1234",
-    "deliveryPictures": {
-      "type": "file[]",
-      "required": false,
-      "description": "Note delivery images optional,Transport Mode // bike, boat, ship, air, truck, van, bus, car, Package Type // //electronics,clothing,documents,food_items,fragile_items,others"
-    }
-  }
-}
-
-//ADMIN CREATE HEADERS
-###
-POST {{url}}/docs/api-headers
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-{
-  "api_endpoint_id": "019c073c-25a2-705c-98e2-3ee62575bce6",
-  "name": "Content-Type",
-  "value": "application/json",
-  "is_required": true,
-  "description": "Request payload format"
-}
-
-//ADMIN CREATE RESPONSES
-###
-POST {{url}}/docs/api-responses
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-{
-  "api_endpoint_id": "019c073c-25a2-705c-98e2-3ee62575bce6",
-  "status_code": 200,
-  "description": "Delivery & payment created successfully",
-  "body": {
-    "success": true,
-    "message": "Delivery & Payment created successfully.",
-    "data": {
-      "delivery": {
-        "id": "019bbb52-e9f5-736f-95a8-7354cd6c45db",
-        "tracking_number": "LPF-20260114-6967403BD1FE1",
-        "pickup_location": "Lagos,Nigeria",
-        "dropoff_location": "Abuja,NIGERIA",
-        "status": "booked",
-        "subtotal": 128858.18,
-        "tax": 9664.36,
-        "total_price": 138522.54,
-        "delivery_pics": []
-      },
-      "payment": {
-        "reference": "EXTERNAL-6967403BDCD9E",
-        "status": "paid",
-        "currency": "NGN",
-        "amount": 138522.54
-      }
-    }
-  }
-}
 
 
-//ADMIN CREATE AUTH
-###
-POST {{url}}/docs/api-auths
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-{
-  "api_endpoint_id": "019c073c-25a2-705c-98e2-3ee62575bce6",
-  "type": "none",
-  "description": "Public endpoint, no authentication required"
-}
 
 
 

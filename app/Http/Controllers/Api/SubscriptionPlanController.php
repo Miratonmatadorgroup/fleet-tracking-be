@@ -155,6 +155,13 @@ class SubscriptionPlanController extends Controller
         }
     }
 
+    public function featureEnums()
+    {
+        return response()->json(
+            array_map(fn($case) => $case->value, SubscriptionFeatureEnums::cases())
+        );
+    }
+
     /*
     |--------------------------------------------------------------------------
     | Shared validator
@@ -187,4 +194,6 @@ class SubscriptionPlanController extends Controller
             'is_active' => ['sometimes', 'boolean'],
         ]);
     }
+
+
 }

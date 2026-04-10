@@ -22,9 +22,10 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "office_admin",
+    "role": "super_admin",
         "permissions": [
-           "allow-user-view-myassets"
+           "view-sub-features"
+
         ]
 }
 
