@@ -180,6 +180,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::get('/view/subscription-plans', [SubscriptionPlanController::class, 'userPlans'])->name('subscription.plans');
     Route::post('/create/subscription-plans', [SubscriptionPlanController::class, 'store'])
         ->middleware('permission:create-sub-plans');
+    Route::get('/view/subscription-features', [SubscriptionPlanController::class, 'featureEnums'])
+        ->middleware('permission:view-sub-features');
     Route::put('/update/subscription-plans/{id}', [SubscriptionPlanController::class, 'update'])
         ->middleware('permission:update-sub-plans');
     Route::delete('/destroy/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy'])

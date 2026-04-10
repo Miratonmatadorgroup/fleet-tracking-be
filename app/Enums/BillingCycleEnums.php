@@ -7,6 +7,6 @@ enum BillingCycleEnums: string
 {
     case MONTHLY  = 'monthly';
     case QUARTERLY   = 'quarterly';
-    case SEMI_ANNUAL = 'semi_annual';
+    case SEMI_ANNUAL = 'semi_yearly';
     case YEARLY  = 'yearly';
 }

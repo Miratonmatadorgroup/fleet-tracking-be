@@ -77,10 +77,16 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-     "role": "admin",
+     "role": "super_admin",
         "permissions": [
-           "admin-global-payout-status",
-           "admin-user-payout-status"
+           "view-sub-features"
+
+        ]
+
+        "role": "admin",
+        "permissions": [
+           "view-sub-features"
+
         ]
 }
 
