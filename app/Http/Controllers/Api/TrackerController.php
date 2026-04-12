@@ -231,10 +231,15 @@ class TrackerController extends Controller
                     throw new \RuntimeException('Tracker already assigned to an asset');
                 }
 
-                $this->trackerService->addDevice(
+                // $this->trackerService->addDevice(
+                //     $tracker->imei,
+                //     $request->label
+                // );
+                $result = $this->trackerService->addDevice(
                     $tracker->imei,
                     $request->label
                 );
+                Log::info('Add device result', $result);
 
                 $tracker->update([
                     'status'      => 'active',

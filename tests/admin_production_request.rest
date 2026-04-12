@@ -120,3 +120,55 @@ GET {{url}}/admin/payouts/global-status
 Content-Type: application/json
 Accept: application/json
 Authorization: {{bearer}}
+
+
+
+# #######TRANSACTION PIN ACTIONS STARTS HERE#########################
+//ADMIN CREATE TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/create
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "transaction_pin": "1234"
+
+}
+
+
+//ADMIN CHANGE TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/change
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "old_pin": "1234",
+    "new_pin": "1111"
+
+}
+
+//ADMIN FORGOT TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/forgot
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+//ADMIN RESET TRANSACTION PIN
+###
+POST {{url}}/transaction-pin/reset
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "otp": "411470",
+    "new_pin": "1234"
+
+}
+# TRANSACTION PIN ACTIONS ENDS HERE
+
