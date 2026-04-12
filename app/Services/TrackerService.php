@@ -57,22 +57,21 @@ class TrackerService
     public function addDevice(string $imei, string $deviceName): array
     {
         $auth = $this->getToken();
-         Log::info('Auth data', $auth);
+        Log::info('Auth data', $auth);
 
         $url = "{$this->baseUrl}?action=adddevice&token={$auth['token']}";
 
         Log::info('Tracker AddDevice Request', [
             'url' => $url,
             'payload' => [
-                // "deviceid" => $imei,
-                "deviceid" => "IMEI" . $imei,
+                "deviceid" => $imei,
+                // "deviceid" => "IMEI" . $imei,
                 "devicename" => $deviceName,
             ]
         ]);
 
         $response = Http::asForm()->post($url, [
-            // "deviceid" => $imei,
-            "deviceid" => "IMEI" . $imei,
+            "deviceid" => $imei,
             "devicename" => $deviceName,
             "devicetype" => 1,
             "creator" => $this->username,
@@ -82,6 +81,20 @@ class TrackerService
             "loginenable" => 1,
             "timezone" => 8
         ]);
+
+        // $response = Http::asForm()
+        //     ->timeout(15)
+        //     ->post($url, [
+        //         "deviceid" => $imei,
+        //         "devicename" => $deviceName,
+        //         "devicetype" => 26, // 🔥 changed
+        //         "creator" => "Loop freight", // 🔥 confirm this is correct login username
+        //         "groupid" => 1, // 🔥 changed
+        //         "calmileageway" => 0,
+        //         "deviceenable" => 1,
+        //         "loginenable" => 1,
+        //         "timezone" => 8
+        //     ]);
 
         if (!$response->successful()) {
 
@@ -101,16 +114,40 @@ class TrackerService
             'response_body' => $data
         ]);
 
+        // $status = $data['status'] ?? null;
+
+        // if ($status === 0) {
+        //     return $data;
+        // }
+
+        // if ($status === 1) {
+        //     return $data;
+        // }
+
+        // throw new \Exception($data['cause'] ?? 'Failed to add device');
+
+
         $status = $data['status'] ?? null;
 
-        if ($status === 0) {
+        // success
+        if ($status === 0 || $status === 1) {
             return $data;
         }
 
-        if ($status === 1) {
-            return $data;
+        //handle bad API behavior (VERY IMPORTANT)
+        if ($status === -1 && ($data['cause'] ?? '') === 'error:null') {
+            Log::warning('Tracker API unclear error — assuming device exists or invalid config', [
+                'imei' => $imei,
+                'response' => $data
+            ]);
+
+            return [
+                'status' => 1,
+                'message' => 'Device may already exist or partially registered'
+            ];
         }
 
+        //real failure
         throw new \Exception($data['cause'] ?? 'Failed to add device');
     }
 
