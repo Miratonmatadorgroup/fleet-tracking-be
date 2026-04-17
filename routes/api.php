@@ -241,6 +241,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
 
 
         // SUBPLAN FEATURES USING TRACKER API
+        Route::post('/admin/fleet/vehicles/tracking', [TrackerController::class, 'tracking'])
+            ->middleware('permission:track-all-assets');
         Route::post('/fleet/vehicles/tracking', [TrackerController::class, 'tracking']);
         Route::post('/fleet/vehicles/geofencing', [TrackerController::class, 'geoFencing']);
         Route::post('/fleet/vehicles/details', [TrackerController::class, 'milageDetails']);

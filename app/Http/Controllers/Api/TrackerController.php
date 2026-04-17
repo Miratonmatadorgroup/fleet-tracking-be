@@ -525,9 +525,23 @@ class TrackerController extends Controller
         ]);
 
         // Fetch all requested assets with their tracker
-        $assets = Asset::with('tracker')
-            ->whereIn('id', $request->asset_id)
-            ->get();
+        $user = Auth::user();
+
+        if ($user->can('track-all-assets')) {
+            // Super admin can access ALL assets
+            $assets = Asset::with('tracker')
+                ->whereIn('id', $request->asset_id)
+                ->get();
+        } else {
+            // Normal users → only their assets
+            $assets = Asset::with('tracker')
+                ->whereIn('id', $request->asset_id)
+                ->where('user_id', $user->id)
+                ->get();
+        }
+        // $assets = Asset::with('tracker')
+        //     ->whereIn('id', $request->asset_id)
+        //     ->get();
 
         // Collect all device IMEIs for assets that have a tracker
         $deviceIds = [];
@@ -557,20 +571,32 @@ class TrackerController extends Controller
 
         // Update each asset with its latest position
         if (!empty($response['records'])) {
-            foreach ($response['records'] as $record) {
-                // Find the matching asset by comparing IMEIs
-                $matchedAsset = $assets->firstWhere(
-                    fn($asset) => $asset->tracker && preg_replace('/\D/', '', $asset->tracker->imei) == $record['deviceid']
-                );
 
-                if ($matchedAsset) {
-                    $matchedAsset->update([
-                        'last_known_lat' => $record['latitude'] ?? null,
-                        'last_known_lng' => $record['longitude'] ?? null,
-                        'last_ping_at'   => now(),
-                        'last_query_position_time' => $record['servertime'] ?? 0, // or whatever your API returns
-                    ]);
+            $assetsByImei = $assets
+                ->filter(fn($asset) => $asset->tracker)
+                ->keyBy(fn($asset) => preg_replace('/\D/', '', $asset->tracker->imei));
+
+            foreach ($response['records'] as $record) {
+                $imei = $record['deviceid'] ?? null;
+
+                if (!$imei || !isset($assetsByImei[$imei])) {
+                    continue;
                 }
+
+                $asset = $assetsByImei[$imei];
+
+                //afety check (prevents your crash)
+                if (!($asset instanceof \App\Models\Asset)) {
+                    Log::error('Invalid asset type', ['asset' => $asset]);
+                    continue;
+                }
+
+                $asset->update([
+                    'last_known_lat' => $record['latitude'] ?? null,
+                    'last_known_lng' => $record['longitude'] ?? null,
+                    'last_ping_at'   => now(),
+                    'last_query_position_time' => $record['servertime'] ?? 0,
+                ]);
             }
         }
 
