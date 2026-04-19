@@ -91,10 +91,12 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "admin",
+    "role": "super_admin",
         "permissions": [
-           "view-sub-features"
-
+           "geofence-any-assets",
+           "view-details-any-assets",
+           "shutdown-any-assets",
+           "unlock-any-assets"
         ]
 }
 

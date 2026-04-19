@@ -612,7 +612,7 @@ class TrackerController extends Controller
             'radius' => 'required|integer'
         ]);
 
-        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+         $asset = $this->resolveAsset($request->asset_id, 'geofence-any-assets');
 
         if (!$asset->tracker) {
             return failureResponse('Asset does not have a tracker attached', 400);
@@ -637,7 +637,8 @@ class TrackerController extends Controller
             'endday'    => 'required|date_format:Y-m-d',
         ]);
 
-        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        // $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        $asset = $this->resolveAsset($request->asset_id, 'view-details-any-assets');
 
         if (!$asset->tracker) {
             return failureResponse('Asset does not have tracker attached', 400);
@@ -665,7 +666,8 @@ class TrackerController extends Controller
             'asset_id' => 'required|exists:assets,id'
         ]);
 
-        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        // $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        $asset = $this->resolveAsset($request->asset_id, 'shutdown-any-assets');
 
         if (!$asset->tracker) {
             return failureResponse('No tracker assigned');
@@ -704,7 +706,8 @@ class TrackerController extends Controller
             'asset_id' => 'required|exists:assets,id'
         ]);
 
-        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        // $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        $asset = $this->resolveAsset($request->asset_id, 'unlock-any-assets');
 
         if (!$asset->tracker) {
             return failureResponse('No tracker assigned');
@@ -748,5 +751,19 @@ class TrackerController extends Controller
             -1, 1, 2, 3, 4, 5, 7, 8 => 'failed',
             default => 'failed',
         };
+    }
+
+    private function resolveAsset($assetId, $permission)
+    {
+        $user = Auth::user();
+
+        $query = Asset::with('tracker')->where('id', $assetId);
+
+        // If user does NOT have global permission → restrict to their assets
+        if (!$user->can($permission)) {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query->firstOrFail();
     }
 }
