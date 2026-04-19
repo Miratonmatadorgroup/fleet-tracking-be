@@ -18,6 +18,10 @@ class CheckSubscription
     {
         $user = $request->user();
 
+        if ($user->hasRole(['super_admin', 'admin'])) {
+            return $next($request);
+        }
+
         if (!$user) {
             return response()->json([
                 'message' => 'Unauthenticated'

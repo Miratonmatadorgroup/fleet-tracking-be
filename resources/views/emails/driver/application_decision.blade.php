@@ -16,7 +16,7 @@
                     style="background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,0.05);">
 
                     <!-- Header -->
-                    <tr style="background-color: #2d5a3a;">
+                    <tr style="background-color: #421d95;">
                         <td align="center" style="padding: 30px;">
                             <img src="{{ asset('assets/images/white-logo.png') }}" alt="Company Logo" width="200"
                                 height="50" style="display: block;">
@@ -44,7 +44,7 @@
                             <!-- Button -->
                             <p style="text-align: center; margin: 40px 0;">
                                 <a href="https://useLoopFreight.com/"
-                                    style="display: inline-block; padding: 12px 24px; background-color: #2d5a3a; color: #fff; text-decoration: none; border-radius: 6px; font-size: 16px;">
+                                    style="display: inline-block; padding: 12px 24px; background-color: #421d95; color: #fff; text-decoration: none; border-radius: 6px; font-size: 16px;">
                                     Visit {{ config('app.name') }}
                                 </a>
                             </p>
@@ -61,7 +61,7 @@
                             &copy; {{ date('Y') }} {{ config('app.name') }}. All rights reserved.<br>
                             No.3 John Great Court, Chevron, Alternative Rte, Lekki, Lagos.<br>
                             <a href="https://useLoopFreight.com/"
-                                style="color: #2d5a3a; text-decoration: none;">https://useLoopFreight.com/</a>
+                                style="color: #421d95; text-decoration: none;">https://useLoopFreight.com/</a>
                         </td>
                     </tr>
 

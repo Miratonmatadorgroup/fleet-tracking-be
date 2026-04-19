@@ -525,9 +525,23 @@ class TrackerController extends Controller
         ]);
 
         // Fetch all requested assets with their tracker
-        $assets = Asset::with('tracker')
-            ->whereIn('id', $request->asset_id)
-            ->get();
+        $user = Auth::user();
+
+        if ($user->can('track-all-assets')) {
+            // Super admin can access ALL assets
+            $assets = Asset::with('tracker')
+                ->whereIn('id', $request->asset_id)
+                ->get();
+        } else {
+            // Normal users → only their assets
+            $assets = Asset::with('tracker')
+                ->whereIn('id', $request->asset_id)
+                ->where('user_id', $user->id)
+                ->get();
+        }
+        // $assets = Asset::with('tracker')
+        //     ->whereIn('id', $request->asset_id)
+        //     ->get();
 
         // Collect all device IMEIs for assets that have a tracker
         $deviceIds = [];
@@ -557,20 +571,32 @@ class TrackerController extends Controller
 
         // Update each asset with its latest position
         if (!empty($response['records'])) {
-            foreach ($response['records'] as $record) {
-                // Find the matching asset by comparing IMEIs
-                $matchedAsset = $assets->firstWhere(
-                    fn($asset) => $asset->tracker && preg_replace('/\D/', '', $asset->tracker->imei) == $record['deviceid']
-                );
 
-                if ($matchedAsset) {
-                    $matchedAsset->update([
-                        'last_known_lat' => $record['latitude'] ?? null,
-                        'last_known_lng' => $record['longitude'] ?? null,
-                        'last_ping_at'   => now(),
-                        'last_query_position_time' => $record['servertime'] ?? 0, // or whatever your API returns
-                    ]);
+            $assetsByImei = $assets
+                ->filter(fn($asset) => $asset->tracker)
+                ->keyBy(fn($asset) => preg_replace('/\D/', '', $asset->tracker->imei));
+
+            foreach ($response['records'] as $record) {
+                $imei = $record['deviceid'] ?? null;
+
+                if (!$imei || !isset($assetsByImei[$imei])) {
+                    continue;
                 }
+
+                $asset = $assetsByImei[$imei];
+
+                //afety check (prevents your crash)
+                if (!($asset instanceof \App\Models\Asset)) {
+                    Log::error('Invalid asset type', ['asset' => $asset]);
+                    continue;
+                }
+
+                $asset->update([
+                    'last_known_lat' => $record['latitude'] ?? null,
+                    'last_known_lng' => $record['longitude'] ?? null,
+                    'last_ping_at'   => now(),
+                    'last_query_position_time' => $record['servertime'] ?? 0,
+                ]);
             }
         }
 
@@ -586,7 +612,7 @@ class TrackerController extends Controller
             'radius' => 'required|integer'
         ]);
 
-        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+         $asset = $this->resolveAsset($request->asset_id, 'geofence-any-assets');
 
         if (!$asset->tracker) {
             return failureResponse('Asset does not have a tracker attached', 400);
@@ -611,7 +637,8 @@ class TrackerController extends Controller
             'endday'    => 'required|date_format:Y-m-d',
         ]);
 
-        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        // $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        $asset = $this->resolveAsset($request->asset_id, 'view-details-any-assets');
 
         if (!$asset->tracker) {
             return failureResponse('Asset does not have tracker attached', 400);
@@ -639,7 +666,8 @@ class TrackerController extends Controller
             'asset_id' => 'required|exists:assets,id'
         ]);
 
-        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        // $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        $asset = $this->resolveAsset($request->asset_id, 'shutdown-any-assets');
 
         if (!$asset->tracker) {
             return failureResponse('No tracker assigned');
@@ -678,7 +706,8 @@ class TrackerController extends Controller
             'asset_id' => 'required|exists:assets,id'
         ]);
 
-        $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        // $asset = Asset::with('tracker')->findOrFail($request->asset_id);
+        $asset = $this->resolveAsset($request->asset_id, 'unlock-any-assets');
 
         if (!$asset->tracker) {
             return failureResponse('No tracker assigned');
@@ -722,5 +751,19 @@ class TrackerController extends Controller
             -1, 1, 2, 3, 4, 5, 7, 8 => 'failed',
             default => 'failed',
         };
+    }
+
+    private function resolveAsset($assetId, $permission)
+    {
+        $user = Auth::user();
+
+        $query = Asset::with('tracker')->where('id', $assetId);
+
+        // If user does NOT have global permission → restrict to their assets
+        if (!$user->can($permission)) {
+            $query->where('user_id', $user->id);
+        }
+
+        return $query->firstOrFail();
     }
 }

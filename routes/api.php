@@ -241,16 +241,30 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
 
 
         // SUBPLAN FEATURES USING TRACKER API
+        Route::post('/admin/fleet/vehicles/tracking', [TrackerController::class, 'tracking'])
+            ->middleware('permission:track-all-assets');
         Route::post('/fleet/vehicles/tracking', [TrackerController::class, 'tracking']);
+
+        Route::post('/admin/fleet/vehicles/geofencing', [TrackerController::class, 'geoFencing'])
+            ->middleware('permission:geofence-any-assets');
         Route::post('/fleet/vehicles/geofencing', [TrackerController::class, 'geoFencing']);
+
+        Route::post('/admin/fleet/vehicles/details', [TrackerController::class, 'milageDetails'])
+            ->middleware('permission:view-details-any-assets');
         Route::post('/fleet/vehicles/details', [TrackerController::class, 'milageDetails']);
+
+
+        Route::post('/admin/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown'])
+            ->middleware('permission:shutdown-any-assets');
         Route::post('/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown']);
+
+
+        Route::post('/admin/fleet/vehicles/unlock', [TrackerController::class, 'remoteUnlock'])
+            ->middleware('permission:unlock-any-assets');
         Route::post('/fleet/vehicles/unlock', [TrackerController::class, 'remoteUnlock']);
     });
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 
 
 

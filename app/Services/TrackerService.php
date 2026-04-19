@@ -82,19 +82,6 @@ class TrackerService
             "timezone" => 8
         ]);
 
-        // $response = Http::asForm()
-        //     ->timeout(15)
-        //     ->post($url, [
-        //         "deviceid" => $imei,
-        //         "devicename" => $deviceName,
-        //         "devicetype" => 26, // 🔥 changed
-        //         "creator" => "Loop freight", // 🔥 confirm this is correct login username
-        //         "groupid" => 1, // 🔥 changed
-        //         "calmileageway" => 0,
-        //         "deviceenable" => 1,
-        //         "loginenable" => 1,
-        //         "timezone" => 8
-        //     ]);
 
         if (!$response->successful()) {
 
@@ -113,19 +100,6 @@ class TrackerService
             'status_code' => $response->status(),
             'response_body' => $data
         ]);
-
-        // $status = $data['status'] ?? null;
-
-        // if ($status === 0) {
-        //     return $data;
-        // }
-
-        // if ($status === 1) {
-        //     return $data;
-        // }
-
-        // throw new \Exception($data['cause'] ?? 'Failed to add device');
-
 
         $status = $data['status'] ?? null;
 
@@ -152,12 +126,13 @@ class TrackerService
     }
 
     // TRACKING
-    public function getLastPosition(array $deviceIds)
+    public function getLastPosition(array $deviceIds, int $lastQueryTime = 0)
     {
         return $this->request('lastposition', [
             "username" => $this->username,
             "deviceids" => implode(',', $deviceIds),
             "serverid" => 0,
+            "lastquerypositiontime" => $lastQueryTime,
         ]);
     }
 
