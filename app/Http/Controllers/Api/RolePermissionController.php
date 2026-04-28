@@ -430,7 +430,6 @@ class RolePermissionController extends Controller
         }
     }
 
-
     public function assignAllPermissionsToAdmin($userId)
     {
         try {

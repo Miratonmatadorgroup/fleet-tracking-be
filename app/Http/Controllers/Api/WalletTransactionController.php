@@ -3,81 +3,124 @@
 namespace App\Http\Controllers\Api;
 
 
-use Throwable;
-use App\Models\User;
-use App\Models\Wallet;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use App\Mail\WalletDebitedMail;
-use App\Services\TermiiService;
-use App\Services\TwilioService;
-use Illuminate\Validation\Rule;
-use App\DTOs\Wallet\BulkDebitDTO;
-use App\Models\WalletTransaction;
-use App\Services\PaystackService;
-use App\DTOs\Wallet\BulkCreditDTO;
-use App\Models\PendingWalletDebit;
-use Illuminate\Support\Facades\DB;
-use App\DTOs\Wallet\DebitWalletDTO;
-use Illuminate\Support\Facades\Log;
-use App\DTOs\Wallet\CreditWalletDTO;
-use App\Http\Controllers\Controller;
-use App\Services\WalletGuardService;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
-use App\Mail\DataPurchaseReceiptMail;
-use App\Services\ExternalBankService;
-use Illuminate\Support\Facades\Cache;
-use App\Services\TransactionPinService;
-use App\Services\WalletPurchaseService;
-use App\DTOs\Wallet\UserTransactionsDTO;
-use App\Mail\AirtimePurchaseReceiptMail;
-use App\Actions\Wallet\DebitWalletAction;
-use App\Enums\WalletTransactionTypeEnums;
+use App\Actions\Wallet\AdminManualCreditAction;
+use App\Actions\Wallet\BulkCreditWalletsAction;
+use App\Actions\Wallet\BulkDebitWalletsAction;
 use App\Actions\Wallet\CreditWalletAction;
-use GuzzleHttp\Exception\ConnectException;
+use App\Actions\Wallet\DebitWalletAction;
+use App\Actions\Wallet\GetUserTransactionsAction;
+use App\DTOs\Wallet\BulkCreditDTO;
+use App\DTOs\Wallet\BulkDebitDTO;
+use App\DTOs\Wallet\CreditWalletDTO;
+use App\DTOs\Wallet\DebitWalletDTO;
+use App\DTOs\Wallet\UserTransactionsDTO;
 use App\Enums\WalletTransactionMethodEnums;
 use App\Enums\WalletTransactionStatusEnums;
-use App\Services\PayoutWalletPurchaseService;
-use App\Actions\Wallet\BulkDebitWalletsAction;
-use App\Notifications\WalletDebitNotification;
-use App\Actions\Wallet\BulkCreditWalletsAction;
-use App\Actions\Wallet\GetUserTransactionsAction;
-use App\Services\BillsPayment\DataPurchaseService;
-use App\Notifications\User\DataPurchaseNotification;
-use App\Services\BillsPayment\AirtimePurchaseService;
+use App\Enums\WalletTransactionTypeEnums;
+use App\Http\Controllers\Controller;
+use App\Mail\AirtimePurchaseReceiptMail;
+use App\Mail\DataPurchaseReceiptMail;
+use App\Mail\WalletDebitedMail;
+use App\Models\PendingWalletDebit;
+use App\Models\User;
+use App\Models\Wallet;
+use App\Models\WalletTransaction;
 use App\Notifications\User\AirtimePurchaseNotification;
+use App\Notifications\User\DataPurchaseNotification;
+use App\Notifications\WalletDebitNotification;
+use App\Services\BillsPayment\AirtimePurchaseService;
+use App\Services\BillsPayment\DataPurchaseService;
 use App\Services\BillsPayment\ElectricityPurchaseService;
+use App\Services\ExternalBankService;
+use App\Services\PayoutWalletPurchaseService;
+use App\Services\PaystackService;
+use App\Services\TermiiService;
+use App\Services\TransactionPinService;
+use App\Services\TwilioService;
+use App\Services\WalletGuardService;
+use App\Services\WalletNotificationService;
+use App\Services\WalletPurchaseService;
+use GuzzleHttp\Exception\ConnectException;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
+use Throwable;
 
 
 
 class WalletTransactionController extends Controller
 {
+    // FOR CREDITING USER WALLET BY FIRST CHECKING ADMIN ACCOUNT BALANCE
+    // public function adminCredit(
+    //     Request $request,
+    //     CreditWalletAction $action,
+    //     WalletNotificationService $notificationService
+    // ) {
+    //     Log::info('RAW INPUT', $request->all());
+    //     Log::info('HEADERS', $request->headers->all());
+
+    //     $validated = $request->validate([
+    //         'account_number'  => 'required|exists:wallets,account_number',
+    //         'amount'           => 'required|numeric|min:0.01',
+    //         'description'      => 'nullable|string',
+    //         'method'           => 'nullable|string',
+    //         'transaction_pin'  => 'required|size:4',
+    //     ]);
+
+    //     Log::info('VALIDATED DATA', $validated);
+
+    //     try {
+    //         $dto = new CreditWalletDTO($validated);
+
+    //         Log::info('DTO PIN', ['transaction_pin' => $dto->pin]);
+
+    //         $result = $action->execute($dto);
+
+    //         $notificationService->notifyCredit(
+    //             $result['wallet']->user,
+    //             $dto->amount,
+    //             $result['reference'],
+    //             $result['sender']
+    //         );
+
+    //         return successResponse('Wallet credited successfully.', $result);
+    //     } catch (\Throwable $th) {
+    //         return failureResponse('Failed to credit wallet.', 500, 'wallet_credit_error', $th);
+    //     }
+    // }
+
+    // FOR MANUAL ADMIN CREDITING USERS ACCOUNT WITHOUT CHECKING ADMIN ACCOUNT BALANCE
     public function adminCredit(
         Request $request,
-        TwilioService $twilio,
-        TermiiService $termii,
-        CreditWalletAction $action
+        AdminManualCreditAction $action,
+        WalletNotificationService $notificationService
     ) {
-
-        Log::info('RAW INPUT', $request->all());
-        Log::info('HEADERS', $request->headers->all());
-
         $validated = $request->validate([
-            'account_number' => 'required|exists:wallets,account_number',
-            'amount'         => 'required|numeric|min:0.01',
-            'description'    => 'nullable|string',
-            'method'         => 'nullable|string',
-            'transaction_pin' => 'required|size:4',
-
+            'account_number'   => 'required|exists:wallets,account_number',
+            'amount'           => 'required|numeric|min:0.01',
+            'description'      => 'nullable|string',
+            'method'           => 'nullable|string',
+            'transaction_pin'  => 'required|size:4',
         ]);
-        Log::info('VALIDATED DATA', $validated);
-
 
         try {
             $dto = new CreditWalletDTO($validated);
-            Log::info('DTO PIN', ['transaction_pin' => $dto->pin]);
-            $result = $action->execute($dto, $twilio, $termii);
+
+            // 1. Run action
+            $result = $action->execute($dto);
+
+            // 2. Send notifications (THIS is where your snippet belongs)
+            app(WalletNotificationService::class)->notifyCredit(
+                $result['wallet']->user,
+                $dto->amount,
+                $result['reference'],
+                $result['sender']
+            );
 
             return successResponse('Wallet credited successfully.', $result);
         } catch (\Throwable $th) {
