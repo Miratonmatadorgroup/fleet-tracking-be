@@ -124,7 +124,12 @@ class WalletTransactionController extends Controller
 
             return successResponse('Wallet credited successfully.', $result);
         } catch (\Throwable $th) {
-            return failureResponse('Failed to credit wallet.', 500, 'wallet_credit_error', $th);
+            Log::error('ADMIN CREDIT ERROR', [
+                'message' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
+
+            return failureResponse('Failed to credit wallet.', 500, 'wallet_credit_error');
         }
     }
 
