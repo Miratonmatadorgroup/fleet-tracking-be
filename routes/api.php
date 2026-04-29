@@ -86,6 +86,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     // TRACKERS ROUTE STARTS HERE
     Route::post('/tracker/inventory', [TrackerController::class, 'storeOrUpdate'])->middleware('permission:take-inventory');
     Route::get('/tracker/inventory', [TrackerController::class, 'index'])->middleware('permission:view-all-trackers');
+    Route::get('/view/all-assets', [AssetController::class, 'viewAllAssets'])->middleware('permission:view-all-assets');
     Route::delete('/tracker/inventory/{tracker}', [TrackerController::class, 'destroy'])->middleware('permission:delete-a-tracker');
     Route::delete('/bulk-delet/trackers', [TrackerController::class, 'bulkDelete'])->middleware('permission:bulk-delete-trackers');
     Route::post('/assign/activate/trackers', [TrackerController::class, 'bulkAssignRange'])->middleware('permission:assign-trackers');
@@ -186,6 +187,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         ->middleware('permission:update-sub-plans');
     Route::delete('/destroy/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy'])
         ->middleware('permission:delete-sub-plans');
+
+
 
     // FINANCIAL SUMMARY VIEW BY SUPER ADMIN
     Route::get('/view/total-earnings', [FinanceSummaryController::class, 'subscriptionEarnings'])

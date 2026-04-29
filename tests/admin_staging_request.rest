@@ -1,7 +1,7 @@
-@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTlhYzQxZi02YWJmLTcyYmEtODUxYy1mZTAyOGFmZjExZDEiLCJqdGkiOiI1YjJiN2Q0Zjg4NjVhYWJmYmViMWY3Y2U3ODAzNGEwNjkyYmJiM2Q2NmEyMzg3MTU4ZWQxZTNjZmU1MTgwYjlmMzk2Zjc4ZGRkY2EyMTVkNyIsImlhdCI6MTc2NDMxNzY0NC42MzM2MDMsIm5iZiI6MTc2NDMxNzY0NC42MzM2MDUsImV4cCI6MTc5NTg1MzY0NC42Mjk3ODUsInN1YiI6ImEzYmRiMTNhLWMwNjYtNDUxMC05NjhiLTMxOTkzMGUxNTQ4NiIsInNjb3BlcyI6W119.miZHgQ-26QlyfUWsSCl7yShMfNJtS9jkY3V7oG05ayFECYKwwIE7mOdqlQKYEn17J47LWipqSMWKsj57FdZLpTlVGbxNdH9bVFRhLRAHnBEIRVPT9Prdx9GZ-ptQj40z5ZdxA9TWqVMjB6kM70Gy9exXNNiTIi6jLxCsu9ITNAFoMLERCUbHwZuokvVkZyyCT1ND6gvF2Y__mO04Qmp4xuraFw0pjZTRoTdLeLCHxk1A2C3i3ON9lUBAQIvrcwa_0zyqvSFOkyIOGLlNV-mEarlwHwazIl6464IipAhJ8Ut8sC1qxOKLH-IkTd3xkCQGzHQVTB_E4un0mVt5lF36albJ0KlyXX1jmUBqjMpLIIlyGkpVO0zXJnMFDm1A3EvZaeUciqkWgxGqoLO0LDJqj1S-U8akoz3hjfb6-ApQGmaCXOHwEGfNjD2_9K-zsLMKR7Ecf9DV1LjJjyno6bAcPjijFBu_LyPIrBIu0EPwM1s6kPAm-VKHx2pXdRnE4k93izaUq2-JS99YzcphInhARqRO182D6YZwfUgcqd-4dfOQ8wvLFUfiGw2wsNvFvEoXNAC7KSX6CdAMXq2IzqsncAt8ZFDxn-ovSKGe9f3LEKFlDoq_zFTJ80vw-kOzqKo8NcLPgvNq0MLhYfPXz3q3PUkDK4F2S-FKYUHQimzWuyU
+@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTlkYWMwNS02MzYyLTczMDYtYThlZi1lNGJkZTlhZDI4NjkiLCJqdGkiOiI1NmE1ZmY1NDMzZWUwY2FkZmY2YzQwMmY4MzE0YWIzMDQ2MGMwNGZhZGY3MDIyODE5ZTlkY2E4Y2U4NzJkYjgwNzU5OTE2NzBkNmZmZGE1YyIsImlhdCI6MTc3NzUwMDA3Mi40MjQzODksIm5iZiI6MTc3NzUwMDA3Mi40MjQzOTQsImV4cCI6MTgwOTAzNjA3Mi4zMTMzODQsInN1YiI6IjViMTg5MGI0LTkzMjUtNDZkNS1iYTNiLTMwNWViNGZjNGU3YSIsInNjb3BlcyI6W119.AbnhSf2vlLqkDxEasDa35w0uUd8tCTmTu3-Ga8conau1jhwst9plOe6gL-YER0xVe9iV_LNhAbVzN0TX9uSqrCY98mx1G1Dj6Yeqsd_3fxZoFs1axAGtW5THnzCx0o7P2mux71UMpJ5SEWx5QO_-wTAQZZWyjjQe8uP1txOi1NC6SIpdhkUSMM6dsckYGBsFkoIJJArHNqSpCzxWnj7G2sGRPk4ujjmPX1wnr59_BrWrfd-ou-tbsMyDMLVuRZ5WqG3APksApZ4W2_AZ43jYDEjaoCZvFecIaxnyblEN02bqiKXKn4gcEjtKi3O1lRwUyoVR6YJgJorq6-CYKmcf6CtqWSG4uZWWyNcZaheu4sKbGktOLsqyXLNdNvxkRMAhaPkf7iWvP8EP-9ZEMWDjkBTax3p6neucVemiFeR0ugx13OCbl7SKdSporZx18F8HPMCWFeWUNZZ_twoLoMZ2Jl-2xieCT6LVo5sll3HVXUSWr0S8OF0Pajsp-7rwLeTvpXjlffY8s2HCFClulTwYHlK6OHZh77CTyWhwd0V2pGFo4moAzjM7viF0v-lrD7LZcSsnoVderVkU1EXQAZFrtKufGViIgR4urWvRkbiGX6iAek7nsuWLHsy6kXVViXTduojGMTW89yc42rn5qrtP6uLpalGZu6ZOB_cykBooV3Y
 
 
-@url=https://api.LoopFreight.xyz/api
+@url=https://staging.api.track.useloopfreight.com/api
 
 //ADMIN LOGIN
  ###
@@ -10,8 +10,8 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "identifier": "admin@useLoopFreight.com",
-    "password": "LoopFreight2@"
+    "identifier": "derektippy@aol.com",
+    "password": "Password1@"
 }
 
 
@@ -77,16 +77,9 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-     "role": "super_admin",
+    "role": "admin",
         "permissions": [
-           "view-sub-features"
-
-        ]
-
-        "role": "admin",
-        "permissions": [
-           "view-sub-features"
-
+           "view-all-assets"
         ]
 }
 
