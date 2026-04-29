@@ -87,12 +87,40 @@ class TrackerController extends Controller
     public function index(Request $request)
     {
         try {
-            // Optional: Pagination parameters
-            $perPage = $request->input('per_page', 20); // default 20
+            $perPage = $request->input('per_page', 20);
+            $search  = $request->input('search');
 
-            $trackers = Tracker::with(['user', 'merchant', 'inventoriedBy'])
-                ->orderBy('created_at', 'desc')
-                ->paginate($perPage);
+            $query = Tracker::with(['user', 'merchant', 'inventoriedBy'])
+                ->orderBy('created_at', 'desc');
+
+            if (!empty($search)) {
+                $search = strtolower($search);
+
+                $query->where(function ($q) use ($search) {
+
+                    $driver = $q->getConnection()->getDriverName();
+
+                    if ($driver === 'pgsql') {
+                        $q->whereRaw('CAST(asset_id AS TEXT) ILIKE ?', ["%{$search}%"])
+                            ->orWhereRaw('LOWER(serial_number) LIKE ?', ["%{$search}%"])
+
+                            //USER NAME
+                            ->orWhereHas('user', function ($u) use ($search) {
+                                $u->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"]);
+                            });
+                    } else {
+                        // MySQL
+                        $q->whereRaw('LOWER(asset_id) LIKE ?', ["%{$search}%"])
+                            ->orWhereRaw('LOWER(serial_number) LIKE ?', ["%{$search}%"])
+
+                            ->orWhereHas('user', function ($u) use ($search) {
+                                $u->whereRaw('LOWER(name) LIKE ?', ["%{$search}%"]);
+                            });
+                    }
+                });
+            }
+
+            $trackers = $query->paginate($perPage);
 
             return successResponse(
                 'Trackers retrieved successfully',
@@ -612,7 +640,7 @@ class TrackerController extends Controller
             'radius' => 'required|integer'
         ]);
 
-         $asset = $this->resolveAsset($request->asset_id, 'geofence-any-assets');
+        $asset = $this->resolveAsset($request->asset_id, 'geofence-any-assets');
 
         if (!$asset->tracker) {
             return failureResponse('Asset does not have a tracker attached', 400);
