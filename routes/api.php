@@ -87,6 +87,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/tracker/inventory', [TrackerController::class, 'storeOrUpdate'])->middleware('permission:take-inventory');
     Route::get('/tracker/inventory', [TrackerController::class, 'index'])->middleware('permission:view-all-trackers');
     Route::get('/view/all-assets', [AssetController::class, 'viewAllAssets'])->middleware('permission:view-all-assets');
+    Route::post('/trackers/reassign', [TrackerController::class, 'reassign'])->middleware('permission:reassign-tracker');
     Route::delete('/tracker/inventory/{tracker}', [TrackerController::class, 'destroy'])->middleware('permission:delete-a-tracker');
     Route::delete('/bulk-delet/trackers', [TrackerController::class, 'bulkDelete'])->middleware('permission:bulk-delete-trackers');
     Route::post('/assign/activate/trackers', [TrackerController::class, 'bulkAssignRange'])->middleware('permission:assign-trackers');
@@ -219,7 +220,18 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/admin/create-permissions', [RolePermissionController::class, 'adminCreateOrUpdatePermissions'])
         ->middleware('permission:create-permissions');
 
-
+    //ADMIN FEATURES WITHOUT SUBSCRIPTION PLANS STARTS HERE
+    Route::post('/admin/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown'])
+        ->middleware('permission:shutdown-any-assets');
+    Route::post('/admin/fleet/vehicles/tracking', [TrackerController::class, 'tracking'])
+        ->middleware('permission:track-all-assets');
+    Route::post('/admin/fleet/vehicles/geofencing', [TrackerController::class, 'geoFencing'])
+        ->middleware('permission:geofence-any-assets');
+    Route::post('/admin/fleet/vehicles/details', [TrackerController::class, 'milageDetails'])
+        ->middleware('permission:view-details-any-assets');
+    Route::post('/admin/fleet/vehicles/unlock', [TrackerController::class, 'remoteUnlock'])
+        ->middleware('permission:unlock-any-assets');
+    //ADMIN FEATURES WITHOUT SUBSCRIPTION PLANS ENDS HERE
 
     Route::middleware('check.subscription')->group(function () {
         // OFFICE ADMIN ALSO KNOWN AS BUSINESS OPERATOR
@@ -242,28 +254,16 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         Route::get('/merchant/fleet-managers', [OfficeAdminController::class, 'myFleetManagers'])
             ->middleware('permission:view-my-fleet-managers');
 
-
         // SUBPLAN FEATURES USING TRACKER API
-        Route::post('/admin/fleet/vehicles/tracking', [TrackerController::class, 'tracking'])
-            ->middleware('permission:track-all-assets');
+
         Route::post('/fleet/vehicles/tracking', [TrackerController::class, 'tracking']);
 
-        Route::post('/admin/fleet/vehicles/geofencing', [TrackerController::class, 'geoFencing'])
-            ->middleware('permission:geofence-any-assets');
         Route::post('/fleet/vehicles/geofencing', [TrackerController::class, 'geoFencing']);
 
-        Route::post('/admin/fleet/vehicles/details', [TrackerController::class, 'milageDetails'])
-            ->middleware('permission:view-details-any-assets');
         Route::post('/fleet/vehicles/details', [TrackerController::class, 'milageDetails']);
 
-
-        Route::post('/admin/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown'])
-            ->middleware('permission:shutdown-any-assets');
         Route::post('/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown']);
 
-
-        Route::post('/admin/fleet/vehicles/unlock', [TrackerController::class, 'remoteUnlock'])
-            ->middleware('permission:unlock-any-assets');
         Route::post('/fleet/vehicles/unlock', [TrackerController::class, 'remoteUnlock']);
     });
 
@@ -276,40 +276,28 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         ->middleware('permission:bulk-credit');
     Route::post('/wallet/bulk-debit', [WalletTransactionController::class, 'bulkDebit'])
         ->middleware('permission:bulk-debit');
-
     // WALLET TRANSACTIONS - SINGLE
     Route::post('/admin-credit-user-walet', [WalletTransactionController::class, 'adminCredit'])
         ->middleware('permission:credit-wallet');
     Route::post('/admin-debit-user-wallet', [WalletTransactionController::class, 'adminDebit'])
         ->middleware('permission:debit-wallet');
-
     Route::get('/admin/shanono/wallet/transactions', [WalletTransactionController::class, 'shanonoWalletTransactions'])
         ->middleware('permission:shanono-merchant-account-transactions');
-
-
     // NOTIFICATIONS
     Route::get('/admin/notifications', [NotificationController::class, 'adminNotifications'])
         ->middleware('permission:view-notifications');
-
     // PAYMENTS
     Route::get('/admin/view-payment-summary', [PaymentController::class, 'getPaymentSummary'])
         ->middleware('permission:view-payment-summary');
-
     Route::get('/admin/view-earnings-summary', [PaymentController::class, 'getEarningsSummary'])
         ->middleware('permission:view-earnings-summary');
-
-
     Route::get('/admin/view/financial/summary', [FinanceSummaryController::class, 'platformFinancialSummary'])
         ->middleware('permission:view-financial-summary');
-
-
     // DISPUTES
     Route::put('/admin/resolve-disputes/{dispute_id}', [DisputeController::class, 'updateStatus'])
         ->middleware('permission:resolve-dispute');
-
     Route::get('/admin/view-all-disputes', [DisputeController::class, 'viewDisputes'])
         ->middleware('permission:view-disputes');
-
     Route::post('/admin/broadcast', [AdminBroadcastController::class, 'sendMessage'])
         ->middleware('permission:admin-broadcast-message');
 

@@ -79,7 +79,7 @@ Authorization: {{bearer}}
 {
     "role": "admin",
         "permissions": [
-           "view-all-assets"
+           "reassign-tracker"
         ]
 }
 

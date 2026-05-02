@@ -22,9 +22,9 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "super_admin",
+    "role": "admin",
         "permissions": [
-           "view-all-assets"
+           "reassign-tracker"
         ]
 }
 
