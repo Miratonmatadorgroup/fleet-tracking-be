@@ -5,15 +5,11 @@ namespace App\Actions\Authentication;
 use App\Models\User;
 use App\Models\Wallet;
 use App\Models\UserToken;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use App\DTOs\Authentication\LoginDTO;
 use App\Services\ExternalBankService;
-use Illuminate\Support\Facades\Response;
 use App\Events\Authentication\UserLoggedInEvent;
-use Illuminate\Http\Exceptions\HttpResponseException;
 
 class LoginUserAction
 {
@@ -92,12 +88,39 @@ class LoginUserAction
             }
         }
 
+        // SUBSCRIPTION LOGIC
+        $subscription = $user->activeSubscription()
+            ->with('plan')
+            ->first();
+
+        $subscriptionData = null;
+
+        if ($subscription) {
+            $subscriptionData = [
+                'id' => $subscription->id,
+                'plan_id' => $subscription->plan_id,
+                'status' => $subscription->status,
+                'start_date' => $subscription->start_date,
+                'end_date' => $subscription->end_date,
+                'is_active' => $subscription->isActive(),
+                'days_until_expiry' => $subscription->daysUntilExpiry(),
+                'auto_renew' => $subscription->auto_renew,
+                'is_trial' => $subscription->is_trial,
+                'plan' => $subscription->plan ? [
+                    'id' => $subscription->plan->id,
+                    'name' => $subscription->plan->name ?? null,
+                ] : null,
+            ];
+        }
+
+        // RETURN RESPONSE
         return [
-            'error'  => false,
-            'user'   => $user,
-            'role'   => $role,
-            'token'  => $accessToken,
-            'wallet' => $walletData,
+            'error'        => false,
+            'user'         => $user,
+            'role'         => $role,
+            'token'        => $accessToken,
+            'wallet'       => $walletData,
+            'subscription' => $subscriptionData,
         ];
     }
 }

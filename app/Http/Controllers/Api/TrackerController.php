@@ -8,6 +8,8 @@ use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\Merchant;
 use App\Models\Tracker;
+use App\Models\TrackerTransfer;
+use App\Models\User;
 use App\Services\TrackerService;
 use App\Services\TransactionPinService;
 use Illuminate\Http\Request;
@@ -292,6 +294,104 @@ class TrackerController extends Controller
         }
 
         return successResponse('Tracker activated and linked successfully');
+    }
+
+    public function reassign(Request $request)
+    {
+        $request->validate([
+            'tracker_id'      => 'required|uuid|exists:trackers,id',
+            'new_user_id'     => 'required|uuid|exists:users,id',
+            'new_asset_id'    => 'required|uuid|exists:assets,id',
+            'transaction_pin' => 'required|digits:4',
+        ]);
+
+        $currentUser = Auth::user();
+
+        if (! $currentUser->can('reassign-tracker')) {
+            return failureResponse('You are not authorized to reassign trackers', 403);
+        }
+
+        $tracker = Tracker::where('id', $request->tracker_id)
+            ->where('status', 'active')
+            ->first();
+
+        if (! $tracker) {
+            return failureResponse('Tracker not found or inactive');
+        }
+
+        if ($tracker->user_id === $request->new_user_id) {
+            return failureResponse('Tracker already belongs to this user');
+        }
+
+        $oldUserId = $tracker->user_id;
+
+        try {
+            app(TransactionPinService::class)
+                ->checkPin($currentUser, $request->transaction_pin);
+        } catch (\Exception $e) {
+            return failureResponse($e->getMessage());
+        }
+
+        try {
+            DB::transaction(function () use ($tracker, $request, $oldUserId) {
+
+                $newUser = User::lockForUpdate()
+                    ->findOrFail($request->new_user_id);
+
+                if ($newUser->is_suspended) {
+                    throw new \RuntimeException('Target user is suspended');
+                }
+
+                // $asset = Asset::where('id', $request->new_asset_id)
+                //     ->where('user_id', $newUser->id)
+                //     ->lockForUpdate()
+                //     ->first();
+                $asset = Asset::where('id', $request->new_asset_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $asset) {
+                    throw new \RuntimeException('Asset does not belong to the target user');
+                }
+
+                if ($asset->tracker_id ?? false) {
+                    throw new \RuntimeException('Asset already has a tracker assigned');
+                }
+
+                if ($tracker->asset_id) {
+                    Asset::where('id', $tracker->asset_id)
+                        ->update([
+                            'status' => 'offline',
+                        ]);
+                }
+
+                $tracker->update([
+                    'user_id'  => $newUser->id,
+                    'asset_id' => $asset->id,
+                ]);
+
+                $asset->update([
+                    'status' => 'active',
+                ]);
+
+
+                TrackerTransfer::create([
+                    'tracker_id'   => $tracker->id,
+                    'from_user_id' => $oldUserId,
+                    'to_user_id'   => $newUser->id,
+                    'performed_by' => Auth::id(),
+                ]);
+            });
+        } catch (\Exception $e) {
+
+            Log::error('Tracker Reassignment Failed', [
+                'message' => $e->getMessage(),
+            ]);
+
+            return failureResponse($e->getMessage());
+        }
+
+        return successResponse('Tracker reassigned successfully');
     }
 
     public function assignRange(Request $request)
@@ -787,9 +887,11 @@ class TrackerController extends Controller
 
         $query = Asset::with('tracker')->where('id', $assetId);
 
-        // If user does NOT have global permission → restrict to their assets
-        if (!$user->can($permission)) {
-            $query->where('user_id', $user->id);
+        // If user does NOT have global permission → restrict via tracker ownership
+        if (!$user->hasPermissionTo($permission)) {
+            $query->whereHas('tracker', function ($q) use ($user) {
+                $q->where('user_id', $user->id);
+            });
         }
 
         return $query->firstOrFail();

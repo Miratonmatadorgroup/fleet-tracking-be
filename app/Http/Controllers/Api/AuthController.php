@@ -489,8 +489,8 @@ class AuthController extends Controller
                 'user'  => $result['user'],
                 'wallet' => $result['wallet'],
                 'role'  => $result['role'],
+                'subscription' => $result['subscription'],
                 'token' => $result['token'],
-
             ]);
         } catch (\Throwable $e) {
 

@@ -16,6 +16,7 @@ use App\Models\UserToken;
 use App\Models\Wallet;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Foundation\Auth\Access\Authorizable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -40,7 +41,7 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasApiTokens, HasFactory, HasRoles, Notifiable;
+    use HasApiTokens, HasFactory, HasRoles, Notifiable, Authorizable;
 
     protected $keyType = 'string';
     public $incrementing = false;
@@ -249,7 +250,7 @@ class User extends Authenticatable
     {
         return $this->hasMany(Subscription::class);
     }
-    
+
     public function activeSubscription()
     {
         return $this->hasOne(Subscription::class)
