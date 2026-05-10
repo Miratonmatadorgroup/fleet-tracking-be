@@ -51,6 +51,13 @@ class TrackerService
         });
     }
 
+    public function getDeviceInfo(string $deviceId)
+    {
+        return $this->request('deviceinfo', [
+            'deviceid' => $deviceId
+        ]);
+    }
+
     /**
      * Add Activate A device
      */
