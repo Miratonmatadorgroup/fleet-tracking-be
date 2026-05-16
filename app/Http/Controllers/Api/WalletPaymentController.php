@@ -2,21 +2,22 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\PaymentStatusEnums;
+use App\Http\Controllers\Controller;
+use App\Mail\WalletCreditedMail;
+use App\Models\Payment;
 use App\Models\User;
 use App\Models\Wallet;
-use App\Models\Payment;
-use Illuminate\Http\Request;
+use App\Models\WalletTransaction;
+use App\Notifications\WalletCreditedNotification;
+use App\Services\Payments\ShanonoPayService;
 use App\Services\TermiiService;
 use App\Services\TwilioService;
-use App\Mail\WalletCreditedMail;
-use App\Enums\PaymentStatusEnums;
-use App\Models\WalletTransaction;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Mail;
-use App\Services\Payments\ShanonoPayService;
-use App\Notifications\WalletCreditedNotification;
 
 class WalletPaymentController extends Controller
 {
@@ -24,7 +25,7 @@ class WalletPaymentController extends Controller
     protected $twilio;
     protected $termii;
 
-    public function __construct(TwilioService $twilio, TermiiService $termii )
+    public function __construct(TwilioService $twilio, TermiiService $termii)
     {
         $this->paymentGateway = new ShanonoPayService();
         $this->twilio = $twilio;
@@ -51,7 +52,19 @@ class WalletPaymentController extends Controller
             ]
         ];
 
-        $gatewayData = $this->paymentGateway->initiate($walletObject);
+        $callbackUrl = route('wallet.callback', [
+            'wallet_id' => $wallet->id,
+        ]);
+
+        $webhookUrl = route('wallet.webhook', [
+            'wallet_id' => $wallet->id,
+        ]);
+
+        $gatewayData = $this->paymentGateway->initiate($walletObject, [
+            'callback_url' => $callbackUrl,
+            'webhook_url'  => $webhookUrl,
+        ]);
+
         $gatewayRef = data_get($gatewayData, 'reference');
 
         if (!$gatewayRef) {
@@ -82,6 +95,30 @@ class WalletPaymentController extends Controller
         ]);
     }
 
+    public function redirectHandler(Request $request)
+    {
+        $reference = $request->query('reference');
+        $walletId  = $request->query('wallet_id');
+
+        Log::info('Wallet redirect callback', [
+            'reference' => $reference,
+            'wallet_id' => $walletId,
+            'all' => $request->all()
+        ]);
+
+        // $frontendUrl = config('app.frontend_url');
+
+        // return redirect()->away(
+        //     "{$frontendUrl}payments/confirm?reference={$reference}&wallet_id={$walletId}&type=wallet"
+        // );
+
+         $frontendUrl = rtrim(config('app.frontend_url'), '/');
+
+        return redirect()->away(
+            "{$frontendUrl}/payments/confirm?reference={$reference}&wallet_id={$walletId}&type=wallet"
+        );
+    }
+
     public function webhook(Request $request)
     {
         Log::info('Wallet webhook called', $request->all());
@@ -108,6 +145,7 @@ class WalletPaymentController extends Controller
             : "JSON_UNQUOTE(JSON_EXTRACT(meta, '$.gateway_reference'))";
 
         $payment = Payment::where('reference', $reference)->first();
+
 
         // $payment = Payment::where('reference', $reference)
         //     ->orWhereRaw("$referenceColumn = ?", [$reference])
@@ -158,7 +196,7 @@ class WalletPaymentController extends Controller
         try {
             //Send email if available
             if (!empty($user->email)) {
-                Mail::to($user->email)->send(new WalletCreditedMail($user, $payment->amount, $payment));
+                Mail::to($user->email)->send(new WalletCreditedMail($user, $payment->amount, $payment, Auth::user()->name));
                 Log::info('Wallet credit email sent.');
             } else {
                 Log::warning("User email is missing for user ID: {$user->id}");

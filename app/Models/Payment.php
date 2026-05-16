@@ -40,9 +40,6 @@ class Payment extends Model
     protected $casts = [
         'status'           => PaymentStatusEnums::class,
         'meta'             => 'array',
-        'gateway_response' => 'array',
-        'amount'           => 'decimal:2',
-        'paid_at'          => 'datetime',
     ];
 
     protected static function boot()
@@ -59,11 +56,6 @@ class Payment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
-    }
-
-    public function delivery(): BelongsTo
-    {
-        return $this->belongsTo(Delivery::class);
     }
 
     public function apiClient(): BelongsTo
