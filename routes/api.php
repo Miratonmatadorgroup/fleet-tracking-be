@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\DisputeController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\ExternalAuthController;
 use App\Http\Controllers\Api\FinanceSummaryController;
+use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\MerchantController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\OfficeAdminController;
@@ -81,6 +82,12 @@ Route::post('/webhooks/smile-id', [SmileIdWebhookController::class, 'handle']);
 // Subscription verify with shanono payment gateway
 Route::post('/sub-payments/verify', [PaymentController::class, 'verifySubscription'])->name('subscription.verify');
 
+// GOOGLE SIGNUP AND SIGNIN
+Route::prefix('auth')->group(function () {
+    Route::post('google', [GoogleAuthController::class, 'login']);
+    Route::get('google/redirect', [GoogleAuthController::class, 'redirect']);
+    Route::get('google/callback', [GoogleAuthController::class, 'callback']);
+});
 
 Route::middleware(['auth:api', 'update.activity'])->group(function () {
     // TRACKERS ROUTE STARTS HERE
