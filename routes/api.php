@@ -26,9 +26,6 @@ use Illuminate\Support\Facades\Request;
 use Illuminate\Support\Facades\Route;
 
 
-
-
-
 Route::get('/', function () {
     $message = 'Welcome to FleetManagement App';
     if (config('app.env') === 'production') {
@@ -45,7 +42,6 @@ Route::get('/', function () {
 
 Route::post('/external-auth', [ExternalAuthController::class, 'authenticate']);
 
-
 // Shared route (guest + auth) for user to verify either email,phone or whatsapp_number otp
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 // FOR EXTERNAL USERS
@@ -60,8 +56,6 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
-
-
 
 // FOR USERS PAYMENTS STARTS HERE
 // Redirect after user finishes on Shanono checkout
@@ -102,7 +96,6 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::get('/view/my-trackers', [TrackerController::class, 'myTrackers']);
     Route::get('/view/tracker-asset/count', [TrackerController::class, 'trackerSummary']);
 
-
     // TRACKER ROUTE ENDS HERE
 
     // ASSET ROUTE STARTS HERE
@@ -110,8 +103,6 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::put('/update/asset/{id}', [AssetController::class, 'update']);
     Route::get('/view/myasset', [AssetController::class, 'myAssets']);
     Route::post('/allow/view/myasset', [AssetController::class, 'grantAssetAccess'])->middleware('permission:allow-user-view-myassets');
-
-
 
     // ASSET ROUTE ENDS HERE
 
@@ -195,6 +186,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         ->middleware('permission:update-sub-plans');
     Route::delete('/destroy/subscription-plans/{id}', [SubscriptionPlanController::class, 'destroy'])
         ->middleware('permission:delete-sub-plans');
+
+    Route::get('/view/subscriptions', [SubscriptionController::class, 'listSubscriptions'])->middleware('permission:list-of-subscriptions');
 
 
 

@@ -33,4 +33,9 @@ class SubscriptionPlan extends Model
         'start_date' => 'date',
         'end_date'   => 'date',
     ];
+
+    public function subscriptions()
+    {
+        return $this->hasMany(Subscription::class, 'plan_id');
+    }
 }

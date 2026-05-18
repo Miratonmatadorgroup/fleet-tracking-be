@@ -91,9 +91,9 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "super_admin",
+    "role": "admin",
         "permissions": [
-           "reassign-tracker"
+           "list-of-subscriptions"
         ]
 }
 
@@ -506,6 +506,14 @@ Content-Type: application/json
 Accept: application/json
 Authorization: {{bearer}}
 
+
+
+//ADMIN VIEW SUBSCRIPTIONs
+###
+GET {{url}}/view/subscriptions
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
 
 
 
