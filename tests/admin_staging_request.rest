@@ -77,9 +77,9 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "admin",
+    "role": "super_admin",
         "permissions": [
-           "reassign-tracker"
+           "list-of-subscriptions"
         ]
 }
 
