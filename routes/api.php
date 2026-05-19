@@ -66,8 +66,10 @@ Route::post('/payments/verify', [PaymentController::class, 'verify'])->name('pay
 // FOR USERS PAYMENTS ENDS HERE
 
 // FOR USERS  TO CREDIT WALLET STARTS HERE
+Route::get('/wallet/pay/callback', [WalletPaymentController::class, 'redirectHandler'])->name('wallet.callback');
 Route::post('/wallet/pay/webhook', [WalletPaymentController::class, 'webhook'])->name('wallet.webhook');
-Route::post('/wallet/pay/verify', [WalletPaymentController::class, 'verify'])->name('wallet.verify');
+// Route::post('/wallet/pay/verify', [WalletPaymentController::class, 'verify'])->name('wallet.verify');
+Route::match(['GET', 'POST'], '/wallet/pay/verify', [WalletPaymentController::class, 'verify'])->name('wallet.verify');
 // FOR USERS TO CREDIT WALLET ENDS HERE
 
 Route::post('/webhooks/shanono/settlement', [ShanonoSettlementWebhookController::class, 'handle']);
