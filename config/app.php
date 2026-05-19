@@ -53,6 +53,7 @@ return [
     */
 
     'url' => env('APP_URL', 'http://localhost'),
+    'frontend_url' => env('FRONTEND_URL'),
 
     'internal_webhook_secret' => env('INTERNAL_WEBHOOK_SECRET'),
 
