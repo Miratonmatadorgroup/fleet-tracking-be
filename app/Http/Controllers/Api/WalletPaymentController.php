@@ -112,7 +112,7 @@ class WalletPaymentController extends Controller
         //     "{$frontendUrl}payments/confirm?reference={$reference}&wallet_id={$walletId}&type=wallet"
         // );
 
-         $frontendUrl = rtrim(config('app.frontend_url'), '/');
+        $frontendUrl = rtrim(config('app.frontend_url'), '/');
 
         return redirect()->away(
             "{$frontendUrl}/payments/confirm?reference={$reference}&wallet_id={$walletId}&type=wallet"
