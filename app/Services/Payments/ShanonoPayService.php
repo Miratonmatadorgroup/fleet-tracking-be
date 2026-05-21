@@ -48,7 +48,7 @@ class ShanonoPayService implements PaymentServiceInterface
                 'firstName'   => $firstName,
                 'lastName'    => $lastName,
                 'email'       => $delivery->customer->email ?? 'admin@useloopfreight.com',
-                'mobile'      => $delivery->customer->phone ?? '08000000000',
+                'mobile'      => $delivery->customer->phone ?? '+2349047516206',
                 'country'     => 'NG',
                 'currency'    => 'NGN',
                 'amount'      => (string) round($delivery->total_price, 2),
