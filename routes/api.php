@@ -16,6 +16,7 @@ use App\Http\Controllers\Api\RolePermissionController;
 use App\Http\Controllers\Api\ShanonoSettlementWebhookController;
 use App\Http\Controllers\Api\SmileIdWebhookController;
 use App\Http\Controllers\Api\SubscriptionController;
+use App\Http\Controllers\Api\SubscriptionPaymentController;
 use App\Http\Controllers\Api\SubscriptionPlanController;
 use App\Http\Controllers\Api\TrackerController;
 use App\Http\Controllers\Api\UserController;
@@ -76,7 +77,17 @@ Route::post('/webhooks/shanono/settlement', [ShanonoSettlementWebhookController:
 Route::post('/webhooks/smile-id', [SmileIdWebhookController::class, 'handle']);
 
 // Subscription verify with shanono payment gateway
-Route::post('/sub-payments/verify', [PaymentController::class, 'verifySubscription'])->name('subscription.verify');
+// Route::post('/sub-payments/verify', [PaymentController::class, 'verifySubscription'])->name('subscription.verify');
+
+// SUBSCRIPTION PAYMENT WITH SHANONO PAYMENT GATEWAY
+Route::get('/subscriptions/payments/callback', [SubscriptionPaymentController::class, 'redirectHandler'])
+    ->name('subscriptions.payments.callback');
+
+Route::post('/subscriptions/payments/webhook', [SubscriptionPaymentController::class, 'webhookHandler'])
+    ->name('subscriptions.payments.webhook');
+
+Route::match(['GET', 'POST'], '/subscriptions/payments/verify', [SubscriptionPaymentController::class, 'verify'])
+    ->name('subscriptions.payments.verify');
 
 // GOOGLE SIGNUP AND SIGNIN
 Route::prefix('auth')->group(function () {
@@ -117,6 +128,11 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/wallet/pay/initiate', [WalletPaymentController::class, 'initiate'])->name('wallet.initiate');
     Route::get('/wallet/pay/success', [WalletPaymentController::class, 'success'])->name('wallet.success');
     Route::get('/wallet/pay/failed', [WalletPaymentController::class, 'failed'])->name('wallet.failed');
+
+    // FOR SUBSCRIPTION PAYMENT
+    Route::post('/subscriptions/payments/initiate', [SubscriptionPaymentController::class, 'initiate'])
+        ->name('subscriptions.payments.initiate');
+
 
     Route::get('/user-profile', [AuthController::class, 'profile']);
     Route::post('/update/user-profile', [AuthController::class, 'updateProfile']);
@@ -160,9 +176,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     // PAYMENT HADNLER STARTS HERE
     Route::get('/payments/success', [PaymentController::class, 'success'])->name('payment.success');
     Route::get('/payments/failed', [PaymentController::class, 'failed'])->name('payment.failed');
-    // Route::post('/subscriptions/pay-with-wallet', [PaymentController::class, 'payWithWallet']);
-    Route::post('/subscriptions/pay-with-wallet', [PaymentController::class, 'paySubscription']);
-    Route::post('/payments/initiate', [PaymentController::class, 'paySubscription'])->name('payments.initiate');
+
 
     // USER SUBSCRIPTION ROUTE
     Route::patch('/subscriptions/{subscriptionId}/toggle-auto-renew', [SubscriptionController::class, 'toggleAutoRenew']);
