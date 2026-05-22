@@ -52,20 +52,31 @@ class WalletPaymentController extends Controller
             ]
         ];
 
+        // Generate local payment reference FIRST
+        $reference = 'SHPG' . uniqid() . rand(1000, 9999);
+
+        // Build callback/webhook using this reference
         $callbackUrl = route('wallet.callback', [
             'wallet_id' => $wallet->id,
+            'reference' => $reference,
         ]);
 
         $webhookUrl = route('wallet.webhook', [
             'wallet_id' => $wallet->id,
+            'reference' => $reference,
         ]);
 
-        $gatewayData = $this->paymentGateway->initiate($walletObject, [
-            'callback_url' => $callbackUrl,
-            'webhook_url'  => $webhookUrl,
-        ]);
-
-        $gatewayRef = data_get($gatewayData, 'reference');
+        // Initiate payment
+        $gatewayData = $this->paymentGateway->initiate(
+            $walletObject,
+            [
+                'callback_url' => $callbackUrl,
+                'webhook_url'  => $webhookUrl,
+                'reference'    => $reference,
+            ]
+        );
+        // use same reference
+        $gatewayRef = $reference;
 
         if (!$gatewayRef) {
             return failureResponse('No gateway reference returned from Shanono');
@@ -105,6 +116,10 @@ class WalletPaymentController extends Controller
             'wallet_id' => $walletId,
             'all' => $request->all()
         ]);
+        Log::info('Wallet callback final', [
+            'full_url' => $request->fullUrl(),
+            'reference' => $request->query('reference'),
+        ]);
 
         // $frontendUrl = config('app.frontend_url');
 
@@ -118,6 +133,7 @@ class WalletPaymentController extends Controller
             "{$frontendUrl}/payments/confirm?reference={$reference}&wallet_id={$walletId}&type=wallet"
         );
     }
+
 
     public function webhook(Request $request)
     {
