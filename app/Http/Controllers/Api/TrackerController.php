@@ -27,29 +27,43 @@ class TrackerController extends Controller
         $this->trackerService = $trackerService;
     }
 
-
     public function storeOrUpdate(Request $request)
     {
         try {
+
             $request->validate([
                 'trackers' => 'required|array|min:1',
                 'trackers.*.serial_number' => 'required|string',
                 'trackers.*.imei' => 'required|string',
             ]);
 
+
             $user = Auth::user();
+
             $created = 0;
             $updated = 0;
 
+
             DB::transaction(function () use ($request, $user, &$created, &$updated) {
+
                 foreach ($request->trackers as $data) {
+
+
+                    // Remove possible "IMEI" text if admin enters it
+                    $imei = strtoupper($data['imei']);
+
+                    $imei = str_replace('IMEI', '', $imei);
+
+                    // Remove spaces, dashes, etc
+                    $imei = preg_replace('/[^0-9]/', '', $imei);
+
 
                     $tracker = Tracker::updateOrCreate(
                         [
                             'serial_number' => $data['serial_number'],
                         ],
                         [
-                            'imei' => $data['imei'],
+                            'imei' => $imei,
                             'status' => TrackerStatusEnums::INACTIVE,
                             'is_assigned' => false,
                             'inventory_by' => $user->id,
@@ -57,9 +71,13 @@ class TrackerController extends Controller
                         ]
                     );
 
-                    $tracker->wasRecentlyCreated ? $created++ : $updated++;
+
+                    $tracker->wasRecentlyCreated
+                        ? $created++
+                        : $updated++;
                 }
             });
+
 
             return successResponse(
                 'Trackers successfully stored or updated',
@@ -70,6 +88,7 @@ class TrackerController extends Controller
                 ]
             );
         } catch (\Illuminate\Validation\ValidationException $e) {
+
             return failureResponse(
                 $e->errors(),
                 422,
@@ -77,6 +96,7 @@ class TrackerController extends Controller
                 $e
             );
         } catch (\Throwable $th) {
+
             return failureResponse(
                 'Failed to store trackers',
                 500,
@@ -85,6 +105,65 @@ class TrackerController extends Controller
             );
         }
     }
+
+
+    // public function storeOrUpdate(Request $request)
+    // {
+    //     try {
+    //         $request->validate([
+    //             'trackers' => 'required|array|min:1',
+    //             'trackers.*.serial_number' => 'required|string',
+    //             'trackers.*.imei' => 'required|string',
+    //         ]);
+
+    //         $user = Auth::user();
+    //         $created = 0;
+    //         $updated = 0;
+
+    //         DB::transaction(function () use ($request, $user, &$created, &$updated) {
+    //             foreach ($request->trackers as $data) {
+
+    //                 $tracker = Tracker::updateOrCreate(
+    //                     [
+    //                         'serial_number' => $data['serial_number'],
+    //                     ],
+    //                     [
+    //                         'imei' => $data['imei'],
+    //                         'status' => TrackerStatusEnums::INACTIVE,
+    //                         'is_assigned' => false,
+    //                         'inventory_by' => $user->id,
+    //                         'inventory_at' => now(),
+    //                     ]
+    //                 );
+
+    //                 $tracker->wasRecentlyCreated ? $created++ : $updated++;
+    //             }
+    //         });
+
+    //         return successResponse(
+    //             'Trackers successfully stored or updated',
+    //             [
+    //                 'created' => $created,
+    //                 'updated' => $updated,
+    //                 'total' => $created + $updated,
+    //             ]
+    //         );
+    //     } catch (\Illuminate\Validation\ValidationException $e) {
+    //         return failureResponse(
+    //             $e->errors(),
+    //             422,
+    //             'validation_error',
+    //             $e
+    //         );
+    //     } catch (\Throwable $th) {
+    //         return failureResponse(
+    //             'Failed to store trackers',
+    //             500,
+    //             'tracker_store_error',
+    //             $th
+    //         );
+    //     }
+    // }
 
     public function index(Request $request)
     {
@@ -261,16 +340,6 @@ class TrackerController extends Controller
                     throw new \RuntimeException('Tracker already assigned to an asset');
                 }
 
-                // $this->trackerService->addDevice(
-                //     $tracker->imei,
-                //     $request->label
-                // );
-                $result = $this->trackerService->addDevice(
-                    $tracker->imei,
-                    $request->label
-                );
-                Log::info('Add device result', $result);
-
                 $tracker->update([
                     'status'      => 'active',
                     'user_id'     => $user->id,
@@ -281,6 +350,8 @@ class TrackerController extends Controller
 
                 $asset->update([
                     'status' => 'active',
+                    'tracker_id' => $tracker->id,
+                    'imei'      => $tracker->imei,
                 ]);
             });
         } catch (\Exception $e) {
@@ -685,8 +756,7 @@ class TrackerController extends Controller
 
         // Call the GPS API once for all device IDs
         $response = $trackerService->getLastPosition(
-            $deviceIds,
-            0 // or you could customize last query time if needed per asset
+            $deviceIds // or you could customize last query time if needed per asset
         );
 
         if (!$response) {
@@ -777,8 +847,7 @@ class TrackerController extends Controller
         $response = $this->trackerService->getMileageDetail(
             $deviceId,
             $request->startday,
-            $request->endday,
-            8 // China timezone
+            $request->endday
         );
 
         if (($response['status'] ?? -1) !== 0) {
@@ -811,8 +880,7 @@ class TrackerController extends Controller
         $deviceId = preg_replace('/\D/', '', $asset->tracker->imei);
 
         $response = $trackerService->lockVehicle(
-            $deviceId,
-            $asset->tracker->device_type ?? 1
+            $deviceId
         );
 
         // Map GPS status to your enum
@@ -851,8 +919,7 @@ class TrackerController extends Controller
 
         // Send unlock command
         $response = $trackerService->unlockVehicle(
-            $deviceId,
-            $asset->tracker->device_type ?? 1
+            $deviceId
         );
 
         // Map GPS numeric status → enum

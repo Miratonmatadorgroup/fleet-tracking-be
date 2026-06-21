@@ -57,8 +57,7 @@ class Asset extends Model
         return $this->hasOne(Tracker::class, 'asset_id');
     }
 
-
-
+    
     // Relationships
     public function organization()
     {
@@ -69,7 +68,6 @@ class Asset extends Model
     {
         return $this->belongsTo(Driver::class, 'driver_id');
     }
-
 
     public function gpsLogs()
     {

@@ -107,11 +107,9 @@ return [
         'tracker_base_url' => env('TRACKER_BASE_URL'),
         'tracker_username'     => env('TRACKER_USERNAME'),
         'tracker_tracker_password' => env('TRACKER_PASSWORD'),
+        'tracker_node_base_url' => env('TRACKER_NODE_URL'),
     ],
 
-    // 'openrouteservice' => [
-    //     'key' => env('ORS_API_KEY'),
-    // ],
 
     'google_maps' => [
         'key' => env('GOOGLE_MAPS_KEY'),

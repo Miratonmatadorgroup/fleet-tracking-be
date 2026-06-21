@@ -5,7 +5,8 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\Payment\GetEarningsSummaryAction;
 use App\Actions\Payment\GetPaymentSummaryAction;
-
+use App\Actions\Payment\PaySubscriptionWithWalletAction;
+use App\DTOs\Payment\PaySubscriptionWithWalletDTO;
 use App\Enums\DeliveryAssignmentLogsEnums;
 use App\Enums\DeliveryStatusEnums;
 use App\Enums\PaymentStatusEnums;
@@ -15,7 +16,6 @@ use App\Http\Controllers\Controller;
 use App\Models\Delivery;
 use App\Models\Driver;
 use App\Models\Payment;
-
 use App\Services\DeliveryAssignmentService;
 use App\Services\DriverService;
 use App\Services\Payments\MockPaymentService;
@@ -23,10 +23,10 @@ use App\Services\Payments\ShanonoPayService;
 use App\Services\TermiiService;
 use App\Services\TwilioService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Http\Request;
 use Throwable;
 
 
@@ -451,6 +451,17 @@ class PaymentController extends Controller
             'delivery_id' => $deliveryId,
             'status' => 'failed',
         ]);
+    }
+
+    public function payWithWallet(Request $request, PaySubscriptionWithWalletAction $payWithWalletAction)
+    {
+        try {
+            $dto = PaySubscriptionWithWalletDTO::fromRequest($request);
+            $delivery = $payWithWalletAction->execute($dto);
+            return successResponse('Payment successful via wallet.', $delivery);
+        } catch (\Throwable $e) {
+            return failureResponse($e->getMessage(), 422);
+        }
     }
 
     public function getPaymentSummary(GetPaymentSummaryAction $action): JsonResponse

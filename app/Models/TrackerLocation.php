@@ -25,7 +25,7 @@ class TrackerLocation extends Model
         'longitude' => 'float',
         'speed' => 'float',
         'tracker_time' => 'datetime',
-        'raw_packet' => 'array',
+        'raw_packet' => 'string',
     ];
 
     public $incrementing = false;
