@@ -133,6 +133,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/subscriptions/payments/initiate', [SubscriptionPaymentController::class, 'initiate'])
         ->name('subscriptions.payments.initiate');
 
+    // FOR USER TO PAY SUBSCRITION FROM WALLET
+    Route::post('/subscriptions/pay-with-wallet', [PaymentController::class, 'payWithWallet']);
 
     Route::get('/user-profile', [AuthController::class, 'profile']);
     Route::post('/update/user-profile', [AuthController::class, 'updateProfile']);
