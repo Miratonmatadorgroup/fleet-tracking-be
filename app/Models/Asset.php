@@ -26,6 +26,7 @@ class Asset extends Model
         'license_plate',
         'vin',
         'color',
+        'imei',
         'image_url',
         'driver_image_url',
         'status',
