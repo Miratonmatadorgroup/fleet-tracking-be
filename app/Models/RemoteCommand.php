@@ -29,6 +29,7 @@ class RemoteCommand extends Model
         'status',
         'api_response',
         'executed_at',
+        'command_param',
     ];
 
     /**

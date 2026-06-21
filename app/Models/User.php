@@ -90,6 +90,8 @@ class User extends Authenticatable
         'nin_verified_at',
         'merchant_id',
         'is_suspended',
+        'provider',
+        'provider_id',
 
     ];
 

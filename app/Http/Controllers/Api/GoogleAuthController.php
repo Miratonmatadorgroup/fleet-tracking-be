@@ -67,7 +67,6 @@ class GoogleAuthController extends Controller
         return successResponse("Login successful", [
             'user' => $user,
             'roles' => $user->getRoleNames()->values(),
-            'wallet' => $wallet,
             'access_token' => $token,
             'token_type' => 'Bearer',
             'is_new_user' => $isNewUser
@@ -118,6 +117,7 @@ class GoogleAuthController extends Controller
         return $this->loginResponse($data);
     }
 
+
     protected function loginResponse(array $data)
     {
         $user = $data['user'];
@@ -125,14 +125,45 @@ class GoogleAuthController extends Controller
         $isNewUser = $data['is_new_user'];
 
         $token = $user->createToken('authToken')->accessToken;
+
         $user->roles = $user->getRoleNames()->values();
 
-        return successResponse("Login successful", [
+        // Get first role
+        $role = $user->getRoleNames()->first();
+
+        // Get active subscription
+        $subscription = $user->activeSubscription()
+            ->with('plan')
+            ->first();
+
+        $subscriptionData = null;
+
+        if ($subscription) {
+            $subscriptionData = [
+                'id' => $subscription->id,
+                'plan_id' => $subscription->plan_id,
+                'status' => $subscription->status,
+                'start_date' => $subscription->start_date,
+                'end_date' => $subscription->end_date,
+                'is_active' => $subscription->isActive(),
+                'days_until_expiry' => $subscription->daysUntilExpiry(),
+                'auto_renew' => $subscription->auto_renew,
+                'is_trial' => $subscription->is_trial,
+                'plan' => $subscription->plan ? [
+                    'id' => $subscription->plan->id,
+                    'name' => $subscription->plan->name,
+                ] : null,
+            ];
+        }
+
+        return successResponse('Login successful', [
             'user' => $user,
             'wallet' => $wallet,
+            'role' => $role,
+            'subscription' => $subscriptionData,
             'access_token' => $token,
             'token_type' => 'Bearer',
-            'is_new_user' => $isNewUser
+            'is_new_user' => $isNewUser,
         ]);
     }
 }

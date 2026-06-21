@@ -2,6 +2,7 @@
 
 namespace App\Actions\Authentication;
 
+use App\Enums\UserTypesEnums;
 use App\Models\User;
 use App\Services\UserProvisioningManager;
 use App\Services\WalletService;
@@ -33,6 +34,7 @@ class GoogleTokenAuthAction
                 $existingEmailUser->update([
                     'provider' => 'google',
                     'provider_id' => $googleUser->id,
+                    'user_type' => UserTypesEnums::INDIVIDUAL_OPERATOR,
                 ]);
 
                 //Upgrade to developer if requested
@@ -58,6 +60,8 @@ class GoogleTokenAuthAction
                 'email_verified_at' => now(),
                 'password' => Hash::make(Str::random(16)),
                 'registration_type' => $isDev ? 'developer' : 'user',
+                'user_type' => UserTypesEnums::INDIVIDUAL_OPERATOR,
+
             ]);
 
             if ($isDev) {
@@ -73,7 +77,6 @@ class GoogleTokenAuthAction
                 'shanono'
             );
 
-            $this->provisioningManager->provision($user);
         } else {
 
             $wallet = $user->wallet;

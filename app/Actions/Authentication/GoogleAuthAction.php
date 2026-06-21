@@ -2,11 +2,12 @@
 
 namespace App\Actions\Authentication;
 
+use App\Enums\UserTypesEnums;
 use App\Models\User;
 use App\Services\UserProvisioningManager;
 use App\Services\WalletService;
-
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class GoogleAuthAction
@@ -26,7 +27,7 @@ class GoogleAuthAction
     {
         //Check if user exists by provider
         $user = User::where('provider', 'google')
-            ->where('provider_id', $googleUser->getId())
+            ->where('provider_id', $googleUser->id)
             ->first();
 
         $isNewUser = false;
@@ -34,15 +35,18 @@ class GoogleAuthAction
         if (!$user) {
 
             //Ensure no existing email/password account
-            $existingEmailUser = User::where('email', $googleUser->getEmail())->first();
+            $existingEmailUser = User::where('email', $googleUser->email)->first();
 
             if ($existingEmailUser) {
 
                 // Attach Google to existing account
-                $existingEmailUser->update([
+                $updated = $existingEmailUser->update([
                     'provider' => 'google',
-                    'provider_id' => $googleUser->getId(),
+                    'provider_id' => $googleUser->id,
+                    'user_type' => UserTypesEnums::INDIVIDUAL_OPERATOR,
                 ]);
+
+                $existingEmailUser->refresh();
 
                 if ($isDev && !$existingEmailUser->hasRole('dev')) {
                     $existingEmailUser->assignRole('dev');
@@ -60,13 +64,14 @@ class GoogleAuthAction
 
             //Create new user
             $user = User::create([
-                'name' => $googleUser->getName() ?: 'Unknown',
-                'email' => $googleUser->getEmail(),
+                'name' => $googleUser->name ?: 'Unknown',
+                'email' => $googleUser->email,
                 'provider' => 'google',
-                'provider_id' => $googleUser->getId(),
+                'provider_id' => $googleUser->id,
                 'email_verified_at' => now(),
-                'password' => Hash::make(Str::random(16)), // random password
+                'password' => Hash::make(Str::random(16)),
                 'registration_type' => $isDev ? 'developer' : 'user',
+                'user_type' => UserTypesEnums::INDIVIDUAL_OPERATOR,
             ]);
 
             if ($isDev) {
@@ -83,8 +88,6 @@ class GoogleAuthAction
                 'shanono'
             );
 
-            // Optionally run any additional provisioning
-            $this->provisioningManager->provision($user);
         } else {
             // Existing Google user — get wallet
             $wallet = $user->wallet;
