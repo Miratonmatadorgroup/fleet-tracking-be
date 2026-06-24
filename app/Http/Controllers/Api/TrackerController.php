@@ -6,12 +6,14 @@ use App\Enums\MerchantStatusEnums;
 use App\Enums\TrackerStatusEnums;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
+use App\Models\Geofence;
 use App\Models\Merchant;
 use App\Models\Tracker;
 use App\Models\TrackerTransfer;
 use App\Models\User;
 use App\Services\TrackerService;
 use App\Services\TransactionPinService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -793,7 +795,9 @@ class TrackerController extends Controller
                     'last_known_lat' => $record['latitude'] ?? null,
                     'last_known_lng' => $record['longitude'] ?? null,
                     'last_ping_at'   => now(),
-                    'last_query_position_time' => $record['servertime'] ?? 0,
+                    'last_query_position_time' => !empty($record['servertime'])
+                        ? Carbon::parse($record['servertime'])
+                        : null,
                 ]);
             }
         }
@@ -801,29 +805,36 @@ class TrackerController extends Controller
         return successResponse('Live tracking data', $response);
     }
 
-    public function geoFencing(Request $request, TrackerService $trackerService)
+    public function geoFencing(Request $request)
     {
         $request->validate([
-            'asset_id' => 'required|exists:assets,id',
+            'organization_id' => 'required',
+            'name' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
-            'radius' => 'required|integer'
+            'radius' => 'required|integer|min:50',
         ]);
 
-        $asset = $this->resolveAsset($request->asset_id, 'geofence-any-assets');
+        $geofence = Geofence::create([
+            'organization_id' => $request->organization_id,
+            'name' => $request->name,
+            'type' => 'circle',
+            'coordinates' => [
+                [
+                    'lat' => $request->latitude,
+                    'lng' => $request->longitude,
+                ]
+            ],
+            'radius_meters' => $request->radius,
+            'is_active' => true,
+            'alert_on_entry' => true,
+            'alert_on_exit' => true,
+        ]);
 
-        if (!$asset->tracker) {
-            return failureResponse('Asset does not have a tracker attached', 400);
-        }
-
-        $response = $trackerService->addGeofence(
-            $asset->tracker->imei,
-            $request->latitude,
-            $request->longitude,
-            $request->radius
+        return successResponse(
+            'Geofence created',
+            $geofence
         );
-
-        return successResponse('Geofence added successfully', $response['record'] ?? $response);
     }
 
     // Vehicle Details
