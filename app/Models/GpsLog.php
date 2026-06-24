@@ -2,12 +2,18 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class GpsLog extends Model
 {
-    use HasFactory;
+    use HasUuids, HasFactory;
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    public $timestamps = false;
 
     protected $fillable = [
         'asset_id',
@@ -37,16 +43,14 @@ class GpsLog extends Model
         ];
     }
 
-    public $timestamps = false;
-
     // Relationships
     public function asset()
     {
-        return $this->belongsTo(Asset::class);
+        return $this->belongsTo(Asset::class, 'asset_id', 'id');
     }
 
     // Scopes
-    public function scopeForAsset($query, int $assetId)
+    public function scopeForAsset($query, string $assetId)
     {
         return $query->where('asset_id', $assetId);
     }

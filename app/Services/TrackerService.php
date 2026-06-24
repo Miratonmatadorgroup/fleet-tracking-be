@@ -305,22 +305,6 @@ class TrackerService
         )->json();
     }
 
-    public function addGeofence(
-        string $imei,
-        float $lat,
-        float $lng,
-        int $radius
-    ) {
-        return Http::post(
-            "{$this->baseUrl}/devices/{$imei}/geofence",
-            [
-                'latitude' => $lat,
-                'longitude' => $lng,
-                'radius' => $radius
-            ]
-        )->json();
-    }
-
     public function getMileageDetail(
         string $imei,
         string $start,
