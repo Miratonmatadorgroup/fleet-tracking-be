@@ -808,24 +808,26 @@ class TrackerController extends Controller
     public function geoFencing(Request $request)
     {
         $request->validate([
-            'organization_id' => 'required',
             'name' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
             'radius' => 'required|integer|min:50',
         ]);
 
+        $user = $request->user();
+
         $geofence = Geofence::create([
-            'organization_id' => $request->organization_id,
+            'user_id' => $user->id,
+            'organization_id' => $user->organization_id, // can be null
             'name' => $request->name,
             'type' => 'circle',
             'coordinates' => [
                 [
-                    'lat' => $request->latitude,
-                    'lng' => $request->longitude,
+                    'lat' => (float) $request->latitude,
+                    'lng' => (float) $request->longitude,
                 ]
             ],
-            'radius_meters' => $request->radius,
+            'radius_meters' => (int) $request->radius,
             'is_active' => true,
             'alert_on_entry' => true,
             'alert_on_exit' => true,
@@ -947,8 +949,6 @@ class TrackerController extends Controller
 
         return successResponse('Unlock command sent', $response);
     }
-
-
     private function mapGpsStatusToCommandStatus(?int $status): string
     {
         return match ($status) {

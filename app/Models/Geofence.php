@@ -23,6 +23,7 @@ class Geofence extends Model
      * Mass assignable attributes
      */
     protected $fillable = [
+        'user_id',
         'organization_id',
         'name',
         'type',
@@ -68,6 +69,12 @@ class Geofence extends Model
     | Relationships
     |--------------------------------------------------------------------------
     */
+
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
 
     public function organization()
     {
