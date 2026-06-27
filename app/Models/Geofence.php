@@ -75,6 +75,15 @@ class Geofence extends Model
         return $this->belongsTo(User::class);
     }
 
+    public function assets()
+    {
+        return $this->belongsToMany(
+            Asset::class,
+            'geofence_assets',
+            'geofence_id',
+            'asset_id'
+        )->withTimestamps();
+    }
 
     public function organization()
     {

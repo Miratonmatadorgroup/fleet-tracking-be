@@ -767,10 +767,6 @@ class TrackerController extends Controller
             return failureResponse('Tracker returned empty response. Device may be offline.');
         }
 
-        // if (!$response) {
-        //     return failureResponse('Tracker returned empty response. Device may be offline.');
-        // }
-
         if (($response['status'] ?? -1) !== 0) {
             return failureResponse($response['cause'] ?? 'Tracking API error');
         }
@@ -811,9 +807,46 @@ class TrackerController extends Controller
         return successResponse('Live tracking data', $response);
     }
 
+    // public function geoFencing(Request $request)
+    // {
+    //     $request->validate([
+    //         'asset_id' => 'required|exists:assets,id',
+    //         'name' => 'required|string',
+    //         'latitude' => 'required|numeric',
+    //         'longitude' => 'required|numeric',
+    //         'radius' => 'required|integer|min:50',
+    //     ]);
+
+    //     $user = $request->user();
+
+    //     $geofence = Geofence::create([
+    //         'asset_id' => $request->asset_id,
+    //         'user_id' => $user->id,
+    //         'organization_id' => $user->organization_id, // can be null
+    //         'name' => $request->name,
+    //         'type' => 'circle',
+    //         'coordinates' => [
+    //             [
+    //                 'lat' => (float) $request->latitude,
+    //                 'lng' => (float) $request->longitude,
+    //             ]
+    //         ],
+    //         'radius_meters' => (int) $request->radius,
+    //         'is_active' => true,
+    //         'alert_on_entry' => true,
+    //         'alert_on_exit' => true,
+    //     ]);
+
+    //     return successResponse(
+    //         'Geofence created',
+    //         $geofence
+    //     );
+    // }
+
     public function geoFencing(Request $request)
     {
         $request->validate([
+            'asset_id' => 'required|exists:assets,id',
             'name' => 'required|string',
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
@@ -824,7 +857,7 @@ class TrackerController extends Controller
 
         $geofence = Geofence::create([
             'user_id' => $user->id,
-            'organization_id' => $user->organization_id, // can be null
+            'organization_id' => $user->organization_id,
             'name' => $request->name,
             'type' => 'circle',
             'coordinates' => [
@@ -833,15 +866,17 @@ class TrackerController extends Controller
                     'lng' => (float) $request->longitude,
                 ]
             ],
-            'radius_meters' => (int) $request->radius,
+            'radius_meters' => (int)$request->radius,
             'is_active' => true,
             'alert_on_entry' => true,
             'alert_on_exit' => true,
         ]);
 
+        $geofence->assets()->attach($request->asset_id);
+
         return successResponse(
             'Geofence created',
-            $geofence
+            $geofence->load('assets')
         );
     }
 
