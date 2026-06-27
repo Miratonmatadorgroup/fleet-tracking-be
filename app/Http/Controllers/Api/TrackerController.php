@@ -760,10 +760,16 @@ class TrackerController extends Controller
         $response = $trackerService->getLastPosition(
             $deviceIds // or you could customize last query time if needed per asset
         );
-
-        if (!$response) {
+        Log::info('TRACKING CONTROLLER RESPONSE', [
+            'response' => $response,
+        ]);
+        if (is_null($response)) {
             return failureResponse('Tracker returned empty response. Device may be offline.');
         }
+
+        // if (!$response) {
+        //     return failureResponse('Tracker returned empty response. Device may be offline.');
+        // }
 
         if (($response['status'] ?? -1) !== 0) {
             return failureResponse($response['cause'] ?? 'Tracking API error');
