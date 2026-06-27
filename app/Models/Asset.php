@@ -57,11 +57,21 @@ class Asset extends Model
         return $this->hasOne(Tracker::class, 'asset_id');
     }
 
-    
+
     // Relationships
     public function organization()
     {
         return $this->belongsTo(Organization::class);
+    }
+
+    public function geofences()
+    {
+        return $this->belongsToMany(
+            Geofence::class,
+            'geofence_assets',
+            'asset_id',
+            'geofence_id'
+        )->withTimestamps();
     }
 
     public function driver()
