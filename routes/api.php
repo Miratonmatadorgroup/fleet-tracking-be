@@ -101,6 +101,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/tracker/inventory', [TrackerController::class, 'storeOrUpdate'])->middleware('permission:take-inventory');
     Route::get('/tracker/inventory', [TrackerController::class, 'index'])->middleware('permission:view-all-trackers');
     Route::get('/view/all-assets', [AssetController::class, 'viewAllAssets'])->middleware('permission:view-all-assets');
+    Route::get('/view/assets/with-trackers', [AssetController::class,'assetsWithTracker'])->middleware('permission:view-all-assets-with-tracker');
     Route::post('/trackers/reassign', [TrackerController::class, 'reassign'])->middleware('permission:reassign-tracker');
     Route::delete('/tracker/inventory/{tracker}', [TrackerController::class, 'destroy'])->middleware('permission:delete-a-tracker');
     Route::delete('/bulk-delet/trackers', [TrackerController::class, 'bulkDelete'])->middleware('permission:bulk-delete-trackers');

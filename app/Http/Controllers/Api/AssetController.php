@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\AssetsFleets\GetAllAssetsAction;
+use App\Actions\AssetsFleets\GetAssetsWithTrackerAction;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetViewPermission;
@@ -297,6 +298,34 @@ class AssetController extends Controller
                 'Failed to retrieve assets',
                 500,
                 'asset_index_error',
+                $th
+            );
+        }
+    }
+
+    public function assetsWithTracker(Request $request,GetAssetsWithTrackerAction $action) {
+
+        try {
+
+            $search  = $request->input('search');
+            $perPage = $request->input('per_page', 20);
+
+            $data = $action->execute(
+                $search,
+                $perPage
+            );
+
+            return successResponse(
+                'Assets with trackers retrieved successfully',
+                $data
+            );
+        } catch (\Throwable $th) {
+
+
+            return failureResponse(
+                'Failed to retrieve assets with trackers',
+                500,
+                'asset_tracker_index_error',
                 $th
             );
         }

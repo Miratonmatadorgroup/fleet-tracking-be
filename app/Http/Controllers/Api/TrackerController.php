@@ -729,21 +729,20 @@ class TrackerController extends Controller
         $user = Auth::user();
 
         if ($user->can('track-all-assets')) {
-            // Super admin can access ALL assets
+
             $assets = Asset::with('tracker')
                 ->whereIn('id', $request->asset_id)
                 ->get();
         } else {
-            // Normal users → only their assets
+
             $assets = Asset::with('tracker')
                 ->whereIn('id', $request->asset_id)
-                ->where('user_id', $user->id)
+                ->whereHas('tracker', function ($query) use ($user) {
+                    $query->where('user_id', $user->id);
+                })
                 ->get();
         }
-        // $assets = Asset::with('tracker')
-        //     ->whereIn('id', $request->asset_id)
-        //     ->get();
-
+        
         // Collect all device IMEIs for assets that have a tracker
         $deviceIds = [];
         foreach ($assets as $asset) {
