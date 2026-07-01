@@ -38,6 +38,9 @@ use Spatie\Permission\Traits\HasRoles;
  * @property string $password
  */
 
+/**
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \App\Models\Subscription> $subscriptions
+ */
 class User extends Authenticatable
 {
     /** @use HasFactory<\Database\Factories\UserFactory> */

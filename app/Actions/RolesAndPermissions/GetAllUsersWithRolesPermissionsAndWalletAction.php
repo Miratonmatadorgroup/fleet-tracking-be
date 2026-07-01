@@ -16,7 +16,7 @@ class GetAllUsersWithRolesPermissionsAndWalletAction
     public function execute(?string $search = null, int $perPage = 10)
     {
         $authUser = Auth::user();
-        $query = User::with('wallet')
+        $query = User::with(['wallet', 'subscriptions.plan'])
             ->orderBy('created_at', 'desc');
 
         if (!$authUser->hasRole('super_admin')) {
@@ -116,9 +116,42 @@ class GetAllUsersWithRolesPermissionsAndWalletAction
                 'phone'            => $user->phone,
                 'payout_restricted' => $user->payout_restricted,
                 'whatsapp_number'  => $user->whatsapp_number,
+
                 'roles'            => $user->getRoleNames(),
+
                 'permissions'      => $user->getAllPermissions()->pluck('name'),
+
                 'wallet'           => $walletData,
+
+
+                'subscriptions' => $user->subscriptions->map(function ($subscription) {
+
+                    return [
+                        'id' => $subscription->id,
+
+                        'status' => $subscription->status,
+
+                        'start_date' => $subscription->start_date,
+                        'end_date' => $subscription->end_date,
+
+                        'is_trial' => (bool) $subscription->is_trial,
+
+                        'auto_renew' => (bool) $subscription->auto_renew,
+
+                        'payment_method' => $subscription->payment_method,
+
+
+                        'plan' => [
+                            'id' => $subscription->plan?->id,
+                            'name' => $subscription->plan?->name,
+                            'user_type' => $subscription->plan?->user_type,
+                            'billing_cycle' => $subscription->plan?->billing_cycle,
+                            'price' => $subscription->plan?->price,
+                            'features' => $subscription->plan?->features ?? [],
+                        ]
+
+                    ];
+                }),
             ];
         });
 

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 
+use App\Actions\subscription\GetSubscriptionUsersSummaryAction;
 use App\Http\Controllers\Controller;
 use App\Models\Subscription;
 use App\Services\TransactionPinService;
@@ -43,6 +44,47 @@ class SubscriptionController extends Controller
         return successResponse([
             'subscriptions' => $subscriptions
         ]);
+    }
+
+    public function mySubscriptions()
+    {
+         /** @var \App\Models\User $user */
+        $user = Auth::user();
+
+        $subscriptions = $user
+            ->subscriptions()
+            ->with('plan')
+            ->latest()
+            ->get();
+
+
+        return successResponse([
+            'count' => $subscriptions->count(),
+            'subscriptions' => $subscriptions
+        ]);
+    }
+
+    public function subscriptionUsersSummary(GetSubscriptionUsersSummaryAction $action)
+    {
+        try {
+
+            $data = $action->execute();
+
+
+            return successResponse(
+                'Subscription users summary retrieved successfully',
+                $data
+            );
+        } catch (\Throwable $th) {
+
+
+            return failureResponse(
+                'Failed to retrieve subscription summary',
+                500,
+                'subscription_summary_error',
+                $th
+            );
+        }
     }
 
     public function toggleAutoRenew(Request $request, $subscriptionId)

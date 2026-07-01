@@ -101,7 +101,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/tracker/inventory', [TrackerController::class, 'storeOrUpdate'])->middleware('permission:take-inventory');
     Route::get('/tracker/inventory', [TrackerController::class, 'index'])->middleware('permission:view-all-trackers');
     Route::get('/view/all-assets', [AssetController::class, 'viewAllAssets'])->middleware('permission:view-all-assets');
-    Route::get('/view/assets/with-trackers', [AssetController::class,'assetsWithTracker'])->middleware('permission:view-all-assets-with-tracker');
+    Route::get('/view/assets/with-trackers', [AssetController::class, 'assetsWithTracker'])->middleware('permission:view-all-assets-with-tracker');
     Route::post('/trackers/reassign', [TrackerController::class, 'reassign'])->middleware('permission:reassign-tracker');
     Route::delete('/tracker/inventory/{tracker}', [TrackerController::class, 'destroy'])->middleware('permission:delete-a-tracker');
     Route::delete('/bulk-delet/trackers', [TrackerController::class, 'bulkDelete'])->middleware('permission:bulk-delete-trackers');
@@ -183,6 +183,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
 
     // USER SUBSCRIPTION ROUTE
     Route::patch('/subscriptions/{subscriptionId}/toggle-auto-renew', [SubscriptionController::class, 'toggleAutoRenew']);
+    // USER SUBSCRIPTION MY SUBSCRIPTIONS
+    Route::get('/view/my-subscriptions', [SubscriptionController::class, 'mySubscriptions']);
 
     // BYPASS STARTS HERE
     Route::post('/create-roles', [RolePermissionController::class, 'createRoleWithPermissions']);
@@ -208,7 +210,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
 
     Route::get('/view/subscriptions', [SubscriptionController::class, 'listSubscriptions'])->middleware('permission:list-of-subscriptions');
 
-
+    Route::get('/subscriptions/users-summary', [SubscriptionController::class, 'subscriptionUsersSummary'])->middleware('permission:list-subscriptions-summary');
 
     // FINANCIAL SUMMARY VIEW BY SUPER ADMIN
     Route::get('/view/total-earnings', [FinanceSummaryController::class, 'subscriptionEarnings'])
@@ -246,6 +248,12 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         ->middleware('permission:track-all-assets');
     Route::post('/admin/fleet/vehicles/geofencing', [TrackerController::class, 'geoFencing'])
         ->middleware('permission:geofence-any-assets');
+    //EDIT
+    Route::put('/admin/update/vehicles-geofencing/{id}', [TrackerController::class, 'updateGeoFencing'])
+        ->middleware('permission:edit-geofence-any-assets');
+    //DELETE
+    Route::delete('/admin/delete/vehicles-geofencing/{id}', [TrackerController::class, 'deleteGeoFencing'])
+        ->middleware('permission:delete-geofence-any-assets');
     Route::post('/admin/fleet/vehicles/details', [TrackerController::class, 'milageDetails'])
         ->middleware('permission:view-details-any-assets');
     Route::post('/admin/fleet/vehicles/unlock', [TrackerController::class, 'remoteUnlock'])
@@ -278,6 +286,10 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         Route::post('/fleet/vehicles/tracking', [TrackerController::class, 'tracking']);
 
         Route::post('/fleet/vehicles/geofencing', [TrackerController::class, 'geoFencing']);
+
+        Route::put('/fleet/vehicles/update/geofencing/{id}', [TrackerController::class, 'updateGeoFencing']);
+
+        Route::delete('/fleet/vehicles/delete/geofencing/{id}', [TrackerController::class, 'deleteGeoFencing']);
 
         Route::post('/fleet/vehicles/details', [TrackerController::class, 'milageDetails']);
 

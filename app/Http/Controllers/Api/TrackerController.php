@@ -742,7 +742,7 @@ class TrackerController extends Controller
                 })
                 ->get();
         }
-        
+
         // Collect all device IMEIs for assets that have a tracker
         $deviceIds = [];
         foreach ($assets as $asset) {
@@ -806,42 +806,6 @@ class TrackerController extends Controller
         return successResponse('Live tracking data', $response);
     }
 
-    // public function geoFencing(Request $request)
-    // {
-    //     $request->validate([
-    //         'asset_id' => 'required|exists:assets,id',
-    //         'name' => 'required|string',
-    //         'latitude' => 'required|numeric',
-    //         'longitude' => 'required|numeric',
-    //         'radius' => 'required|integer|min:50',
-    //     ]);
-
-    //     $user = $request->user();
-
-    //     $geofence = Geofence::create([
-    //         'asset_id' => $request->asset_id,
-    //         'user_id' => $user->id,
-    //         'organization_id' => $user->organization_id, // can be null
-    //         'name' => $request->name,
-    //         'type' => 'circle',
-    //         'coordinates' => [
-    //             [
-    //                 'lat' => (float) $request->latitude,
-    //                 'lng' => (float) $request->longitude,
-    //             ]
-    //         ],
-    //         'radius_meters' => (int) $request->radius,
-    //         'is_active' => true,
-    //         'alert_on_entry' => true,
-    //         'alert_on_exit' => true,
-    //     ]);
-
-    //     return successResponse(
-    //         'Geofence created',
-    //         $geofence
-    //     );
-    // }
-
     public function geoFencing(Request $request)
     {
         $request->validate([
@@ -876,6 +840,100 @@ class TrackerController extends Controller
         return successResponse(
             'Geofence created',
             $geofence->load('assets')
+        );
+    }
+
+    public function updateGeoFencing(Request $request, string $id)
+    {
+        $request->validate([
+            'name' => 'required|string',
+            'latitude' => 'required|numeric',
+            'longitude' => 'required|numeric',
+            'radius' => 'required|integer|min:50',
+            'asset_id' => 'required|exists:assets,id',
+        ]);
+
+        $user = $request->user();
+
+        // Permission check
+        if (!$user->can('edit-geofence-any-assets')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to manage geofencing.'
+            ], 403);
+        }
+
+
+        $geofence = Geofence::where('id', $id)
+            ->where('organization_id', $user->organization_id)
+            ->first();
+
+
+        if (!$geofence) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Geofence not found.'
+            ], 404);
+        }
+
+
+        $geofence->update([
+            'name' => $request->name,
+
+            'coordinates' => [
+                [
+                    'lat' => (float) $request->latitude,
+                    'lng' => (float) $request->longitude,
+                ]
+            ],
+
+            'radius_meters' => (int)$request->radius,
+        ]);
+
+
+        // Update attached asset
+        $geofence->assets()->sync([
+            $request->asset_id
+        ]);
+
+
+        return successResponse(
+            'Geofence updated successfully',
+            $geofence->load('assets')
+        );
+    }
+
+    public function deleteGeoFencing(string $id)
+    {
+        $user = request()->user();
+
+
+        if (!$user->can('delete-geofence-any-assets')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to manage geofencing.'
+            ], 403);
+        }
+
+
+        $geofence = Geofence::where('id', $id)
+            ->where('organization_id', $user->organization_id)
+            ->first();
+
+
+        if (!$geofence) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Geofence not found.'
+            ], 404);
+        }
+        // remove asset relationship first
+        $geofence->assets()->detach();
+        // delete geofence
+        $geofence->delete();
+
+        return successResponse(
+            'Geofence deleted successfully'
         );
     }
 
