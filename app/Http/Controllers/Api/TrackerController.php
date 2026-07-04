@@ -109,64 +109,6 @@ class TrackerController extends Controller
     }
 
 
-    // public function storeOrUpdate(Request $request)
-    // {
-    //     try {
-    //         $request->validate([
-    //             'trackers' => 'required|array|min:1',
-    //             'trackers.*.serial_number' => 'required|string',
-    //             'trackers.*.imei' => 'required|string',
-    //         ]);
-
-    //         $user = Auth::user();
-    //         $created = 0;
-    //         $updated = 0;
-
-    //         DB::transaction(function () use ($request, $user, &$created, &$updated) {
-    //             foreach ($request->trackers as $data) {
-
-    //                 $tracker = Tracker::updateOrCreate(
-    //                     [
-    //                         'serial_number' => $data['serial_number'],
-    //                     ],
-    //                     [
-    //                         'imei' => $data['imei'],
-    //                         'status' => TrackerStatusEnums::INACTIVE,
-    //                         'is_assigned' => false,
-    //                         'inventory_by' => $user->id,
-    //                         'inventory_at' => now(),
-    //                     ]
-    //                 );
-
-    //                 $tracker->wasRecentlyCreated ? $created++ : $updated++;
-    //             }
-    //         });
-
-    //         return successResponse(
-    //             'Trackers successfully stored or updated',
-    //             [
-    //                 'created' => $created,
-    //                 'updated' => $updated,
-    //                 'total' => $created + $updated,
-    //             ]
-    //         );
-    //     } catch (\Illuminate\Validation\ValidationException $e) {
-    //         return failureResponse(
-    //             $e->errors(),
-    //             422,
-    //             'validation_error',
-    //             $e
-    //         );
-    //     } catch (\Throwable $th) {
-    //         return failureResponse(
-    //             'Failed to store trackers',
-    //             500,
-    //             'tracker_store_error',
-    //             $th
-    //         );
-    //     }
-    // }
-
     public function index(Request $request)
     {
         try {
@@ -347,7 +289,8 @@ class TrackerController extends Controller
                     'user_id'     => $user->id,
                     'label'       => $request->label,
                     'asset_id'    => $asset->id,
-                    'is_assigned' => 1,
+                    'is_assigned' => true,
+                    'is_sold'     => true,
                 ]);
 
                 $asset->update([
@@ -505,6 +448,7 @@ class TrackerController extends Controller
                         'merchant_id' => $merchant->id,
                         'status'      => TrackerStatusEnums::ASSIGNED,
                         'is_assigned' => true,
+                        'is_sold'     => true,
                     ]);
 
                 // Approve merchant after successful assignment
@@ -595,6 +539,7 @@ class TrackerController extends Controller
                         'user_id'     => Auth::id(),
                         'asset_id'    => $asset->id,
                         'is_assigned' => true,
+                        'is_sold'     => true,
                     ]);
 
                     $asset->update([
@@ -786,7 +731,7 @@ class TrackerController extends Controller
 
                 $asset = $assetsByImei[$imei];
 
-                //afety check (prevents your crash)
+                //safety check (prevents your crash)
                 if (!($asset instanceof \App\Models\Asset)) {
                     Log::error('Invalid asset type', ['asset' => $asset]);
                     continue;
