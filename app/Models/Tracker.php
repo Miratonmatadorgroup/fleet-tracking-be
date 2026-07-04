@@ -23,6 +23,7 @@ class Tracker extends Model
         'status',
         'asset_id',
         'is_assigned',
+        'is_sold',
         'merchant_id',
         'user_id',
         'inventory_by',
@@ -33,6 +34,7 @@ class Tracker extends Model
 
     protected $casts = [
         'is_assigned' => 'boolean',
+        'is_sold' => 'boolean',
         'inventory_at' => 'datetime',
         'status' => TrackerStatusEnums::class,
     ];

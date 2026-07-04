@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\AdminBroadcastController;
+use App\Http\Controllers\Api\AdminSubscriptionController;
 use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DisputeController;
@@ -210,6 +211,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
 
     Route::get('/view/subscriptions', [SubscriptionController::class, 'listSubscriptions'])->middleware('permission:list-of-subscriptions');
 
+    //TOTAL USERS THAT HAS AND HAS NO SUBSCRIPTION
     Route::get('/subscriptions/users-summary', [SubscriptionController::class, 'subscriptionUsersSummary'])->middleware('permission:list-subscriptions-summary');
 
     // FINANCIAL SUMMARY VIEW BY SUPER ADMIN
@@ -240,6 +242,12 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         ->middleware('permission:edit-role');
     Route::post('/admin/create-permissions', [RolePermissionController::class, 'adminCreateOrUpdatePermissions'])
         ->middleware('permission:create-permissions');
+
+    Route::post('/admin/subscriptions/assign', [AdminSubscriptionController::class, 'assign'])
+        ->middleware('permission:assign-subscription');
+
+    Route::post('/admin/subscriptions/unassign', [AdminSubscriptionController::class, 'unassign'])
+        ->middleware('permission:unassign-subscription');
 
     //ADMIN FEATURES WITHOUT SUBSCRIPTION PLANS STARTS HERE
     Route::post('/admin/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown'])
