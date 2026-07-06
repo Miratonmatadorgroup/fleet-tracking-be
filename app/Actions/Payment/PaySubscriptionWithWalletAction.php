@@ -118,6 +118,7 @@ class PaySubscriptionWithWalletAction
                 'user_id'        => $user->id,
                 'plan_id'        => $plan->id,
                 'asset_id'       => $user->asset_id ?? null,
+                'price_per_month' => $plan->price,
                 'start_date'     => $startDate,
                 'end_date'       => $endDate,
                 'status'         => SubscriptionStatusEnums::ACTIVE,
