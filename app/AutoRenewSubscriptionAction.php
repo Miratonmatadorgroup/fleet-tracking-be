@@ -79,6 +79,7 @@ class AutoRenewSubscriptionAction
             $subscription = Subscription::create([
                 'user_id'        => $user->id,
                 'plan_id'        => $plan->id,
+                'price_per_month' => $plan->price,
                 'start_date'     => $startDate,
                 'end_date'       => $endDate,
                 'status'         => SubscriptionStatusEnums::ACTIVE,

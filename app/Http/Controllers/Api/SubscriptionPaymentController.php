@@ -206,6 +206,7 @@ class SubscriptionPaymentController extends Controller
 
         $subscription = Subscription::find($subscriptionId);
 
+
         if (!$subscription) {
             return response()->json([
                 'success' => false,
@@ -224,6 +225,7 @@ class SubscriptionPaymentController extends Controller
         ) {
             $subscription->update([
                 'status' => SubscriptionStatusEnums::ACTIVE,
+                'price_per_month' => $subscription->plan->price,
                 'start_date' => now(),
                 'end_date' => now()->addMonth(),
             ]);
