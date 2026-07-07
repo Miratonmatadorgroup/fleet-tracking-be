@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\GeoFenceActionTypeEnums;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +27,7 @@ class Geofence extends Model
         'user_id',
         'organization_id',
         'name',
+        'action',
         'type',
         'coordinates',
         'radius_meters',
@@ -43,6 +45,7 @@ class Geofence extends Model
     protected $casts = [
         'coordinates' => 'array',
         'radius_meters' => 'integer',
+        'action' => GeoFenceActionTypeEnums::class,
         'is_active' => 'boolean',
         'alert_on_entry' => 'boolean',
         'alert_on_exit' => 'boolean',

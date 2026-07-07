@@ -77,6 +77,7 @@ class NotificationController extends Controller
                 \App\Notifications\User\DriverAssignedNotification::class,
                 \App\Notifications\User\CustomerAssignedDriverNotification::class,
                 \App\Notifications\User\SubscriptionPaymentNotification::class,
+                \App\Notifications\User\GeofenceAlertNotification::class,
                 \App\Notifications\User\SubscriptionAutoRenewFailedNotification::class,
                 \App\Notifications\User\SubscriptionExpiredNotification::class,
                 \App\Notifications\User\DeliveryMarkedAsDeliveredNotification::class,

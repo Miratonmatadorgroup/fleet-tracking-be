@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Enums\GeoFenceActionTypeEnums;
 use App\Enums\MerchantStatusEnums;
 use App\Enums\TrackerStatusEnums;
 use App\Http\Controllers\Controller;
@@ -11,6 +12,7 @@ use App\Models\Merchant;
 use App\Models\Tracker;
 use App\Models\TrackerTransfer;
 use App\Models\User;
+use App\Services\GeofenceService;
 use App\Services\TrackerService;
 use App\Services\TransactionPinService;
 use Carbon\Carbon;
@@ -18,15 +20,18 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rules\Enum;
 
 class TrackerController extends Controller
 {
 
     protected TrackerService $trackerService;
+    protected GeofenceService $geofenceService;
 
-    public function __construct(TrackerService $trackerService)
+    public function __construct(TrackerService $trackerService, GeofenceService $geofenceService)
     {
         $this->trackerService = $trackerService;
+        $this->geofenceService = $geofenceService;
     }
 
     public function storeOrUpdate(Request $request)
@@ -745,6 +750,7 @@ class TrackerController extends Controller
                         ? Carbon::parse($record['servertime'])
                         : null,
                 ]);
+                $this->geofenceService->process($asset);
             }
         }
 
@@ -759,6 +765,7 @@ class TrackerController extends Controller
             'latitude' => 'required|numeric',
             'longitude' => 'required|numeric',
             'radius' => 'required|integer|min:50',
+            'action' => ['required', new Enum(GeoFenceActionTypeEnums::class),],
         ]);
 
         $user = $request->user();
@@ -769,15 +776,14 @@ class TrackerController extends Controller
             'name' => $request->name,
             'type' => 'circle',
             'coordinates' => [
-                [
-                    'lat' => (float) $request->latitude,
-                    'lng' => (float) $request->longitude,
-                ]
+                'latitude' => (float) $request->latitude,
+                'longitude' => (float) $request->longitude,
             ],
             'radius_meters' => (int)$request->radius,
             'is_active' => true,
             'alert_on_entry' => true,
             'alert_on_exit' => true,
+            'action' => $request->action,
         ]);
 
         $geofence->assets()->attach($request->asset_id);
