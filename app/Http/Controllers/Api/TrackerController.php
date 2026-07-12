@@ -802,6 +802,7 @@ class TrackerController extends Controller
             'longitude' => 'required|numeric',
             'radius' => 'required|integer|min:50',
             'asset_id' => 'required|exists:assets,id',
+            'action' => ['required', new Enum(GeoFenceActionTypeEnums::class),],
         ]);
 
         $user = $request->user();
@@ -839,6 +840,8 @@ class TrackerController extends Controller
             ],
 
             'radius_meters' => (int)$request->radius,
+            'action' => $request->action,
+
         ]);
 
 
