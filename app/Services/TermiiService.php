@@ -21,7 +21,8 @@ class TermiiService
     public function sendSms(string $to, string $message): array
     {
         try {
-            $to = ltrim($to, '+');
+            // $to = ltrim($to, '+');
+            $to = $this->formatPhoneNumber($to);
 
             $payload = [
                 'to'      => $to,
@@ -57,5 +58,24 @@ class TermiiService
                 'message' => 'Termii unreachable',
             ];
         }
+    }
+
+    private function formatPhoneNumber(string $phone): string
+    {
+        $phone = preg_replace('/\s+/', '', trim($phone));
+
+        if (str_starts_with($phone, '+234')) {
+            return $phone;
+        }
+
+        if (str_starts_with($phone, '234')) {
+            return '+' . $phone;
+        }
+
+        if (str_starts_with($phone, '0')) {
+            return '+234' . substr($phone, 1);
+        }
+
+        return '+234' . $phone;
     }
 }

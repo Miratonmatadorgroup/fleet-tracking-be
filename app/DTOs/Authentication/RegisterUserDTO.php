@@ -7,7 +7,9 @@ use Illuminate\Http\Request;
 class RegisterUserDTO
 {
     public string $name;
-    public string $email;
+    public ?string $email;
+    public ?string $phone;
+    public string $channel;
     public string $password;
     public ?string $dob;           // New
     public ?string $gender;
@@ -31,6 +33,8 @@ class RegisterUserDTO
     {
         $this->name = $data['name'];
         $this->email = $data['email'];
+        $this->phone = $data['phone'] ?? null;
+        $this->channel = $data['channel'];
         $this->password = $data['password'];
         $this->dob     = $data['dob'] ?? null;
         $this->gender  = $data['gender'] ?? null;
@@ -52,6 +56,8 @@ class RegisterUserDTO
             ...$request->only([
                 'name',
                 'email',
+                'phone',
+                'channel',
                 'password',
                 'operator_type',
                 'business_type',

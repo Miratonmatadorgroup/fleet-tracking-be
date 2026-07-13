@@ -246,6 +246,50 @@ class TrackerController extends Controller
         return successResponse('Tracker assigned to asset');
     }
 
+    public function assetsWithGeofence(Request $request)
+    {
+        $user = $request->user();
+
+        $assets = Asset::where('organization_id', $user->organization_id)
+            ->with([
+                'geofences' => function ($query) {
+                    $query->select(
+                        'geofences.id',
+                        'geofences.name',
+                        'geofences.radius_meters',
+                        'geofences.action'
+                    );
+                }
+            ])
+            ->get();
+
+        $data = $assets->map(function ($asset) {
+
+            $geofence = $asset->geofences->first();
+
+            return [
+                'id' => $asset->id,
+                'license_plate' => $asset->license_plate,
+                'make' => $asset->make,
+                'model' => $asset->model,
+
+                'has_geofence' => $geofence !== null,
+
+                'geofence' => $geofence ? [
+                    'id' => $geofence->id,
+                    'name' => $geofence->name,
+                    'radius_meters' => $geofence->radius_meters,
+                    'action' => $geofence->action,
+                ] : null,
+            ];
+        });
+
+        return successResponse(
+            'Assets retrieved successfully',
+            $data
+        );
+    }
+
     public function activate(Request $request)
     {
         $request->validate([
@@ -831,14 +875,10 @@ class TrackerController extends Controller
 
         $geofence->update([
             'name' => $request->name,
-
             'coordinates' => [
-                [
-                    'lat' => (float) $request->latitude,
-                    'lng' => (float) $request->longitude,
-                ]
+                'latitude' => (float) $request->latitude,
+                'longitude' => (float) $request->longitude,
             ],
-
             'radius_meters' => (int)$request->radius,
             'action' => $request->action,
 
