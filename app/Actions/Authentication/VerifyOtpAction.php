@@ -116,16 +116,28 @@ class VerifyOtpAction
 
             $result = DB::transaction(function () use ($pending) {
                 // Normalize email for DB search
-                $email = strtolower(trim($pending['email']));
+                if ($pending['channel'] === 'email') {
 
-                //Create or confirm user
-                $user = User::whereRaw('LOWER(email) = ?', [$email])
-                    ->lockForUpdate()
-                    ->first();
+                    $user = User::whereRaw(
+                        'LOWER(email)=?',
+                        [strtolower(trim($pending['email']))]
+                    )
+                        ->lockForUpdate()
+                        ->first();
+                } else {
+
+                    $user = User::where('phone', $pending['phone'])
+                        ->lockForUpdate()
+                        ->first();
+                }
                 if ($user) {
                     // Update email_verified_at if needed
-                    if (! $user->email_verified_at) {
+                    if ($pending['channel'] === 'email' && !$user->email_verified_at) {
                         $user->email_verified_at = now();
+                    }
+
+                    if ($pending['channel'] === 'phone' && !$user->phone_verified_at) {
+                        $user->phone_verified_at = now();
                     }
 
                     // Update nin_verified_at if pending says verified
@@ -141,17 +153,37 @@ class VerifyOtpAction
                 } else {
                     // Create new user with email_verified_at set
                     $user = User::create([
-                        'name'          => $pending['name'],
-                        'email'         => $pending['email'],
-                        'password'      => $pending['password'],
-                        'user_type'     => $pending['user_type'],
-                        'dob'           => $pending['dob'],
-                        'gender'        => $pending['gender'],
+
+                        'name' => $pending['name'],
+
+                        'email' => $pending['email'],
+
+                        'phone' => $pending['phone'],
+
+                        'password' => $pending['password'],
+
+                        'user_type' => $pending['user_type'],
+
+                        'dob' => $pending['dob'],
+
+                        'gender' => $pending['gender'],
+
                         'business_type' => $pending['business_type'] ?? null,
-                        'cac_number'    => $pending['cac_number'] ?? null,
-                        'cac_document'  => $pending['cac_document'] ?? null,
-                        'nin_number'    => $pending['nin_number'] ?? null,
-                        'email_verified_at' => now(),
+
+                        'cac_number' => $pending['cac_number'] ?? null,
+
+                        'cac_document' => $pending['cac_document'] ?? null,
+
+                        'nin_number' => $pending['nin_number'] ?? null,
+
+                        'email_verified_at' => $pending['channel'] === 'email'
+                            ? now()
+                            : null,
+
+                        'phone_verified_at' => $pending['channel'] === 'phone'
+                            ? now()
+                            : null,
+
                         'nin_verified_at' => ($pending['nin_verification']['status'] ?? null) === 'verified'
                             ? now()
                             : null,

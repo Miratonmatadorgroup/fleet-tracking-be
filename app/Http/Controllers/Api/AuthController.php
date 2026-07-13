@@ -65,7 +65,32 @@ class AuthController extends Controller
             ];
             $validator = Validator::make($request->all(), [
                 'name'          => 'required|string|max:255',
-                'email'         => 'required|email|unique:users,email',
+                // 'email'         => 'required|email|unique:users,email',
+                'identifier' => [
+                    'required',
+                    function ($attribute, $value, $fail) {
+
+                        if (filter_var($value, FILTER_VALIDATE_EMAIL)) {
+
+                            if (User::where('email', strtolower($value))->exists()) {
+                                $fail('Email already exists.');
+                            }
+
+                            return;
+                        }
+
+                        if (preg_match('/^[0-9]{10,15}$/', $value)) {
+
+                            if (User::where('phone', $value)->exists()) {
+                                $fail('Phone number already exists.');
+                            }
+
+                            return;
+                        }
+
+                        $fail('Identifier must be a valid email or phone number.');
+                    },
+                ],
                 'operator_type' => 'required|in:individual,business',
                 'dob'     => 'required|date',
                 'gender'  => 'required|in:male,female',
@@ -81,6 +106,24 @@ class AuthController extends Controller
                     'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{6,}$/'
                 ],
             ], $messages);
+
+            $identifier = trim($request->identifier);
+
+            if (filter_var($identifier, FILTER_VALIDATE_EMAIL)) {
+
+                $request->merge([
+                    'email' => strtolower($identifier),
+                    'phone' => null,
+                    'channel' => 'email',
+                ]);
+            } else {
+
+                $request->merge([
+                    'phone' => $identifier,
+                    'email' => null,
+                    'channel' => 'phone',
+                ]);
+            }
 
             if ($validator->fails()) {
                 return failureResponse($validator->errors(), 422, 'validation_error');

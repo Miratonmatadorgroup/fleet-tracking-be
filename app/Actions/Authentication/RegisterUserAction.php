@@ -15,8 +15,16 @@ class RegisterUserAction
 {
     public function execute(RegisterUserDTO $dto): array
     {
-        if (User::where('email', $dto->email)->exists()) {
-            throw new \Exception('Email already in use', 422);
+        if ($dto->channel === 'email') {
+
+            if (User::where('email', $dto->email)->exists()) {
+                throw new \Exception('Email already in use');
+            }
+        } else {
+
+            if (User::where('phone', $dto->phone)->exists()) {
+                throw new \Exception('Phone number already in use');
+            }
         }
 
         $otp = (string) random_int(100000, 999999);
@@ -26,6 +34,8 @@ class RegisterUserAction
             'type'          => 'registration',
             'name'          => $dto->name,
             'email'         => $dto->email,
+            'phone' => $dto->phone,
+            'channel' => $dto->channel,
             'password'      => Hash::make($dto->password),
             'dob'           => $dto->dob,
             'gender'        => $dto->gender,
@@ -43,9 +53,13 @@ class RegisterUserAction
             'otp_expires_at' => now()->addMinutes(10),
         ], now()->addMinutes(15));
 
+        $recipient = $dto->channel === 'email'
+            ? $dto->email
+            : $dto->phone;
+
         event(new OtpRequestedEvent(
-            'email',
-            $dto->email,
+            $dto->channel,
+            $recipient,
             $otp,
             $dto->name
         ));

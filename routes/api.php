@@ -108,6 +108,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::delete('/bulk-delet/trackers', [TrackerController::class, 'bulkDelete'])->middleware('permission:bulk-delete-trackers');
     Route::post('/assign/activate/trackers', [TrackerController::class, 'bulkAssignRange'])->middleware('permission:assign-trackers');
     Route::post('/activate/tracker', [TrackerController::class, 'activate']);
+    // CHECK IF ASSET HAS GEOFENCEING
+    Route::get('/assets/geofences', [TrackerController::class, 'assetsWithGeofence']);
     Route::get('/view/my-trackers', [TrackerController::class, 'myTrackers']);
     Route::get('/view/tracker-asset/count', [TrackerController::class, 'trackerSummary']);
 
