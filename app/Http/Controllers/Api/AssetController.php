@@ -227,9 +227,26 @@ class AssetController extends Controller
 
             $query = Asset::whereHas('driver', function ($q) use ($targetUserId) {
                 $q->where('user_id', $targetUserId);
-            })->with(['driver', 'organization']);
+            })->with(['driver', 'organization',  'geofences:id,name,radius_meters,action']);
 
             $assets = $query->paginate($request->input('per_page', 10));
+            $assets->getCollection()->transform(function ($asset) {
+
+                $geofence = $asset->geofences->first();
+
+                $asset->geofence = $geofence ? [
+                    'id' => $geofence->id,
+                    'name' => $geofence->name,
+                    'radius_meters' => $geofence->radius_meters,
+                    'action' => $geofence->action,
+                ] : null;
+
+                // Optional: remove the full relationship if the frontend
+                // only needs the single geofence object.
+                unset($asset->geofences);
+
+                return $asset;
+            });
 
             return successResponse('Assets retrieved successfully.', $assets);
         } catch (\Throwable $th) {
@@ -303,7 +320,8 @@ class AssetController extends Controller
         }
     }
 
-    public function assetsWithTracker(Request $request,GetAssetsWithTrackerAction $action) {
+    public function assetsWithTracker(Request $request, GetAssetsWithTrackerAction $action)
+    {
 
         try {
 
