@@ -318,7 +318,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/wallet/bulk-debit', [WalletTransactionController::class, 'bulkDebit'])
         ->middleware('permission:bulk-debit');
     // WALLET TRANSACTIONS - SINGLE
-    Route::post('/admin-credit-user-walet', [WalletTransactionController::class, 'adminCredit'])
+    Route::post('/admin-credit-user-wallet', [WalletTransactionController::class, 'adminCredit'])
         ->middleware('permission:credit-wallet');
     Route::post('/admin-debit-user-wallet', [WalletTransactionController::class, 'adminDebit'])
         ->middleware('permission:debit-wallet');
