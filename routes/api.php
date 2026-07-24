@@ -6,7 +6,9 @@ use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DisputeController;
 use App\Http\Controllers\Api\DriverController;
+use App\Http\Controllers\Api\ExternalApiController;
 use App\Http\Controllers\Api\ExternalAuthController;
+use App\Http\Controllers\Api\ExternalWebhookController;
 use App\Http\Controllers\Api\FinanceSummaryController;
 use App\Http\Controllers\Api\GoogleAuthController;
 use App\Http\Controllers\Api\MerchantController;
@@ -58,6 +60,19 @@ Route::middleware('guest')->group(function () {
     Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
     Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
+
+Route::prefix('external')
+    ->middleware(['api.key', 'check.apiclient.blocked', 'external.api.log', 'throttle:' . env('PARTNER_RATE_LIMIT', 120) . ',1'])
+    ->group(function () {
+
+        // FOR ALL EXTERNAL USERS ONLY STARTS HERE
+        Route::post('/live/tracking', [ExternalApiController::class, 'customizePreviewPrice']);
+
+
+        // FOR WEBHOOKS
+        Route::post('/configure/webhooks', [ExternalWebhookController::class, 'store']);
+        Route::get('/view/webhooks', [ExternalWebhookController::class, 'show']);
+    });
 
 // FOR USERS PAYMENTS STARTS HERE
 // Redirect after user finishes on Shanono checkout
