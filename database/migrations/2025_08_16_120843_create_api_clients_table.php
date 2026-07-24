@@ -13,9 +13,10 @@ return new class extends Migration
     {
         Schema::create('api_clients', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('name'); 
+            $table->string('name');
             $table->string('api_key')->unique();
             $table->enum('environment', ['sandbox', 'production'])->index();
+            $table->boolean('is_blocked')->default(false);
             $table->boolean('active')->default(true)->index();
             $table->json('ip_whitelist')->nullable(); // optional security
             $table->timestamps();
