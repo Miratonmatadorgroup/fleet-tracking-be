@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\AssetTypeEnums;
 use App\Models\FuelReport;
 use App\Models\GeofenceBreach;
 use App\Models\RemoteCommand;
@@ -42,6 +43,7 @@ class Asset extends Model
     protected function casts(): array
     {
         return [
+            'asset_type' => AssetTypeEnums::class,
             'year' => 'integer',
             'base_consumption_rate' => 'decimal:2',
             'idle_consumption_rate' => 'decimal:2',

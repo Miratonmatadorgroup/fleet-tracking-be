@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\AssetsFleets\GetAllAssetsAction;
 use App\Actions\AssetsFleets\GetAssetsWithTrackerAction;
+use App\Enums\AssetTypeEnums;
 use App\Http\Controllers\Controller;
 use App\Models\Asset;
 use App\Models\AssetViewPermission;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rules\Enum;
 
 
 
@@ -26,7 +28,7 @@ class AssetController extends Controller
             $validated = $request->validate([
                 // ASSET FIELDS
                 'equipment_id' => 'required|string|unique:assets,equipment_id',
-                'asset_type' => 'required|in:car,bike,suv,truck,van,boat,helicopter,plane,ship',
+                'asset_type' => ['required', new Enum(AssetTypeEnums::class),],
                 'class' => 'required|in:A,B,C',
                 'make' => 'nullable|string|max:100',
                 'model' => 'nullable|string|max:100',
@@ -132,7 +134,7 @@ class AssetController extends Controller
             $validated = $request->validate([
                 // ASSET FIELDS
                 'equipment_id' => 'sometimes|string|unique:assets,equipment_id,' . $asset->id,
-                'asset_type' => 'sometimes|in:car,bike,suv,truck,van,boat,helicopter,plane,ship',
+                'asset_type' => ['required', new Enum(AssetTypeEnums::class),],
                 'class' => 'sometimes|in:A,B,C',
                 'make' => 'nullable|string|max:100',
                 'model' => 'nullable|string|max:100',
