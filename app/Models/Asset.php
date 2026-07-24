@@ -20,6 +20,7 @@ class Asset extends Model
         'equipment_id',
         'tracker_id',
         'asset_type',
+        'custom_asset_type',
         'class',
         'make',
         'model',

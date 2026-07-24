@@ -15,9 +15,8 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Enum;
-
-
 
 class AssetController extends Controller
 {
@@ -29,6 +28,16 @@ class AssetController extends Controller
                 // ASSET FIELDS
                 'equipment_id' => 'required|string|unique:assets,equipment_id',
                 'asset_type' => ['required', new Enum(AssetTypeEnums::class),],
+                'custom_asset_type' => [
+                    Rule::requiredIf(
+                        $request->input('asset_type') === AssetTypeEnums::OTHERS->value
+                    ),
+                    Rule::excludeIf(
+                        $request->input('asset_type') !== AssetTypeEnums::OTHERS->value
+                    ),
+                    'string',
+                    'max:100',
+                ],
                 'class' => 'required|in:A,B,C',
                 'make' => 'nullable|string|max:100',
                 'model' => 'nullable|string|max:100',
@@ -71,6 +80,9 @@ class AssetController extends Controller
                 'phone',
                 'transport_mode'
             ])->toArray();
+            if ($assetData['asset_type'] !== AssetTypeEnums::OTHERS->value) {
+                $assetData['custom_asset_type'] = null;
+            }
 
             $assetData['organization_id'] = $request->user()->organization_id;
             $assetData['status'] = 'offline';
@@ -135,6 +147,16 @@ class AssetController extends Controller
                 // ASSET FIELDS
                 'equipment_id' => 'sometimes|string|unique:assets,equipment_id,' . $asset->id,
                 'asset_type' => ['required', new Enum(AssetTypeEnums::class),],
+                'custom_asset_type' => [
+                    Rule::requiredIf(
+                        $request->input('asset_type') === AssetTypeEnums::OTHERS->value
+                    ),
+                    Rule::excludeIf(
+                        $request->input('asset_type') !== AssetTypeEnums::OTHERS->value
+                    ),
+                    'string',
+                    'max:100',
+                ],
                 'class' => 'sometimes|in:A,B,C',
                 'make' => 'nullable|string|max:100',
                 'model' => 'nullable|string|max:100',
@@ -174,6 +196,13 @@ class AssetController extends Controller
                 'phone',
                 'transport_mode'
             ])->toArray();
+
+            if (
+                isset($assetData['asset_type']) &&
+                $assetData['asset_type'] !== AssetTypeEnums::OTHERS->value
+            ) {
+                $assetData['custom_asset_type'] = null;
+            }
 
             if (!empty($assetData)) {
                 $oldValues = $asset->getOriginal();
