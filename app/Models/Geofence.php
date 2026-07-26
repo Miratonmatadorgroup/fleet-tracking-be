@@ -97,4 +97,14 @@ class Geofence extends Model
     {
         return $this->hasMany(GeofenceBreach::class, 'geofence_id');
     }
+
+    public function trackers()
+    {
+        return $this->belongsToMany(
+            Tracker::class,
+            'geofence_trackers',
+            'geofence_id',
+            'tracker_id'
+        )->withTimestamps();
+    }
 }

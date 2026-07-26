@@ -54,6 +54,8 @@ Route::prefix('external')->group(function () {
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
     Route::post('/resend-verification-otp', [AuthController::class, 'resendVerificationOtp']);
     Route::post('/login', [AuthController::class, 'login'])->name('login');
+    Route::post('/forgot-password', [AuthController::class, 'forgotPassword']);
+    Route::post('/reset-password', [AuthController::class, 'resetPassword']);
 });
 
 // Shared route (guest + auth) for user to verify either email,phone or whatsapp_number otp
@@ -73,6 +75,8 @@ Route::middleware('guest')->group(function () {
 Route::prefix('external')
     ->middleware(['api.key', 'check.apiclient.blocked', 'external.api.log', 'throttle:' . env('PARTNER_RATE_LIMIT', 120) . ',1'])
     ->group(function () {
+        Route::post('/change-password', [AuthController::class, 'changePassword']);
+        Route::post('/logout', [AuthController::class, 'logout']);
         // Developer
         Route::get('/me', [DeveloperAuthController::class, 'me']);
         Route::post('/api-key/rotate', [DeveloperAuthController::class, 'rotateApiKey']);
@@ -306,6 +310,9 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     // SUPER ADMIN APROVE EXTERNAL/DEVElOPERS PRODUCTION ACCESS REQUEST
     Route::post('/production-access/{{request_id}}/approve', [DeveloperAuthController::class, 'approveProductionAccess'])
         ->middleware('permission:approve-production-access');
+
+    Route::post('/assign-tracker-to/developer', [ExternalTrackerController::class, 'assignTrackerDev'])
+        ->middleware('permission:assign-tracker-to-developer');
 
     Route::middleware('check.subscription')->group(function () {
         // OFFICE ADMIN ALSO KNOWN AS BUSINESS OPERATOR
