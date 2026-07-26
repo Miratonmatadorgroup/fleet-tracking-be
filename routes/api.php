@@ -4,10 +4,12 @@ use App\Http\Controllers\Api\AdminBroadcastController;
 use App\Http\Controllers\Api\AdminSubscriptionController;
 use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\AuthController;
+use App\Http\Controllers\Api\DeveloperAuthController;
 use App\Http\Controllers\Api\DisputeController;
 use App\Http\Controllers\Api\DriverController;
 use App\Http\Controllers\Api\ExternalApiController;
 use App\Http\Controllers\Api\ExternalAuthController;
+use App\Http\Controllers\Api\ExternalTrackerController;
 use App\Http\Controllers\Api\ExternalWebhookController;
 use App\Http\Controllers\Api\FinanceSummaryController;
 use App\Http\Controllers\Api\GoogleAuthController;
@@ -46,10 +48,17 @@ Route::get('/', function () {
 
 Route::post('/external-auth', [ExternalAuthController::class, 'authenticate']);
 
+//FOR DEVELOPER 
+Route::prefix('external')->group(function () {
+    Route::post('/register', [DeveloperAuthController::class, 'register']);
+    Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
+    Route::post('/resend-verification-otp', [AuthController::class, 'resendVerificationOtp']);
+    Route::post('/login', [AuthController::class, 'login'])->name('login');
+});
+
 // Shared route (guest + auth) for user to verify either email,phone or whatsapp_number otp
 Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
 // FOR EXTERNAL USERS
-Route::post('/external/verify-otp', [AuthController::class, 'verifyOtp']);
 
 // routes/api.php
 Route::middleware('guest')->group(function () {
@@ -64,14 +73,24 @@ Route::middleware('guest')->group(function () {
 Route::prefix('external')
     ->middleware(['api.key', 'check.apiclient.blocked', 'external.api.log', 'throttle:' . env('PARTNER_RATE_LIMIT', 120) . ',1'])
     ->group(function () {
-
-        // FOR ALL EXTERNAL USERS ONLY STARTS HERE
-        Route::post('/live/tracking', [ExternalApiController::class, 'customizePreviewPrice']);
-
-
+        // Developer
+        Route::get('/me', [DeveloperAuthController::class, 'me']);
+        Route::post('/api-key/rotate', [DeveloperAuthController::class, 'rotateApiKey']);
+        // FOR ALL EXTERNAL USERS TRACKER FEATURES ONLY STARTS HERE
+        Route::post('/tracking', [ExternalTrackerController::class, 'tracking']);
+        Route::post('/shutdown', [ExternalTrackerController::class, 'shutdown']);
+        Route::post('/unlock', [ExternalTrackerController::class, 'unlock']);
+        Route::post('/geofence', [ExternalTrackerController::class, 'createGeofence']);
+        Route::put('/geofence/{id}', [ExternalTrackerController::class, 'updateGeofence']);
+        Route::delete('/geofence/{id}', [ExternalTrackerController::class, 'deleteGeofence']);
+        Route::get('/geofences', [ExternalTrackerController::class, 'geofences']);
+        Route::post('/mileage', [ExternalTrackerController::class, 'mileage']);
+        //REQUEST PRODUCTION CREDENTIALS
+        Route::post('/request-production', [DeveloperAuthController::class, 'requestProductionAccess']);
         // FOR WEBHOOKS
-        Route::post('/configure/webhooks', [ExternalWebhookController::class, 'store']);
-        Route::get('/view/webhooks', [ExternalWebhookController::class, 'show']);
+        Route::post('/webhook', [ExternalWebhookController::class, 'store']);
+        Route::get('/webhooks', [ExternalWebhookController::class, 'show']);
+        Route::post('/webhook/regenerate-secret', [DeveloperAuthController::class, 'regenerateWebhookSecret']);
     });
 
 // FOR USERS PAYMENTS STARTS HERE
@@ -259,10 +278,9 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         ->middleware('permission:edit-role');
     Route::post('/admin/create-permissions', [RolePermissionController::class, 'adminCreateOrUpdatePermissions'])
         ->middleware('permission:create-permissions');
-
+    // SUPER ADMIN ASSIGN AND UNASSIGN SUBSCRIPTIONS
     Route::post('/admin/subscriptions/assign', [AdminSubscriptionController::class, 'assign'])
         ->middleware('permission:assign-subscription');
-
     Route::post('/admin/subscriptions/unassign', [AdminSubscriptionController::class, 'unassign'])
         ->middleware('permission:unassign-subscription');
 
@@ -284,6 +302,10 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/admin/fleet/vehicles/unlock', [TrackerController::class, 'remoteUnlock'])
         ->middleware('permission:unlock-any-assets');
     //ADMIN FEATURES WITHOUT SUBSCRIPTION PLANS ENDS HERE
+
+    // SUPER ADMIN APROVE EXTERNAL/DEVElOPERS PRODUCTION ACCESS REQUEST
+    Route::post('/production-access/{{request_id}}/approve', [DeveloperAuthController::class, 'approveProductionAccess'])
+        ->middleware('permission:approve-production-access');
 
     Route::middleware('check.subscription')->group(function () {
         // OFFICE ADMIN ALSO KNOWN AS BUSINESS OPERATOR

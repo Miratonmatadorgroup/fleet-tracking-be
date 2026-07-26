@@ -2,14 +2,15 @@
 
 namespace App\Actions\Authentication;
 
-use App\Models\User;
-use App\Models\Wallet;
-use App\Models\UserToken;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Hash;
 use App\DTOs\Authentication\LoginDTO;
-use App\Services\ExternalBankService;
 use App\Events\Authentication\UserLoggedInEvent;
+use App\Models\ApiClient;
+use App\Models\User;
+use App\Models\UserToken;
+use App\Models\Wallet;
+use App\Services\ExternalBankService;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 
 class LoginUserAction
 {
@@ -48,6 +49,36 @@ class LoginUserAction
         event(new UserLoggedInEvent($user));
 
         $role = $user->getRoleNames()->first();
+
+        $apiClients = collect();
+
+        if ($user->hasRole('dev')) {
+
+            $clients = ApiClient::with('webhook')
+                ->where('customer_id', $user->id)
+                ->get();
+
+            $apiClients = $clients->map(function ($client) {
+
+                return [
+
+                    'client_id' => $client->id,
+
+                    'environment' => $client->environment,
+
+                    'api_key' => $client->api_key,
+
+                    'company_name' => $client->company_name,
+
+                    'company_website' => $client->company_website,
+
+                    'callback_url' => $client->callback_url,
+                    'webhook' => optional($client->webhook)->webhook_url,
+                    'webhook_secret' => optional($client->webhook)->webhook_secret,
+
+                ];
+            });
+        }
 
         $wallet = Wallet::where('user_id', $user->id)->first();
         $walletData = null;
@@ -121,6 +152,7 @@ class LoginUserAction
             'token'        => $accessToken,
             'wallet'       => $walletData,
             'subscription' => $subscriptionData,
+            'api_clients' => $apiClients,
         ];
     }
 }

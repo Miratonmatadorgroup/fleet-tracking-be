@@ -263,6 +263,13 @@ class User extends Authenticatable
             ->whereDate('end_date', '>', now());
     }
 
+    public function productionRequests()
+    {
+        return $this->hasMany(
+            ProductionAccessRequest::class
+        );
+    }
+
     public function hasFeature(SubscriptionFeatureEnums|string $feature): bool
     {
         $subscription = $this->activeSubscription()->first();
