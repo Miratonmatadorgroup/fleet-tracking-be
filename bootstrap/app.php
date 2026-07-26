@@ -27,6 +27,8 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.apiclient.blocked' => CheckApiClientBlocked::class,
             'check.subscription' => \App\Http\Middleware\CheckSubscription::class,
             'update.activity' => \App\Http\Middleware\UpdateUserActivity::class,
+            'external.api.log' => \App\Http\Middleware\LogExternalApiRequests::class,
+
         ]);
 
         $middleware->priority([
@@ -38,8 +40,8 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withSchedule(function (Schedule $schedule) {
         $schedule->job(new RetryDriverAssignmentJob)->everyFiveMinutes();
         $schedule->call(function () {
-        \App\Models\UserToken::where('expires_at', '<', now())->delete();
-    })->daily();
+            \App\Models\UserToken::where('expires_at', '<', now())->delete();
+        })->daily();
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\Auth\RegisterDeveloperAction;
-use App\DTO\Auth\DeveloperRegisterDTO;
+use App\DTOs\Auth\DeveloperRegisterDTO;
 use App\Enums\ProductionAccessRequestStatusEnums;
 use App\Http\Controllers\Controller;
 use App\Models\ApiClient;
@@ -240,7 +240,8 @@ class DeveloperAuthController extends Controller
         );
     }
 
-    public function approveProductionAccess(ProductionAccessRequest $productionRequest) {
+    public function approveProductionAccess(ProductionAccessRequest $productionRequest)
+    {
         DB::transaction(function () use ($productionRequest) {
 
             $user = $productionRequest->user;
