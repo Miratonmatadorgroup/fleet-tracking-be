@@ -420,8 +420,6 @@ class AuthController extends Controller
         }
     }
 
-
-
     public function adminDeleteUser(Request $request, $userId, DeleteUserAction $action)
     {
         try {
@@ -467,7 +465,6 @@ class AuthController extends Controller
         }
     }
 
-
     public function verifyOtp(Request $request)
     {
         try {
@@ -495,16 +492,28 @@ class AuthController extends Controller
                 }
             }
 
-            return successResponse("OTP verified successfully", [
-                'user'   => $result['user'],
-                'wallet' => $wallet
-                    ? [
-                        ...$wallet->toArray(),
-                        'external_available_balance' => $externalBalance['available_balance'],
-                        'external_book_balance'      => $externalBalance['book_balance'],
-                    ]
-                    : null,
-            ]);
+            return successResponse(
+                "OTP verified successfully",
+                [
+                    'user' => $result['user'],
+                    'wallet' => $wallet
+                        ? [
+
+                            ...$wallet->toArray(),
+
+                            'external_available_balance'
+                            => $externalBalance['available_balance'],
+
+                            'external_book_balance'
+                            => $externalBalance['book_balance'],
+
+                        ]
+                        : null,
+
+                    'api_client' => $result['api_client'] ?? null,
+
+                ]
+            );
         } catch (\DomainException $e) {
             return failureResponse($e->getMessage(), 400, 'otp_verification_failed');
         } catch (\InvalidArgumentException $e) {
@@ -534,6 +543,7 @@ class AuthController extends Controller
                 'role'  => $result['role'],
                 'subscription' => $result['subscription'],
                 'token' => $result['token'],
+                'api_clients' => $result['api_clients'],
             ]);
         } catch (\Throwable $e) {
 

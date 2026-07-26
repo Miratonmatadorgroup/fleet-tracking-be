@@ -370,6 +370,7 @@ class TrackerController extends Controller
             'transaction_pin' => 'required|digits:4',
         ]);
 
+        /** @var \App\Models\User $currentUser */
         $currentUser = Auth::user();
 
         if (! $currentUser->can('reassign-tracker')) {
@@ -720,6 +721,7 @@ class TrackerController extends Controller
         ]);
 
         // Fetch all requested assets with their tracker
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         if ($user->can('track-all-assets')) {
@@ -1053,6 +1055,7 @@ class TrackerController extends Controller
 
     private function resolveAsset($assetId, $permission)
     {
+        /** @var \App\Models\User $user */
         $user = Auth::user();
 
         $query = Asset::with('tracker')->where('id', $assetId);

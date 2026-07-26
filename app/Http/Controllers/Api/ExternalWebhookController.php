@@ -10,11 +10,13 @@ use Illuminate\Support\Str;
 
 class ExternalWebhookController extends Controller
 {
-    public function store(Request $request, ApiClient $apiClient)
+    public function store(Request $request)
     {
         $request->validate([
             'webhook_url' => ['required', 'url'],
         ]);
+
+        $apiClient = $request->attributes->get('api_client');
 
         $webhook = ApiClientWebhook::firstOrNew([
             'api_client_id' => $apiClient->id,
@@ -23,14 +25,14 @@ class ExternalWebhookController extends Controller
         $webhook->webhook_url = $request->webhook_url;
         $webhook->is_active = true;
 
-        // Only create secret if webhook is new
-        if (!$webhook->exists) {
+        if (! $webhook->exists) {
             $webhook->webhook_secret = Str::random(64);
         }
 
         $webhook->save();
+
         return successResponse(
-            'Webhook created successfully',
+            'Webhook configured successfully',
             $webhook
         );
     }

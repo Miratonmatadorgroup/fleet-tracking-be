@@ -25,6 +25,8 @@ class ProductionAccessRequest extends Model
         'id',
         'user_id',
         'app_type',
+        'business_type',
+        'cac_number',
         'status',
         'cac_document_path',
         'cac_verification_result',

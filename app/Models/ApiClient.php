@@ -2,9 +2,11 @@
 
 namespace App\Models;
 
+use App\Models\ApiClientWebhook;
+use App\Models\ProductionAccessRequest;
 use App\Models\User;
-use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class ApiClient extends Model
 {
@@ -13,6 +15,9 @@ class ApiClient extends Model
 
     protected $fillable = [
         'name',
+        'company_name',
+        'company_website',
+        'callback_url',
         'customer_id',
         'api_key',
         'is_blocked',
@@ -49,5 +54,15 @@ class ApiClient extends Model
     public function customer()
     {
         return $this->belongsTo(User::class, 'customer_id');
+    }
+
+    public function webhook()
+    {
+        return $this->hasOne(ApiClientWebhook::class);
+    }
+
+    public function assets()
+    {
+        return $this->hasMany(ApiClientAsset::class);
     }
 }
