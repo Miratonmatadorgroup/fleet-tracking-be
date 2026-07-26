@@ -33,6 +33,7 @@ return new class extends Migration
             $table->json('payload');
 
             $table->timestamps();
+
         });
     }
 

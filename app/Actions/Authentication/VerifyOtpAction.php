@@ -2,16 +2,18 @@
 
 namespace App\Actions\Authentication;
 
-use App\Models\User;
-use App\Models\Merchant;
-use Illuminate\Support\Carbon;
-use App\Services\WalletService;
-use App\Enums\MerchantStatusEnums;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Cache;
 use App\DTOs\Authentication\VerifyOtpDTO;
+use App\Enums\MerchantStatusEnums;
+use App\Models\ApiClient;
+use App\Models\ApiClientWebhook;
+use App\Models\Merchant;
+use App\Models\User;
 use App\Services\UserProvisioningManager;
+use App\Services\WalletService;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 
@@ -32,10 +34,7 @@ class VerifyOtpAction
                 'otp' => 'OTP has already been used or has expired. Please request a new one.',
             ]);
         }
-
-
         //Check expiration first
-
         if (now()->greaterThan(Carbon::parse($pending['otp_expires_at']))) {
             Cache::forget($cacheKey);
             throw ValidationException::withMessages([
@@ -118,10 +117,9 @@ class VerifyOtpAction
                 // Normalize email for DB search
                 if ($pending['channel'] === 'email') {
 
-                    $user = User::whereRaw(
-                        'LOWER(email)=?',
-                        [strtolower(trim($pending['email']))]
-                    )
+                    $email = strtolower(trim($pending['email']));
+
+                    $user = User::whereRaw('LOWER(email) = ?', [$email])
                         ->lockForUpdate()
                         ->first();
                 } else {
@@ -224,7 +222,60 @@ class VerifyOtpAction
 
             return $result;
         }
+        if ($type === 'developer_registration') {
+            $result = DB::transaction(function () use ($pending) {
+                $user = User::whereRaw('LOWER(email)=?', [strtolower(trim($pending['email']))])->lockForUpdate()->first();
+                if (!$user) {
+                    $user = User::create([
+                        'name' => $pending['name'],
+                        'email' => $pending['email'],
+                        'phone' => $pending['phone'],
+                        'password' => $pending['password'],
+                        'email_verified_at' => now(),
+                    ]);
+                } else {
 
+                    if (!$user->email_verified_at) {
+                        $user->email_verified_at = now();
+                        $user->save();
+                    }
+                }
+                /* Assign Developer Role*/
+                if (! $user->hasRole('dev')) {
+                    $user->assignRole('dev');
+                }
+                $wallet = $this->walletService->getOrCreateForUser($user->id, 'NGN', true, 'default');
+                /* Create API Client*/
+                $client = ApiClient::firstOrCreate(
+                    ['customer_id' => $user->id,],
+                    [
+                        'name'             => $user->name,
+                        'company_name'     => $pending['company_name'],
+                        'company_website'  => $pending['company_website'] ?? null,
+                        'callback_url'     => $pending['callback_url'] ?? null,
+                        'environment'      => 'sandbox',
+                        'active'           => true,
+                    ]
+                );
+                /* Create Webhook*/
+                $webhook = ApiClientWebhook::firstOrCreate(
+                    ['api_client_id' => $client->id,],
+                    ['webhook_secret' => Str::random(64), 'is_active' => false,]
+                );
+                return [
+                    'user' => $user,
+                    'wallet' => $wallet,
+                    'api_client' => [
+                        'client_id' => $client->id,
+                        'api_key' => $client->api_key,
+                        'environment' => $client->environment,
+                        'webhook_secret' => $webhook->webhook_secret,
+                    ]
+                ];
+            });
+
+            return $result;
+        }
         throw new \Exception("Unknown OTP type", 400);
     }
 

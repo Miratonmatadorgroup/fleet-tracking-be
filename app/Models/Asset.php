@@ -156,4 +156,12 @@ class Asset extends Model
             'timestamp' => $this->last_ping_at?->toIso8601String(),
         ];
     }
+
+    public function apiClients()
+    {
+        return $this->belongsToMany(
+            ApiClient::class,
+            'api_client_assets'
+        );
+    }
 }
