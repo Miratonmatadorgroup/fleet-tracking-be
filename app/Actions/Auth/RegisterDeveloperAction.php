@@ -2,7 +2,7 @@
 
 namespace App\Actions\Auth;
 
-use App\DTO\Auth\DeveloperRegisterDTO;
+use App\DTOs\Auth\DeveloperRegisterDTO;
 use App\Events\Authentication\OtpRequestedEvent;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;

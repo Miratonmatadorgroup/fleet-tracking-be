@@ -12,7 +12,9 @@ use App\Models\Geofence;
 use App\Models\Tracker;
 use App\Services\TrackerService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rules\Enum;
+use RuntimeException;
 
 class ExternalTrackerController extends Controller
 {
@@ -123,15 +125,6 @@ class ExternalTrackerController extends Controller
             );
         }
 
-        $asset = Asset::where('tracker_id', $tracker->id)->first();
-
-        if (! $asset) {
-            return failureResponse(
-                'No asset assigned to this tracker.',
-                404
-            );
-        }
-
         $geofence = Geofence::create([
 
             'user_id' => $client->customer_id,
@@ -156,16 +149,18 @@ class ExternalTrackerController extends Controller
 
         ]);
 
-        $geofence->assets()->attach($asset->id);
+        // Instead of attaching an Asset...
+        $geofence->trackers()->attach($tracker->id);
+
         SendWebhookJob::dispatch(
             $client,
             'geofence.created',
-            $geofence->load('assets')->toArray()
+            $geofence->load('trackers')->toArray()
         );
 
         return successResponse(
             'Geofence created successfully.',
-            $geofence->load('assets')
+            $geofence->load('trackers')
         );
     }
 
@@ -193,11 +188,16 @@ class ExternalTrackerController extends Controller
 
         $tracker = Tracker::where('imei', $imei)->first();
 
-        $asset = Asset::where('tracker_id', $tracker->id)->first();
+        if (! $tracker) {
+            return failureResponse(
+                'Tracker not found.',
+                404
+            );
+        }
 
         $geofence = Geofence::where('id', $id)
-            ->whereHas('assets', function ($q) use ($asset) {
-                $q->where('assets.id', $asset->id);
+            ->whereHas('trackers', function ($q) use ($tracker) {
+                $q->where('trackers.id', $tracker->id);
             })
             ->first();
 
@@ -222,12 +222,12 @@ class ExternalTrackerController extends Controller
         SendWebhookJob::dispatch(
             $client,
             'geofence.updated',
-            $geofence->fresh()->load('assets')->toArray()
+            $geofence->fresh()->load('trackers')->toArray()
         );
 
         return successResponse(
             'Geofence updated successfully.',
-            $geofence->fresh()->load('assets')
+            $geofence->fresh()->load('trackers')
         );
     }
 
@@ -243,13 +243,11 @@ class ExternalTrackerController extends Controller
 
         $tracker = Tracker::where('imei', $imei)->first();
 
-        $asset = Asset::where('tracker_id', $tracker->id)->first();
+        $geofences = Geofence::with('trackers')
 
-        $geofences = Geofence::with('assets')
+            ->whereHas('trackers', function ($q) use ($tracker) {
 
-            ->whereHas('assets', function ($q) use ($asset) {
-
-                $q->where('assets.id', $asset->id);
+                $q->where('trackers.id', $tracker->id);
             })
 
             ->paginate(
@@ -273,11 +271,9 @@ class ExternalTrackerController extends Controller
 
         $tracker = Tracker::where('imei', $imei)->first();
 
-        $asset = Asset::where('tracker_id', $tracker->id)->first();
-
         $geofence = Geofence::where('id', $id)
-            ->whereHas('assets', function ($q) use ($asset) {
-                $q->where('assets.id', $asset->id);
+            ->whereHas('trackers', function ($q) use ($tracker) {
+                $q->where('trackers.id', $tracker->id);
             })
             ->first();
 
@@ -287,13 +283,14 @@ class ExternalTrackerController extends Controller
                 404
             );
         }
-
         $payload = $geofence
-            ->load('assets')
+            ->load('trackers')
             ->toArray();
 
-        $geofence->assets()->detach();
+        $geofence->trackers()->detach();
+
         $geofence->delete();
+
         SendWebhookJob::dispatch(
             $client,
             'geofence.deleted',
@@ -334,6 +331,97 @@ class ExternalTrackerController extends Controller
             'Mileage retrieved',
             $response
         );
+    }
+
+    public function assignTrackerDev(Request $request)
+    {
+        $request->validate([
+            'customer_id'  => 'required|uuid|exists:users,id',
+            'serial_number' => 'required|string',
+            'label'        => 'nullable|string|max:100',
+        ]);
+        try {
+
+            DB::transaction(function () use ($request) {
+                /* GET API CLIENT */
+                $client = ApiClient::where(
+                    'customer_id',
+                    $request->customer_id
+                )
+                    ->where('active', true)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $client) {
+                    throw new RuntimeException(
+                        'Developer API client not found.'
+                    );
+                }
+                /* GET TRACKER */
+                $tracker = Tracker::where(
+                    'serial_number',
+                    $request->serial_number
+                )
+                    ->lockForUpdate()
+                    ->first();
+
+                if (! $tracker) {
+                    throw new RuntimeException(
+                        'Tracker not found.'
+                    );
+                }
+
+                if ($tracker->is_assigned) {
+                    throw new RuntimeException(
+                        'Tracker already assigned.'
+                    );
+                }
+                /* Activate tracker */
+                $tracker->update([
+
+                    'status'      => 'active',
+
+                    'user_id'     => $client->customer_id,
+
+                    'label'       => $request->label,
+
+                    'asset_id'    => null,
+
+                    'is_assigned' => true,
+
+                    'is_sold'     => true,
+
+                ]);
+
+                /* Map Tracker to API Client */
+                ApiClientAsset::updateOrCreate(
+
+                    [
+                        'api_client_id' => $client->id,
+
+                        'imei' => $tracker->imei,
+                    ],
+
+                    [
+
+                        'serial_number' => $tracker->serial_number,
+
+                        'label' => $request->label,
+
+                    ]
+                );
+            });
+
+            return successResponse(
+                'Tracker assigned successfully.'
+            );
+        } catch (\Throwable $e) {
+
+            return failureResponse(
+                $e->getMessage(),
+                422
+            );
+        }
     }
 
     private function authorizeImei(Request $request, string $imei): ApiClient

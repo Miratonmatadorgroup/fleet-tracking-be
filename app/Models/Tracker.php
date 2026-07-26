@@ -106,4 +106,14 @@ class Tracker extends Model
             'status' => TrackerStatusEnums::ASSIGNED,
         ]);
     }
+
+    public function geofences()
+    {
+        return $this->belongsToMany(
+            Geofence::class,
+            'geofence_trackers',
+            'tracker_id',
+            'geofence_id'
+        )->withTimestamps();
+    }
 }
