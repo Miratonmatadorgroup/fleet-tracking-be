@@ -232,6 +232,14 @@ class User extends Authenticatable
     {
         return $this->hasMany(Tracker::class);
     }
+    public function apiClient()
+    {
+        return $this->hasOne(
+            ApiClient::class,
+            'customer_id',
+            'id'
+        );
+    }
 
     /*
     |--------------------------------------------------------------------------
