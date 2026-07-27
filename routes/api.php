@@ -136,6 +136,12 @@ Route::prefix('auth')->group(function () {
 });
 
 Route::middleware(['auth:api', 'update.activity'])->group(function () {
+    Route::prefix('external')
+        ->middleware(['api.key', 'check.apiclient.blocked', 'external.api.log', 'throttle:' . env('PARTNER_RATE_LIMIT', 120) . ',1'])
+        ->group(function () {
+            //REQUEST PRODUCTION CREDENTIALS
+            Route::post('/request-production', [DeveloperAuthController::class, 'requestProductionAccess']);
+        });
     // TRACKERS ROUTE STARTS HERE
     Route::post('/tracker/inventory', [TrackerController::class, 'storeOrUpdate'])->middleware('permission:take-inventory');
     Route::get('/tracker/inventory', [TrackerController::class, 'index'])->middleware('permission:view-all-trackers');
@@ -308,11 +314,17 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     //ADMIN FEATURES WITHOUT SUBSCRIPTION PLANS ENDS HERE
 
     // SUPER ADMIN APROVE EXTERNAL/DEVElOPERS PRODUCTION ACCESS REQUEST
-    Route::post('/production-access/{{request_id}}/approve', [DeveloperAuthController::class, 'approveProductionAccess'])
+    Route::post('/production-access/{productionRequest}/approve', [DeveloperAuthController::class, 'approveProductionAccess'])
         ->middleware('permission:approve-production-access');
 
     Route::post('/assign-tracker-to/developer', [ExternalTrackerController::class, 'assignTrackerDev'])
         ->middleware('permission:assign-tracker-to-developer');
+
+    Route::get('/list/developers', [DeveloperAuthController::class, 'developers'])
+        ->middleware('permission:list-of-developers');
+
+    Route::get('/list/production-access-requests', [DeveloperAuthController::class, 'productionAccessRequests'])
+        ->middleware('permission:list-of-prod-access-requests');
 
     Route::middleware('check.subscription')->group(function () {
         // OFFICE ADMIN ALSO KNOWN AS BUSINESS OPERATOR

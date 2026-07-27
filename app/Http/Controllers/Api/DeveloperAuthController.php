@@ -8,6 +8,7 @@ use App\Enums\ProductionAccessRequestStatusEnums;
 use App\Http\Controllers\Controller;
 use App\Models\ApiClient;
 use App\Models\ProductionAccessRequest;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -147,7 +148,7 @@ class DeveloperAuthController extends Controller
     {
         $user = $request->user();
 
-        if (! $user->hasRole('dev')) {
+        if (!$user->hasRole('dev')) {
 
             return failureResponse(
                 'Unauthorized.',
@@ -239,39 +240,200 @@ class DeveloperAuthController extends Controller
 
         );
     }
-
     public function approveProductionAccess(ProductionAccessRequest $productionRequest)
     {
         DB::transaction(function () use ($productionRequest) {
 
             $user = $productionRequest->user;
 
+            // Get the developer's existing sandbox API client
+            $sandboxClient = ApiClient::where('customer_id', $user->id)
+                ->where('environment', 'sandbox')
+                ->first();
+
+            if (! $sandboxClient) {
+                throw new \Exception('Sandbox API client not found for this developer.');
+            }
+
+            // Mark the production request as approved
             $productionRequest->update([
-                'status' => ProductionAccessRequestStatusEnums::APPROVED,
+                'status'      => ProductionAccessRequestStatusEnums::APPROVED,
                 'approved_at' => now(),
                 'approved_by' => Auth::id(),
             ]);
 
-            ApiClient::firstOrCreate(
+            // Create or retrieve the production API client
+            $productionClient = ApiClient::firstOrCreate(
                 [
                     'customer_id' => $user->id,
                     'environment' => 'production',
                 ],
-
                 [
-
-                    'name' => $user->name,
-                    'company_name' => $user->company_name,
-                    'company_website' => $user->company_website,
-                    'callback_url' => $user->callback_url,
-                    'active' => true,
+                    'name'             => $sandboxClient->name,
+                    'company_name'     => $sandboxClient->company_name,
+                    'company_website'  => $sandboxClient->company_website,
+                    'callback_url'     => $sandboxClient->callback_url,
+                    'active'           => true,
+                    'is_blocked'       => false,
                 ]
+            );
 
+            // Create the webhook configuration if it doesn't already exist
+            $productionClient->webhook()->firstOrCreate(
+                [],
+                [
+                    'webhook_url'    => null,
+                    'webhook_secret' => Str::random(64),
+                    'is_active'      => true,
+                ]
             );
         });
 
         return successResponse(
             'Production access approved.'
+        );
+    }
+
+    public function productionAccessRequests(Request $request)
+    {
+        $request->validate([
+            'search'    => 'nullable|string',
+            'status'    => 'nullable|string',
+            'app_type'  => 'nullable|string',
+            'per_page'  => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $perPage = $request->integer('per_page', 20);
+
+        $search = trim((string) $request->search);
+
+        $query = ProductionAccessRequest::query()
+
+            ->with([
+                'user:id,name,email,phone',
+                'approvedBy:id,name,email',
+                'approvedBy.roles:id,name',
+            ])
+
+            ->when($request->filled('status'), function ($q) use ($request) {
+
+                $q->where(
+                    'status',
+                    $request->status
+                );
+            })
+
+            ->when($request->filled('app_type'), function ($q) use ($request) {
+
+                $q->where(
+                    'app_type',
+                    $request->app_type
+                );
+            })
+
+            ->when($search, function ($query) use ($search) {
+
+                $driver = $query->getConnection()->getDriverName();
+
+                $operator = $driver === 'pgsql'
+                    ? 'ILIKE'
+                    : 'LIKE';
+
+                $query->where(function ($q) use ($search, $operator) {
+
+                    $q->where('status', $operator, "%{$search}%")
+
+                        ->orWhere('app_type', $operator, "%{$search}%")
+
+                        ->orWhereHas('user', function ($user) use ($search, $operator) {
+
+                            $user->where('first_name', $operator, "%{$search}%")
+                                ->orWhere('last_name', $operator, "%{$search}%")
+                                ->orWhere('email', $operator, "%{$search}%")
+                                ->orWhere('phone', $operator, "%{$search}%");
+
+                            if ($operator === 'ILIKE') {
+
+                                $user->orWhereRaw(
+                                    "CONCAT(first_name,' ',last_name) ILIKE ?",
+                                    ["%{$search}%"]
+                                );
+                            } else {
+
+                                $user->orWhereRaw(
+                                    "CONCAT(first_name,' ',last_name) LIKE ?",
+                                    ["%{$search}%"]
+                                );
+                            }
+                        });
+                });
+            });
+
+        $requests = $query
+            ->latest()
+            ->paginate($perPage);
+
+        return successResponse(
+            'Production access requests retrieved successfully.',
+            [
+                'count' => $requests->total(),
+                'requests' => $requests,
+            ]
+        );
+    }
+
+    public function developers(Request $request)
+    {
+        $request->validate([
+            'search'   => 'nullable|string',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        $perPage = $request->integer('per_page', 20);
+        $search = trim((string) $request->search);
+        $developers = User::query()
+            ->role('dev')
+            ->when($search, function ($query) use ($search) {
+                $driver = $query->getConnection()->getDriverName();
+                $operator = $driver === 'pgsql'
+                    ? 'ILIKE'
+                    : 'LIKE';
+
+                $query->where(function ($q) use ($search, $operator) {
+                    $q->where('first_name', $operator, "%{$search}%")
+                        ->orWhere('last_name', $operator, "%{$search}%")
+                        ->orWhere('email', $operator, "%{$search}%")
+                        ->orWhere('phone', $operator, "%{$search}%")
+
+                        ->orWhere(function ($nameQuery) use ($search, $operator) {
+
+                            $nameQuery
+                                ->where('first_name', $operator, "%{$search}%")
+                                ->where('last_name', $operator, "%{$search}%");
+                        })
+
+                        ->orWhereHas('apiClient', function ($api) use ($search, $operator) {
+
+                            $api->where('company_name', $operator, "%{$search}%")
+                                ->orWhere('company_website', $operator, "%{$search}%")
+                                ->orWhere('name', $operator, "%{$search}%");
+                        });
+                });
+            })
+            ->with([
+                'roles:id,name',
+                'apiClient:id,customer_id,name,company_name,company_website,callback_url,api_key,environment,active,ip_whitelist,is_blocked,created_at,updated_at',
+                'apiClient.webhook:id,api_client_id,webhook_secret,webhook_url'
+            ])
+            ->latest()
+            ->paginate($perPage);
+
+        return successResponse(
+            'Developers retrieved successfully.',
+            [
+                'count' => $developers->total(),
+                'developers' => $developers,
+            ]
         );
     }
 }
