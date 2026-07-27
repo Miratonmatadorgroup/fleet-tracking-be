@@ -63,12 +63,13 @@ class ProductionAccessRequest extends Model
     /**
      * Relationships
      */
+
     public function user()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(User::class, 'user_id');
     }
 
-    public function approver()
+    public function approvedBy()
     {
         return $this->belongsTo(User::class, 'approved_by');
     }

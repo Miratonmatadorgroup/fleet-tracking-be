@@ -13,6 +13,7 @@ use App\Models\Tracker;
 use App\Services\TrackerService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Validation\Rules\Enum;
 use RuntimeException;
 
@@ -77,28 +78,12 @@ class ExternalTrackerController extends Controller
 
     public function unlock(Request $request)
     {
-        $request->validate([
-            'imei' => 'required|string'
-        ]);
-
+        $request->validate(['imei' => 'required|string']);
         $imei = preg_replace('/\D/', '', $request->imei);
-
         $client = $this->authorizeImei($request, $imei);
-
-        $response = $this->trackerService
-            ->unlockVehicle($imei);
-
-        SendWebhookJob::dispatch(
-            $client,
-            'vehicle.unlock',
-            $response
-
-        );
-
-        return successResponse(
-            'Unlock command sent',
-            $response
-        );
+        $response = $this->trackerService->unlockVehicle($imei);
+        SendWebhookJob::dispatch($client, 'vehicle.unlock', $response);
+        return successResponse('Unlock command sent', $response);
     }
 
     public function createGeofence(Request $request)
@@ -116,7 +101,9 @@ class ExternalTrackerController extends Controller
 
         $client = $this->authorizeImei($request, $imei);
 
-        $tracker = Tracker::where('imei', $imei)->first();
+        $tracker = Tracker::where('imei', $imei)
+            ->where('user_id', $client->customer_id)
+            ->first();
 
         if (! $tracker) {
             return failureResponse(
@@ -125,68 +112,85 @@ class ExternalTrackerController extends Controller
             );
         }
 
-        $geofence = Geofence::create([
+        try {
 
-            'user_id' => $client->customer_id,
+            $geofence = DB::transaction(function () use (
+                $client,
+                $request,
+                $tracker
+            ) {
 
-            'organization_id' => null,
+                $geofence = Geofence::create([
 
-            'name' => $request->name,
+                    'user_id' => $client->customer_id,
 
-            'coordinates' => [
+                    'organization_id' => null,
 
-                'latitude' => (float) $request->latitude,
+                    'name' => $request->name,
 
-                'longitude' => (float) $request->longitude,
+                    'coordinates' => [
+                        'latitude' => (float) $request->latitude,
+                        'longitude' => (float) $request->longitude,
+                    ],
 
-            ],
+                    'radius_meters' => (int) $request->radius,
 
-            'radius_meters' => (int) $request->radius,
+                    'action' => $request->action,
 
-            'action' => $request->action,
+                    'is_active' => true,
 
-            'is_active' => true,
+                ]);
 
-        ]);
+                $geofence->trackers()->attach($tracker->id);
 
-        // Instead of attaching an Asset...
-        $geofence->trackers()->attach($tracker->id);
+                return $geofence->load('trackers');
+            });
+        } catch (\Throwable $e) {
+
+            Log::error('Developer geofence creation failed', [
+
+                'customer_id' => $client->customer_id,
+                'imei' => $tracker->imei,
+                'error' => $e->getMessage(),
+
+            ]);
+
+            return failureResponse(
+                'Unable to create geofence.',
+                500
+            );
+        }
 
         SendWebhookJob::dispatch(
             $client,
             'geofence.created',
-            $geofence->load('trackers')->toArray()
+            $geofence->toArray()
         );
 
         return successResponse(
             'Geofence created successfully.',
-            $geofence->load('trackers')
+            $geofence
         );
     }
 
     public function updateGeofence(Request $request, string $id)
     {
         $request->validate([
-
-            'imei' => 'required|string',
-
-            'name' => 'required|string',
-
-            'latitude' => 'required|numeric',
-
+            'imei'      => 'required|string',
+            'name'      => 'required|string',
+            'latitude'  => 'required|numeric',
             'longitude' => 'required|numeric',
-
-            'radius' => 'required|integer|min:50',
-
-            'action' => ['required', new Enum(GeoFenceActionTypeEnums::class)],
-
+            'radius'    => 'required|integer|min:50',
+            'action'    => ['required', new Enum(GeoFenceActionTypeEnums::class)],
         ]);
 
         $imei = preg_replace('/\D/', '', $request->imei);
 
         $client = $this->authorizeImei($request, $imei);
 
-        $tracker = Tracker::where('imei', $imei)->first();
+        $tracker = Tracker::where('imei', $imei)
+            ->where('user_id', $client->customer_id)
+            ->first();
 
         if (! $tracker) {
             return failureResponse(
@@ -196,38 +200,64 @@ class ExternalTrackerController extends Controller
         }
 
         $geofence = Geofence::where('id', $id)
+            ->where('user_id', $client->customer_id)
             ->whereHas('trackers', function ($q) use ($tracker) {
                 $q->where('trackers.id', $tracker->id);
             })
             ->first();
 
         if (! $geofence) {
-
             return failureResponse(
                 'Geofence not found.',
                 404
             );
         }
 
-        $geofence->update([
-            'name' => $request->name,
-            'coordinates' => [
-                'latitude' => (float) $request->latitude,
-                'longitude' => (float) $request->longitude,
-            ],
-            'radius_meters' => (int) $request->radius,
-            'action' => $request->action,
-        ]);
+        try {
+
+            DB::transaction(function () use ($geofence, $request) {
+
+                $geofence->update([
+
+                    'name' => $request->name,
+
+                    'coordinates' => [
+                        'latitude' => (float) $request->latitude,
+                        'longitude' => (float) $request->longitude,
+                    ],
+
+                    'radius_meters' => (int) $request->radius,
+
+                    'action' => $request->action,
+
+                ]);
+            });
+        } catch (\Throwable $e) {
+
+            Log::error('Developer geofence update failed', [
+
+                'geofence_id' => $id,
+                'error' => $e->getMessage(),
+
+            ]);
+
+            return failureResponse(
+                'Unable to update geofence.',
+                500
+            );
+        }
+
+        $geofence = $geofence->fresh()->load('trackers');
 
         SendWebhookJob::dispatch(
             $client,
             'geofence.updated',
-            $geofence->fresh()->load('trackers')->toArray()
+            $geofence->toArray()
         );
 
         return successResponse(
             'Geofence updated successfully.',
-            $geofence->fresh()->load('trackers')
+            $geofence
         );
     }
 
@@ -239,11 +269,22 @@ class ExternalTrackerController extends Controller
 
         $imei = preg_replace('/\D/', '', $request->imei);
 
-        $this->authorizeImei($request, $imei);
+        $client = $this->authorizeImei($request, $imei);
 
-        $tracker = Tracker::where('imei', $imei)->first();
+        $tracker = Tracker::where('imei', $imei)
+            ->where('user_id', $client->customer_id)
+            ->first();
+
+        if (! $tracker) {
+            return failureResponse(
+                'Tracker not found.',
+                404
+            );
+        }
 
         $geofences = Geofence::with('trackers')
+
+            ->where('user_id', $client->customer_id)
 
             ->whereHas('trackers', function ($q) use ($tracker) {
 
@@ -253,6 +294,7 @@ class ExternalTrackerController extends Controller
             ->paginate(
                 $request->integer('per_page', 20)
             );
+
         return successResponse(
             'Geofences retrieved successfully.',
             $geofences
@@ -269,9 +311,19 @@ class ExternalTrackerController extends Controller
 
         $client = $this->authorizeImei($request, $imei);
 
-        $tracker = Tracker::where('imei', $imei)->first();
+        $tracker = Tracker::where('imei', $imei)
+            ->where('user_id', $client->customer_id)
+            ->first();
+
+        if (! $tracker) {
+            return failureResponse(
+                'Tracker not found.',
+                404
+            );
+        }
 
         $geofence = Geofence::where('id', $id)
+            ->where('user_id', $client->customer_id)
             ->whereHas('trackers', function ($q) use ($tracker) {
                 $q->where('trackers.id', $tracker->id);
             })
@@ -283,13 +335,33 @@ class ExternalTrackerController extends Controller
                 404
             );
         }
+
         $payload = $geofence
             ->load('trackers')
             ->toArray();
 
-        $geofence->trackers()->detach();
+        try {
 
-        $geofence->delete();
+            DB::transaction(function () use ($geofence) {
+
+                $geofence->trackers()->detach();
+
+                $geofence->delete();
+            });
+        } catch (\Throwable $e) {
+
+            Log::error('Developer geofence deletion failed', [
+
+                'geofence_id' => $id,
+                'error' => $e->getMessage(),
+
+            ]);
+
+            return failureResponse(
+                'Unable to delete geofence.',
+                500
+            );
+        }
 
         SendWebhookJob::dispatch(
             $client,
