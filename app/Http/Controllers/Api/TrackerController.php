@@ -408,39 +408,48 @@ class TrackerController extends Controller
                     throw new \RuntimeException('Target user is suspended');
                 }
 
-                // $asset = Asset::where('id', $request->new_asset_id)
-                //     ->where('user_id', $newUser->id)
-                //     ->lockForUpdate()
-                //     ->first();
                 $asset = Asset::where('id', $request->new_asset_id)
                     ->lockForUpdate()
                     ->first();
 
                 if (! $asset) {
-                    throw new \RuntimeException('Asset does not belong to the target user');
+                    throw new \RuntimeException('Asset not found.');
                 }
 
-                if ($asset->tracker_id ?? false) {
-                    throw new \RuntimeException('Asset already has a tracker assigned');
+                if ($asset->tracker_id) {
+                    throw new \RuntimeException('Asset already has a tracker assigned.');
                 }
+
+                /* Get previous asset */
+                $oldAsset = null;
 
                 if ($tracker->asset_id) {
-                    Asset::where('id', $tracker->asset_id)
-                        ->update([
-                            'status' => 'offline',
-                        ]);
+
+                    $oldAsset = Asset::lockForUpdate()
+                        ->find($tracker->asset_id);
                 }
 
+                /* Remove IMEI from previous asset */
+                if ($oldAsset) {
+
+                    $oldAsset->update([
+                        'imei'   => null,
+                        'status' => 'offline',
+                    ]);
+                }
+                /* Assign IMEI to new asset */
+                $asset->update([
+                    'imei'   => $tracker->imei,
+                    'status' => 'active',
+                ]);
+
+                /* Update tracker ownershi */
                 $tracker->update([
                     'user_id'  => $newUser->id,
                     'asset_id' => $asset->id,
                 ]);
 
-                $asset->update([
-                    'status' => 'active',
-                ]);
-
-
+                /* Record transfer */
                 TrackerTransfer::create([
                     'tracker_id'   => $tracker->id,
                     'from_user_id' => $oldUserId,
