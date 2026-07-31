@@ -16,6 +16,8 @@ class FetchUserProfileAction
         $user = Auth::user();
         $user->load(['wallet', 'merchant']);
 
+        $user->transaction_pin_set = $user->transaction_pin !== null;
+
         if ($user->image) {
             $user->image_url = asset($user->image);
         }
