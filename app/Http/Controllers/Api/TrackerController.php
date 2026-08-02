@@ -42,6 +42,8 @@ class TrackerController extends Controller
                 'trackers' => 'required|array|min:1',
                 'trackers.*.serial_number' => 'required|string',
                 'trackers.*.imei' => 'required|string',
+                'trackers.*.simcard_number' => 'nullable|string|max:30',
+                'trackers.*.service_provider' => 'nullable|string|max:100',
             ]);
 
 
@@ -70,6 +72,8 @@ class TrackerController extends Controller
                             'serial_number' => $data['serial_number'],
                         ],
                         [
+                            'simcard_number' => $data['simcard_number'] ?? null,
+                            'service_provider' => $data['service_provider'] ?? null,
                             'imei' => $imei,
                             'status' => TrackerStatusEnums::INACTIVE,
                             'is_assigned' => false,

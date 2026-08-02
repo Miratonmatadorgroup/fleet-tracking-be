@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\ApiClient\BlockApiClientAction;
 use App\Actions\Auth\RegisterDeveloperAction;
+use App\DTOs\ApiClient\BlockApiClientDTO;
 use App\DTOs\Auth\DeveloperRegisterDTO;
 use App\Enums\ProductionAccessRequestStatusEnums;
 use App\Http\Controllers\Controller;
@@ -435,5 +437,15 @@ class DeveloperAuthController extends Controller
                 'developers' => $developers,
             ]
         );
+    }
+
+    public function block(Request $request, BlockApiClientAction $action)
+    {
+        $dto = BlockApiClientDTO::fromRequest($request);
+        $client = $action->execute($dto);
+
+        $status = $dto->block ? 'blocked' : 'unblocked';
+
+        return successResponse("API client {$status} successfully.", $client);
     }
 }
