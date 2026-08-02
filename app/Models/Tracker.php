@@ -21,6 +21,8 @@ class Tracker extends Model
         'imei',
         'label',
         'status',
+        'simcard_number',
+        'service_provider',
         'asset_id',
         'is_assigned',
         'is_sold',

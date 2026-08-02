@@ -48,7 +48,7 @@ Route::get('/', function () {
 
 Route::post('/external-auth', [ExternalAuthController::class, 'authenticate']);
 
-//FOR DEVELOPER 
+//FOR DEVELOPER
 Route::prefix('external')->group(function () {
     Route::post('/register', [DeveloperAuthController::class, 'register']);
     Route::post('/verify-otp', [AuthController::class, 'verifyOtp']);
@@ -316,6 +316,9 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     // SUPER ADMIN APROVE EXTERNAL/DEVElOPERS PRODUCTION ACCESS REQUEST
     Route::post('/production-access/{productionRequest}/approve', [DeveloperAuthController::class, 'approveProductionAccess'])
         ->middleware('permission:approve-production-access');
+
+    Route::post('/admin/block/api-client', [DeveloperAuthController::class, 'block'])
+        ->middleware(['permission:block-external-users']);
 
     Route::post('/assign-tracker-to/developer', [ExternalTrackerController::class, 'assignTrackerDev'])
         ->middleware('permission:assign-tracker-to-developer');
