@@ -7,7 +7,6 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DeveloperAuthController;
 use App\Http\Controllers\Api\DisputeController;
 use App\Http\Controllers\Api\DriverController;
-use App\Http\Controllers\Api\ExternalApiController;
 use App\Http\Controllers\Api\ExternalAuthController;
 use App\Http\Controllers\Api\ExternalTrackerController;
 use App\Http\Controllers\Api\ExternalWebhookController;
@@ -164,6 +163,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::put('/update/asset/{id}', [AssetController::class, 'update']);
     Route::get('/view/myasset', [AssetController::class, 'myAssets']);
     Route::post('/allow/view/myasset', [AssetController::class, 'grantAssetAccess'])->middleware('permission:allow-user-view-myassets');
+    Route::post('/delete/asset', [AssetController::class, 'destroy']);
+
 
     // ASSET ROUTE ENDS HERE
 
