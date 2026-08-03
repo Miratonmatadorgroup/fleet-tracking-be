@@ -233,7 +233,7 @@ class AuthController extends Controller
             $data = $this->registerUserAction->execute($dto);
 
             return successResponse(
-                'Verification code sent to your email',
+                'Verification code sent to your identifier',
                 ['reference' => $data['reference']]
             );
         } catch (\Throwable $e) {
