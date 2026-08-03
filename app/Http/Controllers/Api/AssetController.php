@@ -384,14 +384,23 @@ class AssetController extends Controller
 
     public function destroy(Request $request, Asset $asset)
     {
-        Gate::authorize('delete', $asset);
+        $user = $request->user();
+
+        // Users with delete_asset permission can delete any asset
+        if (! $user->can('delete_asset')) {
+
+            // Otherwise they can only delete their own asset
+            if ($asset->driver?->user_id !== $user->id) {
+                abort(403, 'You are not authorized to delete this asset.');
+            }
+        }
 
         $oldValues = $asset->toArray();
+
         $asset->delete();
 
-        // Log audit
-        \App\Models\AuditLog::create([
-            'user_id' => $request->user()->id,
+        AuditLog::create([
+            'user_id' => $user->id,
             'action' => 'deleted',
             'entity_type' => 'Asset',
             'entity_id' => $asset->id,
@@ -400,7 +409,10 @@ class AssetController extends Controller
             'user_agent' => $request->userAgent(),
         ]);
 
-        return response()->json(['message' => 'Asset deleted successfully']);
+
+        return successResponse(
+            'Asset deleted successfully'
+        );
     }
 
     public function location(Request $request, Asset $asset)
