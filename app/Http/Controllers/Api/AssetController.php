@@ -387,7 +387,7 @@ class AssetController extends Controller
         $user = $request->user();
 
         // Users with delete_asset permission can delete any asset
-        if (! $user->can('delete_asset')) {
+        if (! $user->can('delete-asset')) {
 
             // Otherwise they can only delete their own asset
             if ($asset->driver?->user_id !== $user->id) {
