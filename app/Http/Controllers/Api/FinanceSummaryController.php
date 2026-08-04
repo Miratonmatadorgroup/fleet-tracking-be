@@ -27,7 +27,6 @@ class FinanceSummaryController extends Controller
                 'funds_breakdown' => [
                     'platform_net_income' => $summary['platform_net_income'],
                     'investor_funds' => $summary['investor_funds'],
-                    'bills_payment_revenue' => $summary['bills_payment_revenue'] ?? 0,
                 ],
 
                 'spendable_balance' => $summary['spendable_balance'],
