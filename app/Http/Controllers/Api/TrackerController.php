@@ -853,6 +853,99 @@ class TrackerController extends Controller
         );
     }
 
+    // public function updateGeoFencing(Request $request, string $id)
+    // {
+    //     $request->validate([
+    //         'name' => 'required|string',
+    //         'latitude' => 'required|numeric',
+    //         'longitude' => 'required|numeric',
+    //         'radius' => 'required|integer|min:50',
+    //         'asset_id' => 'required|exists:assets,id',
+    //         'action' => ['required', new Enum(GeoFenceActionTypeEnums::class),],
+    //     ]);
+
+    //     $user = $request->user();
+
+    //     // Permission check
+    //     if (!$user->can('edit-geofence-any-assets')) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'You do not have permission to manage geofencing.'
+    //         ], 403);
+    //     }
+
+
+    //     $geofence = Geofence::where('id', $id)
+    //         ->where('organization_id', $user->organization_id)
+    //         ->first();
+
+
+    //     if (!$geofence) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Geofence not found.'
+    //         ], 404);
+    //     }
+
+
+    //     $geofence->update([
+    //         'name' => $request->name,
+    //         'coordinates' => [
+    //             'latitude' => (float) $request->latitude,
+    //             'longitude' => (float) $request->longitude,
+    //         ],
+    //         'radius_meters' => (int)$request->radius,
+    //         'action' => $request->action,
+
+    //     ]);
+
+
+    //     // Update attached asset
+    //     $geofence->assets()->sync([
+    //         $request->asset_id
+    //     ]);
+
+
+    //     return successResponse(
+    //         'Geofence updated successfully',
+    //         $geofence->load('assets')
+    //     );
+    // }
+
+    // public function deleteGeoFencing(string $id)
+    // {
+    //     $user = request()->user();
+
+
+    //     if (!$user->can('delete-geofence-any-assets')) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'You do not have permission to manage geofencing.'
+    //         ], 403);
+    //     }
+
+
+    //     $geofence = Geofence::where('id', $id)
+    //         ->where('organization_id', $user->organization_id)
+    //         ->first();
+
+
+    //     if (!$geofence) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Geofence not found.'
+    //         ], 404);
+    //     }
+    //     // remove asset relationship first
+    //     $geofence->assets()->detach();
+    //     // delete geofence
+    //     $geofence->delete();
+
+    //     return successResponse(
+    //         'Geofence deleted successfully'
+    //     );
+    // }
+
     public function updateGeoFencing(Request $request, string $id)
     {
         $request->validate([
@@ -861,24 +954,15 @@ class TrackerController extends Controller
             'longitude' => 'required|numeric',
             'radius' => 'required|integer|min:50',
             'asset_id' => 'required|exists:assets,id',
-            'action' => ['required', new Enum(GeoFenceActionTypeEnums::class),],
+            'action' => ['required', new Enum(GeoFenceActionTypeEnums::class)],
         ]);
 
         $user = $request->user();
 
-        // Permission check
-        if (!$user->can('edit-geofence-any-assets')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have permission to manage geofencing.'
-            ], 403);
-        }
-
-
         $geofence = Geofence::where('id', $id)
             ->where('organization_id', $user->organization_id)
+            ->with('assets.driver')
             ->first();
-
 
         if (!$geofence) {
             return response()->json([
@@ -887,6 +971,16 @@ class TrackerController extends Controller
             ], 404);
         }
 
+        // User must have global permission OR own the geofence
+        if (
+            !$user->can('edit-geofence-any-assets') &&
+            !$this->userOwnsGeofence($user, $geofence)
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to manage this geofence.'
+            ], 403);
+        }
 
         $geofence->update([
             'name' => $request->name,
@@ -894,17 +988,11 @@ class TrackerController extends Controller
                 'latitude' => (float) $request->latitude,
                 'longitude' => (float) $request->longitude,
             ],
-            'radius_meters' => (int)$request->radius,
+            'radius_meters' => (int) $request->radius,
             'action' => $request->action,
-
         ]);
 
-
-        // Update attached asset
-        $geofence->assets()->sync([
-            $request->asset_id
-        ]);
-
+        $geofence->assets()->sync([$request->asset_id]);
 
         return successResponse(
             'Geofence updated successfully',
@@ -916,19 +1004,10 @@ class TrackerController extends Controller
     {
         $user = request()->user();
 
-
-        if (!$user->can('delete-geofence-any-assets')) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You do not have permission to manage geofencing.'
-            ], 403);
-        }
-
-
         $geofence = Geofence::where('id', $id)
             ->where('organization_id', $user->organization_id)
+            ->with('assets.driver')
             ->first();
-
 
         if (!$geofence) {
             return response()->json([
@@ -936,9 +1015,20 @@ class TrackerController extends Controller
                 'message' => 'Geofence not found.'
             ], 404);
         }
-        // remove asset relationship first
+
+        // User must have global permission OR own the geofence
+        if (
+            !$user->can('delete-geofence-any-assets') &&
+            !$this->userOwnsGeofence($user, $geofence)
+        ) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to manage this geofence.'
+            ], 403);
+        }
+
         $geofence->assets()->detach();
-        // delete geofence
+
         $geofence->delete();
 
         return successResponse(
@@ -1081,5 +1171,12 @@ class TrackerController extends Controller
         }
 
         return $query->firstOrFail();
+    }
+
+    private function userOwnsGeofence(User $user, Geofence $geofence): bool
+    {
+        return $geofence->assets->contains(function ($asset) use ($user) {
+            return optional($asset->driver)->user_id === $user->id;
+        });
     }
 }
