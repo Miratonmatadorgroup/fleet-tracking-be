@@ -77,14 +77,19 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "super_admin",
+    "role": "admin",
         "permissions": [
-           "list-of-subscriptions"
+           "view-total-earnings"
         ]
 }
 
 
-
+//VIEW SUPER ADMIN ANALYTICS
+###
+GET {{url}}/super-admin/analytics
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
 
 //ADMIN TO DELETE A USER
 ###

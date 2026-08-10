@@ -3,13 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 
-use App\Enums\PaymentStatusEnums;
 use App\Http\Controllers\Controller;
-
-use App\Models\Payment;
 use App\Services\FinancialSummaryService;
+use App\Services\SubscriptionAnalyticsService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 
 class FinanceSummaryController extends Controller
 {
@@ -19,50 +16,36 @@ class FinanceSummaryController extends Controller
             ->calculate($request);
 
         return successResponse(
-            'Platform financial summary',
+            'Platform financial summary retrieved successfully',
             [
                 'gross_income' => $summary['gross_income'],
-                'operational_revenue' => $summary['operational_revenue'],
 
-                'funds_breakdown' => [
-                    'platform_net_income' => $summary['platform_net_income'],
-                    'investor_funds' => $summary['investor_funds'],
-                ],
+                'operational_revenue' =>
+                $summary['operational_revenue'],
 
-                'spendable_balance' => $summary['spendable_balance'],
+                'platform_net_income' =>
+                $summary['platform_net_income'],
+
+                'total_subscription_payments' =>
+                $summary['total_subscription_payments'],
+
+                'total_paying_users' =>
+                $summary['total_paying_users'],
+
+                'average_revenue_per_user' =>
+                $summary['average_revenue_per_user'],
             ]
         );
     }
 
-    public function subscriptionEarnings(Request $request)
+    public function subscriptionAnalytics(Request $request)
     {
-        $user = Auth::user();
+        $analytics = app(SubscriptionAnalyticsService::class)
+            ->getAnalytics($request);
 
-        if (! $user->hasAnyRole( 'super_admin')) {
-            return failureResponse('Unauthorized', 403);
-        }
-
-        $startDate = $request->query('start_date');
-        $endDate   = $request->query('end_date');
-        $perPage   = min($request->query('per_page', 10), 50);
-
-        $query = Payment::query()
-            ->whereNotNull('payments.subscription_id')
-            ->where('payments.status', PaymentStatusEnums::PAID)
-            ->when($startDate, fn($q) => $q->whereDate('paid_at', '>=', $startDate))
-            ->when($endDate, fn($q) => $q->whereDate('paid_at', '<=', $endDate))
-            ->join('subscriptions', 'payments.subscription_id', '=', 'subscriptions.id')
-            ->join('subscription_plans', 'subscriptions.plan_id', '=', 'subscription_plans.id')
-            ->selectRaw('
-            subscription_plans.id as plan_id,
-            subscription_plans.name as plan_name,
-            SUM(payments.amount) as total_earnings,
-            COUNT(payments.id) as total_transactions
-        ')
-            ->groupBy('subscription_plans.id', 'subscription_plans.name');
-
-        $earnings = $query->paginate($perPage);
-
-        return successResponse('Subscription earnings retrieved successfully', $earnings);
+        return successResponse(
+            'Subscription analytics retrieved successfully',
+            $analytics
+        );
     }
 }

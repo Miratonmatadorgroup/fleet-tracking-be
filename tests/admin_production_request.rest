@@ -1,5 +1,4 @@
-@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTljNzdhNC05OWM0LTcyNGQtODRmZi1lYzFlNDJmZGExZTciLCJqdGkiOiI0NDlmYjU4YmFmZDgzYTc4NjQ3NDViM2E1YTg0OTAwOWM2ZTQ2Yjg1MjI5ZmY3MmQyMTc1Mjg4ZWRmM2Q0ZDVjOTVmMWJmMDIwZTBkNmFlMSIsImlhdCI6MTc3MTY1Mzc4Mi43MjI5NjcsIm5iZiI6MTc3MTY1Mzc4Mi43MjI5NzEsImV4cCI6MTgwMzE4OTc4Mi43MDczNjUsInN1YiI6ImUzYzQ1ZTY3LTA4NzEtNDFiMS04YjFlLWZjMmQzOGM4MzNjYiIsInNjb3BlcyI6W119.JisGwvn7m0yq0EUBb543CiAMjy0iaRgNUm33fXxAhho4gQg-kt29JwwdD1zapm2kxWVRoLngrjJjjknggLkChdbRjoHWw3z8pPvrsNGfrfW5ykoXP-rd9d8Y84Kd-Hr_BKZeqlEFR4cjaxfxBYZVBNPtDm5NV05jMxsMuhMoyxPVxhIt7x5HZ_0b8eeenvuQOCP6PQLlR_rNlqMZrJqKugRyt6XWwDReKXXvRXlZr5Le8QM6syHI9NwwaILxDeNh8xEdL-RX6DlYalzoWQ75-8eqdUULbtt7aEvwjKywFVocYTKKm38SQOGlex3JcU2F22gkz7zZQ_-ms7Fd8gYDjxywXPr-uM4DtOlwK18sdi5nhPN0PThYJdZaOl5YR5b6QaYBPwHG_7Ln_Ws0wru_g2LlnO9u-TQFH_YAwe-m2LZoGRM-06_8nqHHvQ6_-bWEDltapvfoTg5P1TcmbtWZ8lZE70_c7uzvJdT-I-zVinEWa8wtRprPhokpwi52SHxlgU_1RBleNWMFeQfquMA-VGdPktZHldkbgQcdi65F_iD-_mJjQ5gv3w2qAP2bxcbZGrSASXbQkQeJd7TQAIXOYgSWuVaoKKRXoEq5rkljsbGwzmcZIOmukc3iclD0gcYim7gIZUbd-v5IP7pEbdGsjoTW2Nt2jmKisHFURo4eoK8
-
+@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTljNzdhNC05OWM0LTcyNGQtODRmZi1lYzFlNDJmZGExZTciLCJqdGkiOiI0ZDkzZmM1NWQ3MmI2ZjUyNDI1NDI2NWEyZGVmMTAxZWQ4MGRhNjhhNWYyM2JmZWE3MTkxZGUwMjU1NzNiZjFjZjhiZTFkYmM1ZDdlZTY3MSIsImlhdCI6MTc4NTg1MDkyNi41Mzc2NTcsIm5iZiI6MTc4NTg1MDkyNi41Mzc2NTksImV4cCI6MTgxNzM4NjkyNi41MjAyOTgsInN1YiI6ImUzYzQ1ZTY3LTA4NzEtNDFiMS04YjFlLWZjMmQzOGM4MzNjYiIsInNjb3BlcyI6W119.VcN7Wizoy9ioKbDpTs_3bwp1ErRljOjFqPAqxPap-wN7DmlnnKcbsifginYC4cEzPSLLW1YGt5Qf2FL-EmEdSCiuJN281lYaXhNwhZNm8gNwc1oc0cMtdxwrqIHY-7CqXunV4joKhhJLFZ7f2ZarzLHdNTH42a_HHiF44f3Tyaacgiz-k9EoPaNayBsGgUPQ3dchBRzEaKrWwpEEDsZd2va-2cK3RRQUlIOOBzFUTDmm3tz26N6MlXsnlFWZ0GC2q9BSYwH61roS-rvKsuGb1uHAePZsMwZXJUaDiZ5lT2AW8ENVlwk-f8BVKMSQhFzI6y3k1Dhrlc41qjud_av4zofBLclI6MDNlZUyQxLy9Wzs0-fTvY5CoN9_t4yAI4Ak8TrJc3WiV-GbGqfYrRwMSoNGqcHeHAVjzKv5-kTkkKyb5cRfvCdKUctzFznijsnOEi5fKl-8sTmO-MrrvF7QQ9_FV-hv99LmCkUFJGWXqSub8qVqctj0iMslwFqoQDKBI5HuqTPPSsowa2QlHxaJvEvCKxAEiqSC_W3yqDekRijIByaiLkR_NNrJZbDE-gWiT8DR00B0i--njnc8_-40VHZLe_wmXXkTWjsf-CWoA7BemLhezAePnEa9KSnD_zyrq2YVW-EhZIIi4OhZ_e1NiIANpmd6NUB52J80oqOLGy8
 
 @url=https://api.track.useloopfreight.com/api
 
@@ -22,19 +21,41 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "super_admin",
+    "role": "admin",
         "permissions": [
-           "list-of-subscriptions"
+           "view-total-earnings"
         ]
 }
+
+//VIEW SUPER ADMIN ANALYTICS
+###
+GET {{url}}/super-admin/analytics
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
 
 
 //ADMIN TO DELETE A USER
 ###
-DELETE {{url}}/admin/delete-user/c55173c3-141a-4768-9e7f-ffe9e0255628
+DELETE {{url}}/admin/delete-user/9c19a065-d4c8-4457-83e1-3b2829fdd98d
 Content-Type: application/json
 Accept: application/json
 Authorization: {{bearer}}
+
+//ADMIN VIEW ALL ASSETS
+###
+GET {{url}}/view/all-assets
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//ADMIN DELET ASSETS
+###
+DELETE {{url}}/admin/delete/asset/019d8188-7e04-7355-9b18-b19688e7b0cf
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
 
 //ADMIN VIEW FINANACIAL SUMMARY
 ###
