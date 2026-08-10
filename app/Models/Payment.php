@@ -40,6 +40,7 @@ class Payment extends Model
     protected $casts = [
         'status'           => PaymentStatusEnums::class,
         'meta'             => 'array',
+        'paid_at' => 'datetime',
     ];
 
     protected static function boot()

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\Api\AdminBroadcastController;
 use App\Http\Controllers\Api\AdminSubscriptionController;
+use App\Http\Controllers\Api\AnalyticsController;
 use App\Http\Controllers\Api\AssetController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\DeveloperAuthController;
@@ -157,6 +158,7 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::get('/assets/geofences', [TrackerController::class, 'assetsWithGeofence']);
     Route::get('/view/my-trackers', [TrackerController::class, 'myTrackers']);
     Route::get('/view/tracker-asset/count', [TrackerController::class, 'trackerSummary']);
+    Route::get('/super-admin/analytics', [AnalyticsController::class, 'superAdminAnalytics'])->middleware('permission:view-super-admin-analytics');
 
     // TRACKER ROUTE ENDS HERE
 
@@ -264,10 +266,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::get('/subscriptions/users-summary', [SubscriptionController::class, 'subscriptionUsersSummary'])->middleware('permission:list-subscriptions-summary');
 
     // FINANCIAL SUMMARY VIEW BY SUPER ADMIN
-    Route::get('/view/total-earnings', [FinanceSummaryController::class, 'subscriptionEarnings'])
-        ->middleware('permission:view-total-earnings');
-
-
+    Route::get('/view/total-earnings', [FinanceSummaryController::class, 'platformFinancialSummary'])->middleware('permission:view-total-earnings');
+    Route::get('/super-admin/subscription-analytics', [FinanceSummaryController::class, 'subscriptionAnalytics'])->middleware('permission:view-super-admin-subscription-analytics');
     // ROLES AND PERMISSIONS
     Route::post('/admin/create-roles', [RolePermissionController::class, 'adminCreateRoleWithPermissions'])
         ->middleware('permission:create-role');
