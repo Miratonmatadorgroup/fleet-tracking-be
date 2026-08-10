@@ -1,7 +1,6 @@
-@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTljMWQ2Mi03MDQ0LTczZmQtOGY1Yi1iM2FhNDIxMDhhZjMiLCJqdGkiOiI3NDJhMjBhMTU1M2NhZTk2OWZmZjVmYjIwNTM0MWQzM2VhNmFjZjgzZWU1NjU4ZjRlZDc0YzkyMmExZTRjNTgxMTcwYmIxNjY2NWE4YWI1MyIsImlhdCI6MTc3MDM0Njg1Ni45NDMwMjcsIm5iZiI6MTc3MDM0Njg1Ni45NDMwMzIsImV4cCI6MTgwMTg4Mjg1Ni45MDkzNzEsInN1YiI6IjAxYjFlZmMwLTM5OGItNDE5Mi05ZjBiLTgzN2IyY2JhZTFkNSIsInNjb3BlcyI6W119.UkDjERJMmZOlGkQ6MWVimbRIEJJ8BuNWZTUydEMIMfm-oBSMbkB1P6HHEikZIImHsVJXC5bY9yKqOoDzlCg7KqZLYU3vAHo4BKUCS892gZkc4_Hk8ZXAyGp93UcCmRdlbQjGLVTJi1BmB8ixXfZVNx6IZN5SHOfEdu5PyrexP2NdQa8zduz7AIw0bJygAGcKpEHcx1ggzSqmvvJLBmx7mQIbJzcOAtylKrguMUJpvuwGDKUDrZpFT7KopdeTAhO75TsL-znjWK-mZof-ChPnc_7qfvenuoAT85RNKjfEG6X1socGqiFi_dQrTyJVzBXD8BAkvuREY5CyLVWNOTkjgmQjh2mweuh2jP-kVdY7oK-g-Nz9GHgT8xQpzMKe8iVGWGti-RBMDkdIsoFeC3tLdYvD17CfN7qoTMLo7NbEEu-E3q-T8T1IaB1xOhqBuiaSliLGdL4uYS8kTaEN-qrSaV8CSy4Krka4fTisDM8wZmTkxwQEUQQuE7FG9T9Mgcm5VWvrMeHxLagy6LNhs5_8O6Y7jTGqIglj5CQW1_qFy2nl0DkXJ983cBsOIQPHMb8qne8LOXpZow7wGAjUBRgwu4wa5BqhVDQ5vWfIZaoQzaBfcKzBQYzr0MWmcPfksKIB9i48e0uluQH-DVV6K1b5qFPkTlYP4qwXtPQTpi6nwO0
+@bearer=Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiJ9.eyJhdWQiOiIwMTljMWQ2Mi03MDQ0LTczZmQtOGY1Yi1iM2FhNDIxMDhhZjMiLCJqdGkiOiJiMWZmNTcxODAyZmVlYjNkMTViOWZiOTNlMzkyZjZiMTNkNjU3MWY1YTUwYTUzZWUxNjRhNDA4YjUwODA2ODdmZjY2NTU2YWI5NDU1MTEzNSIsImlhdCI6MTc4NjM2MTEwNy45ODgwOTMsIm5iZiI6MTc4NjM2MTEwNy45ODgwOTYsImV4cCI6MTgxNzg5NzEwNy4wODkwNzgsInN1YiI6IjAxYjFlZmMwLTM5OGItNDE5Mi05ZjBiLTgzN2IyY2JhZTFkNSIsInNjb3BlcyI6W119.QrFubqq76hznmWhkCj_eHZuBxd7XctBZYmkIQwRPLX129IdpEDa_j2UGU4rIOhx7coEjWG-e9tywZ-_IpNZ_MCy7LZnjPf5EiZ7HGkbQSeRBN_J1s7gf-SvUi_uLPDnbkx7U7BbhwdOoBBnxzLH5kj43F7PZmbj-pUNzkkgh-ainzdbPq73GsZI6EcpK6KxaMxX_lb20t4i8KzdGFeab-8_Hjl725GQdln9DXTOZ7-btQgjLFfcZzFE3oNOZ1EvrLhRUYu9_qMMaoRp6ggmJPBTEeNlDi_q4rDWW_zM9GHNxlqWErSU3uJA3E8OFOBSVsCR4KpFwqwNIEjNbitm0Tw9LPFB0PcRqyka34Wn4ROmNJUgndcFZdebMj7VVPHpw74bTXF9VeGD346COhDbOjyjmjNclkPtVa_oyQcnYKVqiuYOGSnKZnmDtyL0nAuZGCbZXYBivDGxvbJJxqQr2z-67CqRGjHJ3dtuMl4Ir61EveW5NaZNpb0ZCkI52cwIh34FU5n8agRiCcPfNIeHpmLKk8H4t3RiDz4TK4d_9iTfafExNdzORckSbVEcqYYkapyDrHxUG48mUk6hOy2cu_POoocse2MNuoE-TJXz2KxCEU5MbBMvh9qCqwaEeXSk0zwO_nSauEbcacoXYFPSD2TKoK9tkJREg6XuKIGLA9ug
 
-
-@url=http://127.0.0.1:8001/api
+@url=http://127.0.0.1:8002/api
 
 //ADMIN LOGIN
  ###
@@ -61,12 +60,48 @@ Authorization: {{bearer}}
 
 }
 
+//VIEW SUPER ADMIN ANALYTICS
+###
+GET {{url}}/super-admin/analytics
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//VIEW PLATFORM FINANCIAL SUMMARY
+###
+GET {{url}}/view/total-earnings
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+//VIEW SUBSCRIPTION ANALYTICS
+###
+GET {{url}}/super-admin/subscription-analytics
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
 //ADMIN PROFILE
 ###
 GET {{url}}/user-profile
 Content-Type: application/json
 Accept: application/json
 Authorization: {{bearer}}
+
+//ADMIN ADD PERMISSIONS TO ROLE
+###
+POST {{url}}/add-permissions-to-role
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "role": "super_admin",
+        "permissions": [
+           "view-total-earnings"
+        ]
+}
 
 //ADMIN CREDIT A USER ACCOUNT
 ###
@@ -83,19 +118,6 @@ Authorization: {{bearer}}
 
 }
 
- //ADMIN ADD PERMISSIONS TO ROLE
-###
-POST {{url}}/add-permissions-to-role
-Content-Type: application/json
-Accept: application/json
-Authorization: {{bearer}}
-
-{
-    "role": "admin",
-        "permissions": [
-           "list-of-subscriptions"
-        ]
-}
 
 //ADMIN ASIGN DELIVERY TO DRIVER
 ###
