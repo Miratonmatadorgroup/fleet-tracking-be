@@ -26,7 +26,7 @@ class SuperAdminAnalyticsService
         $totalTrackers = Tracker::count();
 
         $activeTrackers = Tracker::query()
-            ->where('status', TrackerStatusEnums::ACTIVE)
+            // ->where('status', TrackerStatusEnums::ACTIVE)
             ->where('is_online', true)
             ->count();
 
@@ -45,7 +45,7 @@ class SuperAdminAnalyticsService
 
         $activeAssetQuery = Asset::whereHas('tracker', function ($query) {
             $query
-                ->where('status', TrackerStatusEnums::ACTIVE)
+                // ->where('status', TrackerStatusEnums::ACTIVE)
                 ->where('is_online', true);
         });
 
@@ -97,8 +97,8 @@ class SuperAdminAnalyticsService
 
         $faultyAssets = Asset::whereHas('tracker', function ($query) {
             $query->where(function ($q) {
-                $q->where('status', '!=', TrackerStatusEnums::ACTIVE)
-                    ->orWhere('is_online', false)
+                // $q->where('status', '!=', TrackerStatusEnums::ACTIVE)
+                    $q->Where('is_online', false)
                     ->orWhereNull('is_online');
             });
         })->count();
