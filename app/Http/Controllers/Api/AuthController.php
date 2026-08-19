@@ -3,45 +3,49 @@
 namespace App\Http\Controllers\Api;
 
 
-use Throwable;
-use App\Models\User;
-use App\Mail\SendOtpMail;
-use App\Models\ApiClient;
-use App\Models\UserToken;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
-use App\Services\TermiiService;
-use App\Services\TwilioService;
-use App\Services\SmileIdService;
-use App\Mail\TransactionPinOtpMail;
-use Illuminate\Support\Facades\Log;
-use App\Http\Controllers\Controller;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
-use App\DTOs\Authentication\LoginDTO;
-use App\Services\ExternalBankService;
-use App\Services\TransactionPinService;
-use Illuminate\Support\Facades\Storage;
-use App\DTOs\Authentication\ResendOtpDTO;
-use App\DTOs\Authentication\VerifyOtpDTO;
-use Illuminate\Support\Facades\Validator;
+use App\Actions\Authentication\ChangePasswordAction;
+use App\Actions\Authentication\DeleteUserAction;
+use App\Actions\Authentication\FetchUserProfileAction;
+use App\Actions\Authentication\LoginUserAction;
+use App\Actions\Authentication\RegisterUserAction;
+use App\Actions\Authentication\ResendVerificationOtpAction;
+use App\Actions\Authentication\ResetPasswordAction;
+use App\Actions\Authentication\SendDeleteAccountOtpAction;
+use App\Actions\Authentication\SendForgotPasswordOtpAction;
+use App\Actions\Authentication\UpdateUserProfileAction;
+use App\Actions\Authentication\VerifyDeleteAccountAction;
+use App\Actions\Authentication\VerifyOtpAction;
+use App\DTOs\Authentication\ChangePasswordDTO;
+use App\DTOs\Authentication\DeleteAccountRequestDTO;
 use App\DTOs\Authentication\DeleteUserDTO;
+use App\DTOs\Authentication\ForgotPasswordDTO;
+use App\DTOs\Authentication\LoginDTO;
 use App\DTOs\Authentication\RegisterUserDTO;
+use App\DTOs\Authentication\ResendOtpDTO;
 use App\DTOs\Authentication\ResetPasswordDTO;
 use App\DTOs\Authentication\UpdateProfileDTO;
-use App\DTOs\Authentication\ChangePasswordDTO;
-use App\DTOs\Authentication\ForgotPasswordDTO;
-use App\Actions\Authentication\LoginUserAction;
-use App\Actions\Authentication\VerifyOtpAction;
-use App\Actions\Authentication\DeleteUserAction;
-use App\Actions\Authentication\RegisterUserAction;
-use App\Actions\Authentication\ResetPasswordAction;
-use App\Actions\Authentication\ChangePasswordAction;
-use App\Actions\Authentication\FetchUserProfileAction;
+use App\DTOs\Authentication\VerifyDeleteAccountDTO;
+use App\DTOs\Authentication\VerifyOtpDTO;
+use App\Http\Controllers\Controller;
+use App\Mail\SendOtpMail;
+use App\Mail\TransactionPinOtpMail;
+use App\Models\ApiClient;
+use App\Models\User;
+use App\Models\UserToken;
 use App\Notifications\User\TransactionPinNotification;
-use App\Actions\Authentication\UpdateUserProfileAction;
-use App\Actions\Authentication\ResendVerificationOtpAction;
-use App\Actions\Authentication\SendForgotPasswordOtpAction;
+use App\Services\ExternalBankService;
+use App\Services\SmileIdService;
+use App\Services\TermiiService;
+use App\Services\TransactionPinService;
+use App\Services\TwilioService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use Throwable;
 
 class AuthController extends Controller
 {
@@ -903,4 +907,33 @@ class AuthController extends Controller
             return failureResponse("Failed to check PIN status", 400, "PIN_STATUS_ERROR", $th);
         }
     }
+
+    public function requestAccountDeletion(Request $request, SendDeleteAccountOtpAction $action) {
+        try {
+            $dto = DeleteAccountRequestDTO::fromRequest($request);
+
+            $action->execute($dto);
+
+            return successResponse('OTP sent successfully.');
+        } catch (\Throwable $th) {
+            return failureResponse(
+                $th->getMessage(),
+                $th->getCode() ?: 500
+            );
+        }
+    }
+public function confirmAccountDeletion(Request $request, VerifyDeleteAccountAction $action) {
+    try {
+        $dto = VerifyDeleteAccountDTO::fromRequest($request);
+
+        $action->execute($dto, $request);
+
+        return successResponse('Account deleted successfully.');
+    } catch (\Throwable $th) {
+        return failureResponse(
+            $th->getMessage(),
+            $th->getCode() ?: 500
+        );
+    }
+}
 }
