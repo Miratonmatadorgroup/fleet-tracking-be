@@ -853,99 +853,6 @@ class TrackerController extends Controller
         );
     }
 
-    // public function updateGeoFencing(Request $request, string $id)
-    // {
-    //     $request->validate([
-    //         'name' => 'required|string',
-    //         'latitude' => 'required|numeric',
-    //         'longitude' => 'required|numeric',
-    //         'radius' => 'required|integer|min:50',
-    //         'asset_id' => 'required|exists:assets,id',
-    //         'action' => ['required', new Enum(GeoFenceActionTypeEnums::class),],
-    //     ]);
-
-    //     $user = $request->user();
-
-    //     // Permission check
-    //     if (!$user->can('edit-geofence-any-assets')) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'You do not have permission to manage geofencing.'
-    //         ], 403);
-    //     }
-
-
-    //     $geofence = Geofence::where('id', $id)
-    //         ->where('organization_id', $user->organization_id)
-    //         ->first();
-
-
-    //     if (!$geofence) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Geofence not found.'
-    //         ], 404);
-    //     }
-
-
-    //     $geofence->update([
-    //         'name' => $request->name,
-    //         'coordinates' => [
-    //             'latitude' => (float) $request->latitude,
-    //             'longitude' => (float) $request->longitude,
-    //         ],
-    //         'radius_meters' => (int)$request->radius,
-    //         'action' => $request->action,
-
-    //     ]);
-
-
-    //     // Update attached asset
-    //     $geofence->assets()->sync([
-    //         $request->asset_id
-    //     ]);
-
-
-    //     return successResponse(
-    //         'Geofence updated successfully',
-    //         $geofence->load('assets')
-    //     );
-    // }
-
-    // public function deleteGeoFencing(string $id)
-    // {
-    //     $user = request()->user();
-
-
-    //     if (!$user->can('delete-geofence-any-assets')) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'You do not have permission to manage geofencing.'
-    //         ], 403);
-    //     }
-
-
-    //     $geofence = Geofence::where('id', $id)
-    //         ->where('organization_id', $user->organization_id)
-    //         ->first();
-
-
-    //     if (!$geofence) {
-    //         return response()->json([
-    //             'success' => false,
-    //             'message' => 'Geofence not found.'
-    //         ], 404);
-    //     }
-    //     // remove asset relationship first
-    //     $geofence->assets()->detach();
-    //     // delete geofence
-    //     $geofence->delete();
-
-    //     return successResponse(
-    //         'Geofence deleted successfully'
-    //     );
-    // }
-
     public function updateGeoFencing(Request $request, string $id)
     {
         $request->validate([
@@ -1145,6 +1052,60 @@ class TrackerController extends Controller
         ]);
 
         return successResponse('Unlock command sent', $response);
+    }
+
+    public function lastFiveLocations(Request $request)
+    {
+        $request->validate([
+            'asset_id' => 'required|exists:assets,id',
+        ]);
+
+        // Resolve the asset and apply the same ownership/permission rules
+        $asset = $this->resolveAsset(
+            $request->asset_id,
+            'view-details-any-assets'
+        );
+
+        if (!$asset->tracker) {
+            return failureResponse(
+                'Asset does not have a tracker attached',
+                400
+            );
+        }
+
+        $tracker = $asset->tracker;
+
+        $locations = $tracker->locations()
+            ->latest('tracker_time')
+            ->limit(5)
+            ->get([
+                'id',
+                'tracker_id',
+                'imei',
+                'latitude',
+                'longitude',
+                'speed',
+                'tracker_time',
+            ]);
+
+        return successResponse(
+            'Last five locations retrieved successfully',
+            [
+                'asset' => [
+                    'id' => $asset->id,
+                    'name' => $asset->name ?? $asset->label ?? null,
+                ],
+
+                'tracker' => [
+                    'id' => $tracker->id,
+                    'imei' => $tracker->imei,
+                    'is_online' => $tracker->is_online,
+                    'last_seen_at' => $tracker->last_seen_at,
+                ],
+
+                'locations' => $locations,
+            ]
+        );
     }
     private function mapGpsStatusToCommandStatus(?int $status): string
     {
