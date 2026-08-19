@@ -13,21 +13,57 @@ Content-Type: application/json
 Accept: application/json
 
 {
-    "identifier": "kelec.hivctorn@gmail.com",
+    "identifier": "teped34192@ittiv.com",
+    "password": "Password1@"
+}
+
+//USER REGISTER
+###
+POST {{url}}/register
+Content-Type: application/json
+Accept: application/json
+
+{
+    "name": "John Doe",
+    "identifier": "teped34192@ittiv.com",
+    "operator_type": "individual",
+    "dob": "1995-05-20",
+    "gender": "male",
     "password": "Password1@"
 }
 
 
-# //USER LOGIN
-#  ###
-# POST {{url}}/login
-# Content-Type: application/json
-# Accept: application/json
+//USER VERIFY OTP
+###
+POST {{url}}/verify-otp
+Content-Type: application/json
+Accept: application/json
 
-# {
-#     "identifier": "poska.nzee@gmail.com",
-#     "password": "Password1@"
-# }
+{
+    "reference": "pending_registration_f5e867fe-411b-4fb8-8e03-dc4350f84b00",
+    "otp": "244425"
+}
+
+//USER REQUEST DELETE ACCOUNT
+###
+POST {{url}}/account/delete/request
+Content-Type: application/json
+Accept: application/json
+
+{
+    "identifier": "teped34192@ittiv.com"
+}
+
+//USER CONFIRM DELETE ACCOUNT
+###
+POST {{url}}/account/delete/confirm
+Content-Type: application/json
+Accept: application/json
+
+{
+    "identifier": "teped34192@ittiv.com",
+    "otp": "171862"
+}
 
 //USER PROFILE
 ###

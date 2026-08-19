@@ -135,6 +135,9 @@ Route::prefix('auth')->group(function () {
     Route::get('google/callback', [GoogleAuthController::class, 'callback']);
 });
 
+Route::post('/account/delete/request', [AuthController::class, 'requestAccountDeletion']);
+Route::post('/account/delete/confirm', [AuthController::class, 'confirmAccountDeletion']);
+
 Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::prefix('external')
         ->middleware(['api.key', 'check.apiclient.blocked', 'external.api.log', 'throttle:' . env('PARTNER_RATE_LIMIT', 120) . ',1'])
@@ -404,6 +407,8 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
     Route::post('/admin/broadcast', [AdminBroadcastController::class, 'sendMessage'])
         ->middleware('permission:admin-broadcast-message');
 
+
+        
 
     Route::get('/user', function (Request $request) {
         return $request->user();
