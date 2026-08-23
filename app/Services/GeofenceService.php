@@ -4,18 +4,23 @@ namespace App\Services;
 
 
 use App\Enums\GeoFenceActionTypeEnums;
+use App\Mail\GeofenceAlertMail;
 use App\Models\Asset;
 use App\Models\Geofence;
 use App\Models\GeofenceBreach;
 use App\Models\GeofenceState;
 use App\Notifications\User\GeofenceAlertNotification;
+use App\Services\TermiiService;
+use App\Services\TrackerService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class GeofenceService
 {
     public function __construct(
-        protected TrackerService $trackerService
+        protected TrackerService $trackerService,
+        protected TermiiService $termiiService
     ) {}
 
     // Process all geofences attached to an asset. This method should be called every time a new GPS location is received.
@@ -115,79 +120,78 @@ class GeofenceService
     }
 
     // Calculate the distance between asset and geofence. Returns distance in meters.
-    private function calculateDistance(float $latitude, float $longitude, Geofence $geofence): float {
+    private function calculateDistance(float $latitude, float $longitude, Geofence $geofence): float
+    {
 
-    $coordinates = $geofence->coordinates;
+        $coordinates = $geofence->coordinates;
 
-    /**
-     * Support both coordinate formats.
-     *
-     * OLD FORMAT
-     * [
-     *     [
-     *         'lat' => 6.415,
-     *         'lng' => 2.885,
-     *     ]
-     * ]
-     *
-     * NEW FORMAT
-     * [
-     *     'latitude' => 6.415,
-     *     'longitude' => 2.885,
-     * ]
-     */
-    if (
-        isset($coordinates['latitude']) &&
-        isset($coordinates['longitude'])
-    ) {
+        /**
+         * Support both coordinate formats.
+         *
+         * OLD FORMAT
+         * [
+         *     [
+         *         'lat' => 6.415,
+         *         'lng' => 2.885,
+         *     ]
+         * ]
+         *
+         * NEW FORMAT
+         * [
+         *     'latitude' => 6.415,
+         *     'longitude' => 2.885,
+         * ]
+         */
+        if (
+            isset($coordinates['latitude']) &&
+            isset($coordinates['longitude'])
+        ) {
 
-        $fenceLatitude = (float) $coordinates['latitude'];
-        $fenceLongitude = (float) $coordinates['longitude'];
+            $fenceLatitude = (float) $coordinates['latitude'];
+            $fenceLongitude = (float) $coordinates['longitude'];
+        } elseif (
+            isset($coordinates[0]['lat']) &&
+            isset($coordinates[0]['lng'])
+        ) {
 
-    } elseif (
-        isset($coordinates[0]['lat']) &&
-        isset($coordinates[0]['lng'])
-    ) {
+            $fenceLatitude = (float) $coordinates[0]['lat'];
+            $fenceLongitude = (float) $coordinates[0]['lng'];
+        } else {
 
-        $fenceLatitude = (float) $coordinates[0]['lat'];
-        $fenceLongitude = (float) $coordinates[0]['lng'];
+            Log::warning('Invalid geofence coordinates.', [
+                'geofence_id' => $geofence->id,
+                'coordinates' => $coordinates,
+            ]);
 
-    } else {
+            return PHP_FLOAT_MAX;
+        }
 
-        Log::warning('Invalid geofence coordinates.', [
-            'geofence_id' => $geofence->id,
-            'coordinates' => $coordinates,
-        ]);
+        $earthRadius = 6371000; // meters
 
-        return PHP_FLOAT_MAX;
+        $latFrom = deg2rad($latitude);
+        $lonFrom = deg2rad($longitude);
+
+        $latTo = deg2rad($fenceLatitude);
+        $lonTo = deg2rad($fenceLongitude);
+
+        $latDelta = $latTo - $latFrom;
+        $lonDelta = $lonTo - $lonFrom;
+
+        $angle = 2 * asin(
+            sqrt(
+                pow(sin($latDelta / 2), 2) +
+                    cos($latFrom) *
+                    cos($latTo) *
+                    pow(sin($lonDelta / 2), 2)
+            )
+        );
+
+        return $earthRadius * $angle;
     }
 
-    $earthRadius = 6371000; // meters
-
-    $latFrom = deg2rad($latitude);
-    $lonFrom = deg2rad($longitude);
-
-    $latTo = deg2rad($fenceLatitude);
-    $lonTo = deg2rad($fenceLongitude);
-
-    $latDelta = $latTo - $latFrom;
-    $lonDelta = $lonTo - $lonFrom;
-
-    $angle = 2 * asin(
-        sqrt(
-            pow(sin($latDelta / 2), 2) +
-            cos($latFrom) *
-            cos($latTo) *
-            pow(sin($lonDelta / 2), 2)
-        )
-    );
-
-    return $earthRadius * $angle;
-}
-
     // Vehicle has entered a geofence.
-    private function handleEntry(Asset $asset, Geofence $geofence, GeofenceState $state): void
-    {
+    private function handleEntry(Asset $asset, Geofence $geofence, GeofenceState $state
+    ): void {
 
         DB::transaction(function () use (
             $asset,
@@ -211,34 +215,46 @@ class GeofenceService
             ]);
         });
 
-        // Execute AFTER transaction commits
-        $this->performAction(
-            $asset,
-            $geofence
-        );
+        // Send alert only if entry alerts are enabled
+        if ($geofence->alert_on_entry) {
+            $this->performAction(
+                $asset,
+                $geofence,
+                'entry'
+            );
+        }
     }
 
     //Vehicle has exited a geofence.
-    private function handleExit(Asset $asset, Geofence $geofence, GeofenceState $state): void
-    {
+    private function handleExit(Asset $asset, Geofence $geofence, GeofenceState $state): void {
 
-        DB::transaction(function () use ($asset, $geofence, $state) {
-            // Update state.
+        DB::transaction(function () use ($asset, $geofence,$state
+        ) {
+
             $state->update([
-
                 'is_inside' => false,
-
             ]);
-            // Save breach.
-            $this->createBreach(asset: $asset, geofence: $geofence, breachType: 'exit');
+
+            $this->createBreach(
+                asset: $asset,
+                geofence: $geofence,
+                breachType: 'exit'
+            );
+
             Log::info('Vehicle exited geofence.', [
-
                 'asset_id' => $asset->id,
-
                 'geofence_id' => $geofence->id,
-
             ]);
         });
+
+        // Send alert only if exit alerts are enabled
+        if ($geofence->alert_on_exit) {
+            $this->performAction(
+                $asset,
+                $geofence,
+                'exit'
+            );
+        }
     }
 
     // Save the geofence breach.
@@ -272,7 +288,7 @@ class GeofenceService
     }
 
     // Execute configured action for the geofence.
-    private function performAction(Asset $asset, Geofence $geofence): void
+    private function performAction(Asset $asset, Geofence $geofence, string $eventType): void
     {
 
         switch ($geofence->action) {
@@ -282,6 +298,7 @@ class GeofenceService
                 Log::info('No action configured for geofence.', [
                     'asset_id' => $asset->id,
                     'geofence_id' => $geofence->id,
+                    'event_type' => $eventType,
                 ]);
 
                 break;
@@ -290,16 +307,15 @@ class GeofenceService
 
                 $this->sendAlert(
                     $asset,
-                    $geofence
+                    $geofence,
+                    $eventType
                 );
 
                 break;
 
             case GeoFenceActionTypeEnums::SHUTDOWN:
 
-                $this->shutdownVehicle(
-                    $asset
-                );
+                $this->shutdownVehicle($asset);
 
                 break;
 
@@ -377,50 +393,78 @@ class GeofenceService
     }
 
     // Send notification.
-    private function sendAlert(Asset $asset, Geofence $geofence): void
-    {
+    private function sendAlert(Asset $asset, Geofence $geofence, string $eventType): void {
 
         try {
 
             $asset->loadMissing('organization.user');
+            $geofence->loadMissing('user');
 
+            // Determine who should receive the notification
             $user = $geofence->user
                 ?? $asset->organization?->user;
 
             if (!$user) {
 
-                Log::warning('Unable to send geofence alert. No recipient found.', [
-
-                    'asset_id' => $asset->id,
-
-                    'geofence_id' => $geofence->id,
-
-                ]);
+                Log::warning(
+                    'Unable to send geofence alert. No recipient found.',
+                    [
+                        'asset_id' => $asset->id,
+                        'geofence_id' => $geofence->id,
+                    ]
+                );
 
                 return;
             }
 
-            $user->notify(new GeofenceAlertNotification($asset, $geofence, $geofence->action));
+            /* IN-APP NOTIFICATION */
+            $user->notify(
+                new GeofenceAlertNotification(
+                    $asset,
+                    $geofence,
+                    $eventType
+                )
+            );
 
-            Log::info('Geofence notification sent.', [
+            /* EMAIL NOTIFICATION */
+            if (!empty($user->email)) {
+                Mail::to($user->email)
+                    ->send(
+                        new GeofenceAlertMail(
+                            $user,
+                            $asset,
+                            $geofence,
+                            $eventType
+                        )
+                    );
+            }
+            /* SMS NOTIFICATION */
+            if (!empty($user->phone)) {
+                $message = $eventType === 'entry'
+                    ? "Geofence Alert: Your vehicle {$asset->license_plate} has entered the geofence \"{$geofence->name}\"."
+                    : "Geofence Alert: Your vehicle {$asset->license_plate} has exited the geofence \"{$geofence->name}\".";
 
+                $this->termiiService->sendSms(
+                    $user->phone,
+                    $message
+                );
+            }
+
+            Log::info('Geofence alerts sent successfully.', [
                 'asset_id' => $asset->id,
-
                 'geofence_id' => $geofence->id,
-
                 'user_id' => $user->id,
-
+                'event_type' => $eventType,
+                'email' => $user->email,
             ]);
         } catch (\Throwable $exception) {
 
-            Log::error('Failed to send geofence notification.', [
-
+            Log::error('Failed to send geofence alerts.', [
                 'asset_id' => $asset->id,
-
                 'geofence_id' => $geofence->id,
-
+                'event_type' => $eventType,
                 'message' => $exception->getMessage(),
-
+                'trace' => $exception->getTraceAsString(),
             ]);
         }
     }
