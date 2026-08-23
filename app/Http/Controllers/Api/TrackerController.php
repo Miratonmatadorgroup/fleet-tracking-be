@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\GeofenceService;
 use App\Services\TrackerService;
 use App\Services\TransactionPinService;
+use App\Services\VehicleMovementService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -1054,6 +1055,178 @@ class TrackerController extends Controller
         return successResponse('Unlock command sent', $response);
     }
 
+    //TRACKER ASSET MOVEMENT AND HISTORY
+    public function locationHistory(Request $request, VehicleMovementService $movementService)
+    {
+        $request->validate([
+            'asset_id' => 'required|exists:assets,id',
+
+            'hours' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:168',
+            ],
+
+            'from' => [
+                'nullable',
+                'date',
+                'required_with:to',
+            ],
+
+            'to' => [
+                'nullable',
+                'date',
+                'required_with:from',
+                'after:from',
+            ],
+        ]);
+
+        if (
+            $request->filled('hours') &&
+            ($request->filled('from') || $request->filled('to'))
+        ) {
+            return failureResponse(
+                'Use either hours or from/to, not both.',
+                422
+            );
+        }
+
+        $asset = $this->resolveAsset(
+            $request->asset_id,
+            'view-location-history'
+        );
+
+        if (!$asset->tracker) {
+            return failureResponse(
+                'Asset does not have a tracker attached.',
+                400
+            );
+        }
+
+        [$from, $to] = $this->resolveHistoryPeriod($request);
+
+        $locations = $movementService->locationHistory(
+            $asset->tracker,
+            $from,
+            $to
+        );
+
+        return successResponse(
+            'Vehicle location history retrieved successfully',
+            [
+                'asset' => [
+                    'id' => $asset->id,
+                    'name' => $asset->name ?? $asset->label ?? null,
+                    'license_plate' => $asset->license_plate ?? null,
+                ],
+
+                'tracker' => [
+                    'id' => $asset->tracker->id,
+                    'imei' => $asset->tracker->imei,
+                    'is_online' => $asset->tracker->is_online,
+                    'last_seen_at' => $asset->tracker->last_seen_at,
+                ],
+
+                'period' => [
+                    'from' => $from->toDateTimeString(),
+                    'to' => $to->toDateTimeString(),
+                ],
+
+                'gps_points' => $locations,
+            ]
+        );
+    }
+
+    public function movementHistory(Request $request, VehicleMovementService $movementService)
+    {
+        $request->validate([
+            'asset_id' => 'required|exists:assets,id',
+
+            'hours' => [
+                'nullable',
+                'integer',
+                'min:1',
+                'max:168',
+            ],
+
+            'from' => [
+                'nullable',
+                'date',
+                'required_with:to',
+            ],
+
+            'to' => [
+                'nullable',
+                'date',
+                'required_with:from',
+                'after:from',
+            ],
+        ]);
+
+        if (
+            $request->filled('hours') &&
+            ($request->filled('from') || $request->filled('to'))
+        ) {
+            return failureResponse(
+                'Use either hours or from/to, not both.',
+                422
+            );
+        }
+
+        $asset = $this->resolveAsset(
+            $request->asset_id,
+            'view-movement-history'
+        );
+
+        if (!$asset->tracker) {
+            return failureResponse(
+                'Asset does not have a tracker attached.',
+                400
+            );
+        }
+
+        [$from, $to] = $this->resolveHistoryPeriod($request);
+
+        $history = $movementService->movementHistory(
+            $asset->tracker,
+            $from,
+            $to
+        );
+
+        return successResponse(
+            'Vehicle movement history retrieved successfully',
+            [
+                'asset' => [
+                    'id' => $asset->id,
+                    'name' => $asset->name ?? $asset->label ?? null,
+                    'license_plate' => $asset->license_plate ?? null,
+                ],
+
+                'tracker' => [
+                    'id' => $asset->tracker->id,
+                    'imei' => $asset->tracker->imei,
+                    'is_online' => $asset->tracker->is_online,
+                    'last_seen_at' => $asset->tracker->last_seen_at,
+                ],
+
+                'period' => [
+                    'hours' => round(
+                        $from->diffInMinutes($to) / 60,
+                        2
+                    ),
+
+                    'from' => $from->toDateTimeString(),
+
+                    'to' => $to->toDateTimeString(),
+                ],
+
+                'summary' => $history['summary'],
+
+                'timeline' => $history['timeline'],
+            ]
+        );
+    }
     public function lastFiveLocations(Request $request)
     {
         $request->validate([
@@ -1139,5 +1312,27 @@ class TrackerController extends Controller
         return $geofence->assets->contains(function ($asset) use ($user) {
             return optional($asset->driver)->user_id === $user->id;
         });
+    }
+
+    protected function resolveHistoryPeriod(Request $request): array
+    {
+        if ($request->filled('from') && $request->filled('to')) {
+
+            return [
+                Carbon::parse($request->from),
+                Carbon::parse($request->to),
+            ];
+        }
+
+        $hours = (int) $request->input('hours', 5);
+
+        $to = now();
+
+        $from = now()->subHours($hours);
+
+        return [
+            $from,
+            $to,
+        ];
     }
 }

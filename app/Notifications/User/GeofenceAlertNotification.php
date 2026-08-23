@@ -15,7 +15,8 @@ class GeofenceAlertNotification extends Notification
 
     public function __construct(
         public Asset $asset,
-        public Geofence $geofence
+        public Geofence $geofence,
+        public string $eventType
     ) {}
 
     public function via($notifiable): array
@@ -25,43 +26,38 @@ class GeofenceAlertNotification extends Notification
 
     public function toDatabase($notifiable): array
     {
+        $isEntry = $this->eventType === 'entry';
+
         return [
 
-            'title' => 'Geofence Alert',
+            'title' => $isEntry
+                ? 'Geofence Entry Alert'
+                : 'Geofence Exit Alert',
 
-            'message' =>
-            "Your vehicle {$this->asset->license_plate} has entered the geofence \"{$this->geofence->name}\".",
+            'message' => $isEntry
+                ? "Your vehicle {$this->asset->license_plate} has entered the geofence \"{$this->geofence->name}\"."
+                : "Your vehicle {$this->asset->license_plate} has exited the geofence \"{$this->geofence->name}\".",
+
+            'event_type' => $this->eventType,
 
             'asset' => [
-
                 'id' => $this->asset->id,
-
                 'license_plate' => $this->asset->license_plate,
-
                 'imei' => $this->asset->imei,
-
             ],
 
             'geofence' => [
-
                 'id' => $this->geofence->id,
-
                 'name' => $this->geofence->name,
-
                 'radius' => $this->geofence->radius_meters,
-
             ],
 
             'location' => [
-
                 'latitude' => $this->asset->last_known_lat,
-
                 'longitude' => $this->asset->last_known_lng,
-
             ],
 
             'triggered_at' => now()->toDateTimeString(),
-
         ];
     }
 }

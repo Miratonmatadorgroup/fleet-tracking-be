@@ -21,9 +21,11 @@ Accept: application/json
 Authorization: {{bearer}}
 
 {
-    "role": "admin",
+    "role": "super_admin",
         "permissions": [
-           "view-total-earnings"
+           "view-location-history",
+           "view-movement-history"
+
         ]
 }
 
@@ -169,6 +171,35 @@ Authorization: {{bearer}}
     "new_pin": "1111"
 
 }
+
+//TRACK LAST FIVE LOCATIONS OF MY ASSET
+###
+POST {{url}}/tracking/last-five-locations
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+{
+    "asset_id": "019eea7a-68be-73c5-8858-247395040f9c"
+}
+
+//TRACK ASSET LOCATION HISTORY GET {{url}}/assets/location-history?asset_id=019eea7a-68be-73c5-8858-247395040f9c&hours=1
+//TRACK ASSET LOCATION HISTORY GET {{url}}/assets/location-history?asset_id=019eea7a-68be-73c5-8858-247395040f9c&from=2026-08-20T00:00:00Z&to=2026-08-20T23:59:59Z
+###
+GET {{url}}/assets/location-history?asset_id=019eea7a-68be-73c5-8858-247395040f9c&from=2026-08-20T00:00:00Z&to=2026-08-20T23:59:59Z
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
+
+
+
+//TRACK ASSET MOVEMENT HISTORY GET {{url}}/assets/movement-history?asset_id=019eea7a-68be-73c5-8858-247395040f9c&from=2026-08-20T00:00:00Z&to=2026-08-20T23:59:59Z
+// GET {{url}}/assets/movement-history?asset_id=019eea7a-68be-73c5-8858-247395040f9c&from=2026-08-20T00:00:00Z&to=2026-08-20T23:59:59Z
+###
+GET {{url}}/assets/movement-history?asset_id=019eea7a-68be-73c5-8858-247395040f9c&from=2026-08-20T00:00:00Z&to=2026-08-20T23:59:59Z
+Content-Type: application/json
+Accept: application/json
+Authorization: {{bearer}}
 
 //ADMIN FORGOT TRANSACTION PIN
 ###

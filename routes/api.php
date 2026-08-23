@@ -371,8 +371,12 @@ Route::middleware(['auth:api', 'update.activity'])->group(function () {
         Route::post('/fleet/vehicles/shutdown', [TrackerController::class, 'remoteShutdown']);
 
         Route::post('/fleet/vehicles/unlock', [TrackerController::class, 'remoteUnlock']);
-         Route::post('/tracking/last-five-locations', [TrackerController::class, 'lastFiveLocations'])->name('tracking.last-five-locations');
-    });
+        Route::post('/tracking/last-five-locations', [TrackerController::class, 'lastFiveLocations'])->name('tracking.last-five-locations');
+        Route::get('/assets/location-history', [TrackerController::class, 'locationHistory'])->name('assets.location-history')
+        ->middleware('permission:view-location-history');
+        Route::get('/assets/movement-history', [TrackerController::class, 'movementHistory'])->name('assets.movement-history')
+        ->middleware('permission:view-movement-history');
+});
 
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
