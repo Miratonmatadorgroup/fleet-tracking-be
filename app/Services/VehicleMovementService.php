@@ -28,7 +28,8 @@ class VehicleMovementService
     /**
      * Return raw location history.
      */
-    public function locationHistory($tracker, Carbon $from, Carbon $to): Collection {
+    public function locationHistory($tracker, Carbon $from, Carbon $to): Collection
+    {
         return $tracker->locations()
             ->whereBetween('tracker_time', [$from, $to])
             ->orderBy('tracker_time')
@@ -46,7 +47,8 @@ class VehicleMovementService
     /**
      * Build movement history from GPS points.
      */
-    public function movementHistory($tracker, Carbon $from, Carbon $to): array {
+    public function movementHistory($tracker, Carbon $from, Carbon $to): array
+    {
         $locations = $this->locationHistory(
             $tracker,
             $from,
@@ -108,15 +110,26 @@ class VehicleMovementService
     /**
      * Calculate total distance travelled from GPS points.
      */
+
     protected function calculateTotalDistance(
         Collection $locations
     ): float {
-        $distance = 0;
+        $locations = $locations->values();
+
+        if ($locations->count() < 2) {
+            return 0.0;
+        }
+
+        $distance = 0.0;
 
         for ($i = 1; $i < $locations->count(); $i++) {
 
-            $previous = $locations[$i - 1];
-            $current = $locations[$i];
+            $previous = $locations->get($i - 1);
+            $current = $locations->get($i);
+
+            if (!$previous || !$current) {
+                continue;
+            }
 
             $distance += $this->distanceBetweenPoints(
                 (float) $previous->latitude,
@@ -217,7 +230,8 @@ class VehicleMovementService
     /**
      * Add a stop only when it lasted long enough.
      */
-    protected function addStopIfValid(array &$stops, $start, array $points): void {
+    protected function addStopIfValid(array &$stops, $start, array $points): void
+    {
         if (empty($points)) {
             return;
         }
@@ -249,7 +263,8 @@ class VehicleMovementService
     /**
      * Build movement + stop timeline.
      */
-    protected function buildTimeline(Collection $locations, array $stops): array {
+    protected function buildTimeline(Collection $locations, array $stops): array
+    {
         $timeline = [];
 
         if ($locations->isEmpty()) {
